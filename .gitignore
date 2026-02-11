@@ -29,11 +29,10 @@ data/processed/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 
-# Model artifacts
-models/
-checkpoints/
+# Model artifacts (root-level outputs only)
+/models/
+/checkpoints/
 *.pt
 *.pth
 *.h5
 *.joblib
-
