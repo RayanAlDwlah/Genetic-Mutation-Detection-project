@@ -106,3 +106,85 @@ clinvar_cleaning:
     - "22"
     - "X"
     - "Y"
+
+dbnsfp_features:
+  version: "5.3.1a"
+  key_columns:
+    chr:
+      - "#chr"
+      - "chr"
+    pos:
+      - "pos(1-based)"
+      - "pos"
+    ref:
+      - "ref"
+    alt:
+      - "alt"
+    ref_aa:
+      - "aaref"
+    alt_aa:
+      - "aaalt"
+
+  conservation:
+    phyloP100way_vertebrate:
+      - "phyloP100way_vertebrate"
+    phyloP30way_mammalian:
+      - "phyloP30way_mammalian"
+      - "phyloP470way_mammalian"
+    phastCons100way_vertebrate:
+      - "phastCons100way_vertebrate"
+    phastCons30way_mammalian:
+      - "phastCons30way_mammalian"
+      - "phastCons470way_mammalian"
+    GERP++_RS:
+      - "GERP++_RS"
+    GERP++_NR:
+      - "GERP++_NR"
+    SiPhy_29way_logOdds:
+      - "SiPhy_29way_logOdds"
+
+  physicochemical:
+    Grantham_distance:
+      - "Grantham"
+    BLOSUM62_score:
+      - "BLOSUM62"
+
+  structural:
+    secondary_structure_prediction:
+      - "PSIPRED_pred"
+      - "PSIPRED2_pred"
+      - "secondary_structure"
+    solvent_accessibility:
+      - "ASAquick"
+      - "solvent_accessibility"
+      - "RSA"
+    disorder_prediction_score:
+      - "disorder_score"
+      - "IUPred_score"
+      - "VSL2_score"
+    pfam_domain:
+      - "Pfam_domain"
+      - "Interpro_domain"
+
+  amino_acid_properties:
+    - hydrophobicity_ref
+    - hydrophobicity_alt
+    - molecular_weight_ref
+    - molecular_weight_alt
+    - pI_ref
+    - pI_alt
+
+  derived_changes:
+    - polarity_change
+    - volume_change
+    - charge_change
+
+  exclude_predictors:
+    - "REVEL"
+    - "ClinPred"
+    - "MetaLR"
+    - "MetaSVM"
+    - "MetaRNN"
+    - "BayesDel"
+    - "VEST4"
+    - "M-CAP"
