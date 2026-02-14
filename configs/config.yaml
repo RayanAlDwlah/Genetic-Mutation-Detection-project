@@ -13,7 +13,7 @@ paths:
 data_sources:
   clinvar:
     enabled: true
-    file: data/raw/clinvar/variant_summary.txt
+    file: data/raw/clinvar/variant_summary.txt.gz
     delimiter: "\t"
     key_columns:
       - Chromosome
@@ -24,7 +24,7 @@ data_sources:
     drop_vus: true
   gnomad:
     enabled: true
-    file: data/raw/gnomad/gnomad.exomes.vcf.gz
+    file: data/raw/gnomad/gnomad.exomes.r2.1.1.sites.1.vcf.bgz
     benign_proxy_af_threshold: 0.01
     key_columns:
       - Chromosome
@@ -32,9 +32,10 @@ data_sources:
       - Ref
       - Alt
     af_column: AF
+    notes: "Current local file is chr1 from gnomAD exomes r2.1.1."
   dbnsfp:
     enabled: true
-    file: data/raw/dbnsfp/dbNSFP4.tsv.gz
+    file: data/raw/dbnsfp/dbNSFP.tsv.gz
     selected_features:
       - PhyloP
       - phastCons
@@ -59,3 +60,49 @@ training:
   batch_size: 32
   epochs: 20
   learning_rate: 0.001
+
+clinvar_cleaning:
+  input_file: data/raw/clinvar/variant_summary.txt.gz
+  output_file: data/intermediate/clinvar_labeled_clean.parquet
+  metadata_file: data/intermediate/clinvar_metadata.json
+  variant_type: single nucleotide variant
+  molecular_consequence_column: MolecularConsequence
+  molecular_consequence: missense_variant
+  molecular_consequence_non_empty_ratio_min: 0.1
+  labels_kept:
+    - Pathogenic
+    - Likely pathogenic
+    - Benign
+    - Likely benign
+  label_positive:
+    - Pathogenic
+    - Likely pathogenic
+  label_negative:
+    - Benign
+    - Likely benign
+  min_review_stars: 1
+  allowed_chromosomes:
+    - "1"
+    - "2"
+    - "3"
+    - "4"
+    - "5"
+    - "6"
+    - "7"
+    - "8"
+    - "9"
+    - "10"
+    - "11"
+    - "12"
+    - "13"
+    - "14"
+    - "15"
+    - "16"
+    - "17"
+    - "18"
+    - "19"
+    - "20"
+    - "21"
+    - "22"
+    - "X"
+    - "Y"
