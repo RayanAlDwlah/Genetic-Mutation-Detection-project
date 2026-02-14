@@ -1,38 +1,35 @@
-# Python
+# Python cache
 __pycache__/
 *.py[cod]
-*.so
-.Python
-build/
-dist/
-*.egg-info/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Data
+# Keep raw data out of git
+data/raw/*
+!data/raw/.gitkeep
+
+# Processed and split datasets can be large
+data/processed/*
+!data/processed/.gitkeep
+data/splits/*
+!data/splits/.gitkeep
+
+# Large CSV files
+*.csv
+
+# Training artifacts
+checkpoints/
+results/checkpoints/*
+!results/checkpoints/.gitkeep
 
 # Virtual environments
 .venv/
 venv/
 env/
 
-# Jupyter
-.ipynb_checkpoints/
-
 # OS / editor
 .DS_Store
 .vscode/
 .idea/
-
-# Logs
-*.log
-
-# Data artifacts (keep data folders but ignore contents by default)
-data/raw/*
-data/processed/*
-!data/raw/.gitkeep
-!data/processed/.gitkeep
-
-# Model artifacts (root-level outputs only)
-/models/
-/checkpoints/
-*.pt
-*.pth
-*.h5
-*.joblib
