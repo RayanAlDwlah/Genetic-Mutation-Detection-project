@@ -1,0 +1,18 @@
+project:
+  name: mutation-detection
+  seed: 42
+
+paths:
+  raw_data: data/raw
+  processed_data: data/processed
+  splits: data/splits
+  figures: results/figures
+  checkpoints: results/checkpoints
+  metrics: results/metrics
+
+training:
+  test_size: 0.2
+  val_size: 0.1
+  batch_size: 32
+  epochs: 20
+  learning_rate: 0.001

@@ -1,56 +1,38 @@
-# Genetic Mutation Detection (Team Workspace)
+# Mutation Detection
 
-This repository is configured for a 6-person graduation project team to collaborate safely using GitHub pull requests.
+## Overview
+This project focuses on detecting and classifying genetic mutations using both classical machine learning and deep learning approaches. The workflow covers data collection, preprocessing, feature engineering, model training, and evaluation for clinically relevant variant prediction tasks.
 
-## Branch Strategy
+## Installation
+1. Create and activate a Python virtual environment.
+2. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+3. Start working with notebooks or scripts in `src/`.
 
-- `main`: production-ready code only.
-- `develop`: integration branch for completed features.
-- `feature/<short-task-name>`: each task branch created from `develop`.
-- `fix/<short-task-name>`: bug fix branch created from `develop`.
+## Data
+- `data/raw/`: original datasets (e.g., ClinVar, gnomAD, and other external sources).
+- `data/processed/`: cleaned and transformed datasets ready for modeling.
+- `data/splits/`: train/validation/test split files.
 
-## Daily Workflow
+Keep raw and large derived data out of git, and document data versions when you update datasets.
 
-1. Update local `develop`.
-2. Create your feature branch.
-3. Commit in small logical steps.
-4. Push branch and open a PR to `develop`.
-5. Merge only after review and checks pass.
+## Models
+The project includes multiple modeling tracks:
+- `xgboost_model.py`: gradient-boosted tree baseline.
+- `cnn_model.py`: convolutional neural network for sequence-based learning.
+- `esm2_model.py`: transformer-based modeling using ESM2 representations.
 
-## First-Time Setup
+Training and evaluation pipelines are orchestrated through `src/training.py` and `src/evaluation.py`.
 
-```bash
-git checkout -b develop
-git add .
-git commit -m "chore: initialize team collaboration structure"
-```
+## Team
+Genetic Graduation Project Team.
 
-After you create the GitHub repository and add it as `origin`:
+Suggested roles:
+- Data engineering and preprocessing
+- Modeling and experimentation
+- Evaluation and reporting
 
-```bash
-git push -u origin main
-git push -u origin develop
-```
-
-## Suggested Folder Structure
-
-```text
-data/
-  raw/
-  processed/
-notebooks/
-src/
-  data/
-  features/
-  models/
-  evaluation/
-reports/
-```
-
-## Team Rules
-
-- No direct push to `main`.
-- No merge without review.
-- Every PR must link an Issue.
-- Keep dataset files out of git unless small metadata files.
-
+## License
+License is to be defined by the team. For now, this repository is intended for academic/research use.
