@@ -10,7 +10,50 @@ paths:
   checkpoints: results/checkpoints
   metrics: results/metrics
 
+data_sources:
+  clinvar:
+    enabled: true
+    file: data/raw/clinvar/variant_summary.txt
+    delimiter: "\t"
+    key_columns:
+      - Chromosome
+      - Start
+      - ReferenceAllele
+      - AlternateAllele
+    label_column: ClinicalSignificance
+    drop_vus: true
+  gnomad:
+    enabled: true
+    file: data/raw/gnomad/gnomad.exomes.vcf.gz
+    benign_proxy_af_threshold: 0.01
+    key_columns:
+      - Chromosome
+      - Position
+      - Ref
+      - Alt
+    af_column: AF
+  dbnsfp:
+    enabled: true
+    file: data/raw/dbnsfp/dbNSFP4.tsv.gz
+    selected_features:
+      - PhyloP
+      - phastCons
+      - GERP++
+      - BLOSUM62
+      - Grantham
+      - PolyPhen2
+      - SIFT
+  uniprot:
+    enabled: true
+    file: data/raw/uniprot/human_proteome.fasta
+    required_for: esm2_model
+
+label_mapping:
+  Pathogenic: 1
+  Benign: 0
+
 training:
+  target_column: label
   test_size: 0.2
   val_size: 0.1
   batch_size: 32
