@@ -4,8 +4,6 @@
 from __future__ import annotations
 
 import argparse
-import json
-from datetime import datetime, timezone
 from pathlib import Path
 
 import numpy as np
@@ -149,44 +147,6 @@ def validate_splits(
     }
 
 
-def build_split_info(
-    source_file: Path,
-    seed: int,
-    group_col: str,
-    train_df: pd.DataFrame,
-    val_df: pd.DataFrame,
-    test_df: pd.DataFrame,
-    overlap: dict[str, int],
-) -> dict[str, object]:
-    def split_block(df: pd.DataFrame) -> dict[str, object]:
-        pathogenic, benign, pathogenic_ratio = label_stats(df)
-        genes = [str(x) for x in df[group_col].dropna().astype(str).unique().tolist()]
-        return {
-            "rows": int(len(df)),
-            "genes": int(len(set(genes))),
-            "pathogenic": int(pathogenic),
-            "benign": int(benign),
-            "pathogenic_ratio": round(float(pathogenic_ratio), 6),
-            "gene_list": gene_preview(genes, limit=10),
-        }
-
-    return {
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "source_file": str(source_file),
-        "random_seed": int(seed),
-        "split_method": "Gene-level GroupShuffleSplit",
-        "group_column": group_col,
-        "train": split_block(train_df),
-        "val": split_block(val_df),
-        "test": split_block(test_df),
-        "overlap_check": {
-            "train_val_overlap": int(overlap["train_val_overlap"]),
-            "train_test_overlap": int(overlap["train_test_overlap"]),
-            "val_test_overlap": int(overlap["val_test_overlap"]),
-            "status": "PASSED — zero overlap",
-        },
-    }
-
 
 def print_summary(train_df: pd.DataFrame, val_df: pd.DataFrame, test_df: pd.DataFrame) -> None:
     rows = []
@@ -245,30 +205,16 @@ def main() -> None:
     train_path = output_dir / "train.parquet"
     val_path = output_dir / "val.parquet"
     test_path = output_dir / "test.parquet"
-    info_path = output_dir / "split_info.json"
 
     train_df.to_parquet(train_path, index=False)
     val_df.to_parquet(val_path, index=False)
     test_df.to_parquet(test_path, index=False)
-
-    split_info = build_split_info(
-        source_file=input_path,
-        seed=args.seed,
-        group_col=group_col,
-        train_df=train_df,
-        val_df=val_df,
-        test_df=test_df,
-        overlap=overlap,
-    )
-    with info_path.open("w", encoding="utf-8") as handle:
-        json.dump(split_info, handle, indent=2)
 
     print_summary(train_df, val_df, test_df)
     print("✅ Gene-level split validated — zero overlap between splits")
     print(f"Saved train: {train_path}")
     print(f"Saved val: {val_path}")
     print(f"Saved test: {test_path}")
-    print(f"Saved split info: {info_path}")
 
 
 if __name__ == "__main__":

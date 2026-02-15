@@ -4,10 +4,8 @@
 from __future__ import annotations
 
 import argparse
-import json
 import re
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -56,6 +54,11 @@ def normalize_chromosome(value: Any) -> str | None:
         return text
 
     return text
+
+
+def normalize_allele_series(series: pd.Series) -> pd.Series:
+    out = series.fillna("").astype(str).str.strip().str.upper()
+    return out.replace({"": "", "NA": "", "NAN": "", "NONE": "", "NULL": "", ".": "", "-": ""})
 
 
 def extract_review_stars(value: Any) -> int:
@@ -163,16 +166,11 @@ def run_pipeline(config_path: Path, strict: bool) -> None:
         repo_root,
         cleaning_cfg.get("output_file", "data/intermediate/clinvar_labeled_clean.parquet"),
     )
-    metadata_path = resolve_path(
-        repo_root,
-        cleaning_cfg.get("metadata_file", "data/intermediate/clinvar_metadata.json"),
-    )
 
     if not input_path.exists():
         raise FileNotFoundError(f"ClinVar input file not found: {input_path}")
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    metadata_path.parent.mkdir(parents=True, exist_ok=True)
 
     variant_type_target = normalize_text(cleaning_cfg.get("variant_type", "single nucleotide variant"))
     mc_column = cleaning_cfg.get("molecular_consequence_column", "MolecularConsequence")
@@ -309,7 +307,7 @@ def run_pipeline(config_path: Path, strict: bool) -> None:
     print_before_after("Rows", before, len(df))
 
     print("\n=== STEP 7: Standardize columns ===")
-    required_cols = ["Chromosome", "Start", "ReferenceAllele", "AlternateAllele", "GeneSymbol"]
+    required_cols = ["Chromosome", "GeneSymbol"]
     missing_required = [col for col in required_cols if col not in df.columns]
     if missing_required:
         raise KeyError(f"Required columns are missing: {missing_required}")
@@ -324,9 +322,17 @@ def run_pipeline(config_path: Path, strict: bool) -> None:
     df = df[df["chr"].isin(allowed_chromosomes)].copy()
     print_before_after("Rows after chromosome normalization/filter", before, len(df))
 
-    df["pos"] = pd.to_numeric(df["Start"], errors="coerce")
-    df["ref"] = df["ReferenceAllele"].fillna("").astype(str).str.strip().str.upper()
-    df["alt"] = df["AlternateAllele"].fillna("").astype(str).str.strip().str.upper()
+    pos_vcf = pd.to_numeric(df["PositionVCF"], errors="coerce") if "PositionVCF" in df.columns else pd.Series(pd.NA, index=df.index, dtype="float64")
+    pos_start = pd.to_numeric(df["Start"], errors="coerce") if "Start" in df.columns else pd.Series(pd.NA, index=df.index, dtype="float64")
+    df["pos"] = pos_vcf.where(pos_vcf.notna(), pos_start)
+
+    ref_vcf = normalize_allele_series(df["ReferenceAlleleVCF"]) if "ReferenceAlleleVCF" in df.columns else pd.Series("", index=df.index)
+    ref_raw = normalize_allele_series(df["ReferenceAllele"]) if "ReferenceAllele" in df.columns else pd.Series("", index=df.index)
+    alt_vcf = normalize_allele_series(df["AlternateAlleleVCF"]) if "AlternateAlleleVCF" in df.columns else pd.Series("", index=df.index)
+    alt_raw = normalize_allele_series(df["AlternateAllele"]) if "AlternateAllele" in df.columns else pd.Series("", index=df.index)
+
+    df["ref"] = ref_vcf.where(ref_vcf.ne(""), ref_raw)
+    df["alt"] = alt_vcf.where(alt_vcf.ne(""), alt_raw)
     df["gene"] = df["GeneSymbol"].fillna("").astype(str).str.strip()
 
     before = len(df)
@@ -335,6 +341,8 @@ def run_pipeline(config_path: Path, strict: bool) -> None:
         & df["ref"].ne("")
         & df["alt"].ne("")
         & df["gene"].ne("")
+        & df["ref"].str.len().eq(1)
+        & df["alt"].str.len().eq(1)
     ].copy()
     df["pos"] = df["pos"].astype("int64")
     print_before_after("Rows after required-field cleanup", before, len(df))
@@ -387,35 +395,8 @@ def run_pipeline(config_path: Path, strict: bool) -> None:
     pathogenic_count = int((df["label"] == 1).sum())
     benign_count = int((df["label"] == 0).sum())
     total_rows = int(len(df))
-    pathogenic_ratio = (pathogenic_count / total_rows) if total_rows else 0.0
-
-    unique_chromosomes = sorted(df["chr"].dropna().astype(str).unique().tolist(), key=chromosome_sort_key)
-
-    metadata = {
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "source_file": input_path.name,
-        "total_rows": total_rows,
-        "pathogenic_count": pathogenic_count,
-        "benign_count": benign_count,
-        "pathogenic_ratio": pathogenic_ratio,
-        "unique_genes": int(df["gene"].nunique()),
-        "unique_chromosomes": unique_chromosomes,
-        "filters_applied": {
-            "variant_type": variant_type_target,
-            "molecular_consequence": mc_target,
-            "labels_kept": labels_kept,
-            "min_review_stars": min_review_stars,
-            "duplicates_removed": int(duplicates_removed),
-            "conflicting_labels_removed": int(conflicting_labels_removed),
-            "molecular_filter_applied": molecular_filter_applied,
-        },
-    }
-
-    with metadata_path.open("w", encoding="utf-8") as handle:
-        json.dump(metadata, handle, indent=2)
 
     print(f"Saved parquet: {output_path}")
-    print(f"Saved metadata: {metadata_path}")
 
     print("\n=== STEP 10: Final summary ===")
     print(f"Total clean variants: {total_rows:,}")
