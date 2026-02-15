@@ -15,9 +15,7 @@ Example:
 from __future__ import annotations
 
 import argparse
-import json
 import math
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -27,7 +25,6 @@ import yaml
 
 
 DEFAULT_OUTPUT = "data/intermediate/dbnsfp_selected_features.parquet"
-DEFAULT_METADATA = "data/intermediate/dbnsfp_metadata.json"
 
 
 # Standard amino-acid physicochemical values used for derived features.
@@ -494,7 +491,6 @@ def main() -> None:
     input_path = resolve_path(repo_root, args.input)
     output_path = resolve_path(repo_root, args.output)
     config_path = resolve_path(repo_root, args.config)
-    metadata_path = resolve_path(repo_root, DEFAULT_METADATA)
 
     if not input_path.exists():
         raise FileNotFoundError(f"dbNSFP input not found: {input_path}")
@@ -519,7 +515,6 @@ def main() -> None:
     feature_candidates.update(structural_cfg)
 
     excluded_predictors = [str(x) for x in feature_cfg.get("exclude_predictors", [])]
-    version = str(feature_cfg.get("version", "unknown"))
 
     available_columns = get_text_header_columns(input_path, delimiter=pick_separator(input_path))
     key_cols = resolve_columns(available_columns, key_cfg)
@@ -580,33 +575,10 @@ def main() -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     extracted_df.to_parquet(output_path, index=False)
 
-    circularity_status = (
-        "PASSED — no ClinVar-derived predictors included"
-        if not detected_circular
-        else "PASSED — no ClinVar-derived predictors included"
-    )
-
-    metadata = {
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "source": "dbNSFP",
-        "version": version,
-        "total_variants_extracted": int(len(extracted_df)),
-        "features_extracted": [c for c in extracted_df.columns if c not in base_cols],
-        "features_dropped_high_missing": dropped_high_missing,
-        "missing_value_summary": missing_summary,
-        "circularity_check": circularity_status,
-        "excluded_predictors": excluded_predictors,
-    }
-
-    metadata_path.parent.mkdir(parents=True, exist_ok=True)
-    with metadata_path.open("w", encoding="utf-8") as handle:
-        json.dump(metadata, handle, indent=2)
-
     print("Extraction finished.")
     print(f"Total variants extracted: {len(extracted_df):,}")
-    print(f"Features extracted: {len(metadata['features_extracted'])}")
+    print(f"Features extracted: {len(final_feature_cols)}")
     print(f"Saved parquet: {output_path}")
-    print(f"Saved metadata: {metadata_path}")
 
 
 if __name__ == "__main__":

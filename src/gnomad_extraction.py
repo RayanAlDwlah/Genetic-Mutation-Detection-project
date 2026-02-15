@@ -15,11 +15,9 @@ Example:
 from __future__ import annotations
 
 import argparse
-import json
 import math
 import re
 from array import array
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Iterable
 
@@ -37,7 +35,6 @@ except ImportError:  # pragma: no cover - runtime dependency guard
 POPULATIONS = ["AFR", "AMR", "ASJ", "EAS", "FIN", "NFE", "SAS"]
 EPSILON = 1e-8
 DEFAULT_OUTPUT = "data/intermediate/gnomad_af_clean.parquet"
-DEFAULT_METADATA = "data/intermediate/gnomad_metadata.json"
 
 
 def resolve_path(repo_root: Path, path_str: str) -> Path:
@@ -603,23 +600,6 @@ def fetch_gnomad_af(variant_keys: list[str]) -> pd.DataFrame:
     return out[["variant_key", "AF", "AF_popmax", "AN", "AC", "log_AF", "is_common"]]
 
 
-def save_metadata(metadata_path: Path, summary: dict[str, Any]) -> None:
-    """Save gnomAD extraction metadata JSON."""
-    payload = {
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "source": "gnomAD",
-        "version": "r2.1.1",
-        "total_variants": summary["total_variants"],
-        "common_variants_count": summary["common_variants_count"],
-        "rare_variants_count": summary["rare_variants_count"],
-        "mean_AF": summary["mean_AF"],
-        "median_AF": summary["median_AF"],
-    }
-
-    metadata_path.parent.mkdir(parents=True, exist_ok=True)
-    with metadata_path.open("w", encoding="utf-8") as handle:
-        json.dump(payload, handle, indent=2)
-
 
 def parse_args() -> argparse.Namespace:
     """Parse CLI arguments."""
@@ -651,7 +631,6 @@ def main() -> None:
 
     input_path = resolve_path(repo_root, args.input)
     output_path = resolve_path(repo_root, args.output)
-    metadata_path = resolve_path(repo_root, DEFAULT_METADATA)
 
     if not input_path.exists():
         raise FileNotFoundError(f"Input file not found: {input_path}")
@@ -677,7 +656,6 @@ def main() -> None:
         extract_from_table(input_path=input_path, sink=sink, clinvar_keys=clinvar_keys)
 
     summary = sink.finalize()
-    save_metadata(metadata_path, summary)
 
     print("Extraction complete:")
     print(f"  total_variants={summary['total_variants']:,}")
@@ -686,7 +664,6 @@ def main() -> None:
     print(f"  mean_AF={summary['mean_AF']:.6g}")
     print(f"  median_AF={summary['median_AF']:.6g}")
     print(f"Saved parquet: {output_path}")
-    print(f"Saved metadata: {metadata_path}")
 
 
 if __name__ == "__main__":

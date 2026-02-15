@@ -9,7 +9,6 @@ Exit code:
 
 from __future__ import annotations
 
-import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -25,7 +24,6 @@ import seaborn as sns
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 INPUT_PATH = REPO_ROOT / "data" / "processed" / "merged_clinvar_gnomad_dbnsfp.parquet"
-REPORT_PATH = REPO_ROOT / "data" / "processed" / "validation_report.json"
 FIGURES_DIR = REPO_ROOT / "results" / "figures"
 
 CORR_FIG_PATH = FIGURES_DIR / "correlation_matrix.png"
@@ -443,7 +441,6 @@ def print_report(report: dict[str, object], critical_issues: list[str]) -> None:
         print("- none")
 
     print("\nArtifacts")
-    print(f"- JSON report: {REPORT_PATH}")
     print(f"- Correlation heatmap: {CORR_FIG_PATH}")
     print(f"- Class distribution plot: {CLASS_FIG_PATH}")
     print(f"- Missing values plot: {MISSING_FIG_PATH}")
@@ -452,7 +449,6 @@ def print_report(report: dict[str, object], critical_issues: list[str]) -> None:
 def main() -> None:
     require_file(INPUT_PATH)
     FIGURES_DIR.mkdir(parents=True, exist_ok=True)
-    REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
 
     df = pd.read_parquet(INPUT_PATH)
 
@@ -499,9 +495,6 @@ def main() -> None:
         "items": critical_issues,
         "critical_passed": len(critical_issues) == 0,
     }
-
-    with REPORT_PATH.open("w", encoding="utf-8") as handle:
-        json.dump(report, handle, indent=2)
 
     print_report(report, critical_issues)
 
