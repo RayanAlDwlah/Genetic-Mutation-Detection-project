@@ -21,8 +21,13 @@ data/splits/*
 
 # Training artifacts
 checkpoints/
+results/checkpoints/
 results/checkpoints/*
 !results/checkpoints/.gitkeep
+results/metrics/*.csv
+
+# Assistant worktrees
+.claude/
 
 # Virtual environments
 .venv/

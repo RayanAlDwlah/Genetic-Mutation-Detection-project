@@ -9,7 +9,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import GroupShuffleSplit
-from output import echo
+from src.output import echo
+from src.utils import resolve_path
 
 
 DEFAULT_INPUT = "data/processed/final_balanced.parquet"
@@ -25,14 +26,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--test-ratio", type=float, default=0.15, help="Test ratio")
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
     return parser.parse_args()
-
-
-def resolve_path(repo_root: Path, value: str) -> Path:
-    path = Path(value)
-    if path.is_absolute():
-        return path
-    return repo_root / path
-
 
 def get_gene_column(df: pd.DataFrame) -> str:
     if "GeneSymbol" in df.columns:

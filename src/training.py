@@ -11,9 +11,10 @@ import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder
 
-from evaluation import compute_classification_metrics, select_best_threshold
-from models.xgboost_model import XGBTuningConfig, tune_xgboost
-from output import echo
+from src.evaluation import compute_classification_metrics, select_best_threshold
+from src.models.xgboost_model import XGBTuningConfig, tune_xgboost
+from src.output import echo
+from src.utils import require_file, resolve_path
 
 
 DEFAULT_TRAIN_PATH = "data/splits/train.parquet"
@@ -45,19 +46,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--trials", type=int, default=14, help="Hyperparameter search trials")
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
     return parser.parse_args()
-
-
-def resolve_path(repo_root: Path, path_str: str) -> Path:
-    path = Path(path_str)
-    if path.is_absolute():
-        return path
-    return repo_root / path
-
-
-def require_file(path: Path) -> None:
-    if not path.exists():
-        raise FileNotFoundError(f"Required file not found: {path}")
-
 
 def select_feature_columns(df: pd.DataFrame) -> tuple[list[str], list[str]]:
     """Select numeric and categorical columns while excluding leakage/IDs.

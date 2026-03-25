@@ -20,7 +20,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from output import echo
+from src.output import echo
+from src.utils import require_file
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -30,12 +31,6 @@ FIGURES_DIR = REPO_ROOT / "results" / "figures"
 CORR_FIG_PATH = FIGURES_DIR / "correlation_matrix.png"
 CLASS_FIG_PATH = FIGURES_DIR / "class_distribution.png"
 MISSING_FIG_PATH = FIGURES_DIR / "missing_values.png"
-
-
-def require_file(path: Path) -> None:
-    if not path.exists():
-        raise FileNotFoundError(f"Input file not found: {path}")
-
 
 def safe_float(value: float | int | np.floating | np.integer | None) -> float | None:
     if value is None:

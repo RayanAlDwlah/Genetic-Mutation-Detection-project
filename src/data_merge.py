@@ -14,7 +14,8 @@ from math import log10
 from pathlib import Path
 
 import pandas as pd
-from output import echo
+from src.output import echo
+from src.utils import require_file
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -31,12 +32,6 @@ GNOMAD_DEFAULT_AF = 0.0
 GNOMAD_DEFAULT_AF_POPMAX = 0.0
 GNOMAD_DEFAULT_LOG_AF = log10(1e-8)
 GNOMAD_DEFAULT_IS_COMMON = False
-
-
-def _require_file(path: Path) -> None:
-    if not path.exists():
-        raise FileNotFoundError(f"Required input file not found: {path}")
-
 
 def _require_columns(df: pd.DataFrame, required: list[str], table_name: str) -> None:
     missing = [col for col in required if col not in df.columns]
@@ -72,9 +67,9 @@ def _run_sanity_checks(merged: pd.DataFrame, expected_rows: int) -> None:
 
 
 def main() -> None:
-    _require_file(CLINVAR_PATH)
-    _require_file(DBNSFP_PATH)
-    _require_file(GNOMAD_PATH)
+    require_file(CLINVAR_PATH, "ClinVar input")
+    require_file(DBNSFP_PATH, "dbNSFP input")
+    require_file(GNOMAD_PATH, "gnomAD input")
 
     echo(f"Loading ClinVar: {CLINVAR_PATH}")
     clinvar = pd.read_parquet(CLINVAR_PATH)

@@ -12,7 +12,8 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-from output import echo
+from src.output import echo
+from src.utils import require_file
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -64,12 +65,6 @@ IMPORTANT_IMPUTE_FLAGS = [
     "Grantham_distance",
     "BLOSUM62_score",
 ]
-
-
-def require_file(path: Path) -> None:
-    if not path.exists():
-        raise FileNotFoundError(f"Required file not found: {path}")
-
 
 def load_input() -> pd.DataFrame:
     require_file(INPUT_PATH)

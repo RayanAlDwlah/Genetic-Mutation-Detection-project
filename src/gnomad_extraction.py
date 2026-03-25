@@ -23,7 +23,8 @@ from typing import Any, Callable, Iterable
 
 import numpy as np
 import pandas as pd
-from output import echo
+from src.output import echo
+from src.utils import normalize_chromosome, resolve_path
 
 try:
     import pyarrow as pa
@@ -36,39 +37,6 @@ except ImportError:  # pragma: no cover - runtime dependency guard
 POPULATIONS = ["AFR", "AMR", "ASJ", "EAS", "FIN", "NFE", "SAS"]
 EPSILON = 1e-8
 DEFAULT_OUTPUT = "data/intermediate/gnomad_af_clean.parquet"
-
-
-def resolve_path(repo_root: Path, path_str: str) -> Path:
-    """Resolve absolute/relative path against repository root."""
-    path = Path(path_str)
-    if path.is_absolute():
-        return path
-    return repo_root / path
-
-
-def normalize_chromosome(value: Any) -> str | None:
-    """Normalize chromosome labels to 1-22/X/Y style without 'chr' prefix."""
-    if value is None or (isinstance(value, float) and math.isnan(value)):
-        return None
-
-    text = str(value).strip()
-    if not text:
-        return None
-
-    if text.lower().startswith("chr"):
-        text = text[3:]
-
-    text = text.upper()
-    if text == "23":
-        return "X"
-    if text == "24":
-        return "Y"
-    if text.isdigit():
-        return str(int(text))
-    if text in {"X", "Y"}:
-        return text
-    return text
-
 
 def variant_key(chrom: str, pos: int, ref: str, alt: str) -> str:
     """Build standardized variant key used for cross-dataset merges."""

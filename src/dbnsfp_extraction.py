@@ -21,8 +21,8 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-import yaml
-from output import echo
+from src.output import echo
+from src.utils import load_yaml_config, normalize_chromosome, resolve_path
 
 
 DEFAULT_OUTPUT = "data/intermediate/dbnsfp_selected_features.parquet"
@@ -111,14 +111,6 @@ GRANTHAM_TABLE = {
     "V": {"A": 64, "R": 96, "N": 133, "D": 152, "C": 192, "Q": 96, "E": 121, "G": 109, "H": 84, "I": 29, "L": 32, "K": 97, "M": 21, "F": 50, "P": 68, "S": 124, "T": 69, "W": 88, "Y": 55, "V": 0},
 }
 
-
-def resolve_path(repo_root: Path, path_str: str) -> Path:
-    path = Path(path_str)
-    if path.is_absolute():
-        return path
-    return repo_root / path
-
-
 def normalize_name(name: str) -> str:
     return "".join(ch for ch in str(name).lower() if ch.isalnum())
 
@@ -145,27 +137,6 @@ def first_token(value: Any) -> Any:
     if not token or token in {".", "NA", "N/A", "nan", "None"}:
         return np.nan
     return token
-
-
-def normalize_chromosome(value: Any) -> str | None:
-    if value is None or (isinstance(value, float) and math.isnan(value)):
-        return None
-    text = str(value).strip()
-    if not text:
-        return None
-    if text.lower().startswith("chr"):
-        text = text[3:]
-    text = text.upper()
-    if text == "23":
-        return "X"
-    if text == "24":
-        return "Y"
-    if text.isdigit():
-        return str(int(text))
-    if text in {"X", "Y"}:
-        return text
-    return text
-
 
 def normalize_aa(value: Any) -> str | None:
     token = first_token(value)
@@ -201,15 +172,6 @@ def first_non_null(series: pd.Series) -> Any:
             continue
         return value
     return np.nan
-
-
-def load_yaml(path: Path) -> dict[str, Any]:
-    with path.open("r", encoding="utf-8") as handle:
-        obj = yaml.safe_load(handle) or {}
-    if not isinstance(obj, dict):
-        raise ValueError("config.yaml must be a mapping")
-    return obj
-
 
 def infer_input_format(input_path: Path, input_format: str) -> str:
     if input_format != "auto":
@@ -498,7 +460,7 @@ def main() -> None:
     if not config_path.exists():
         raise FileNotFoundError(f"Config not found: {config_path}")
 
-    cfg = load_yaml(config_path)
+    cfg = load_yaml_config(config_path)
     feature_cfg = cfg.get("dbnsfp_features")
     if not isinstance(feature_cfg, dict):
         raise ValueError("Missing 'dbnsfp_features' section in config.yaml")
