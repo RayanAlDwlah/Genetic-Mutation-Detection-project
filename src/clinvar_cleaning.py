@@ -8,54 +8,18 @@ import re
 import sys
 from pathlib import Path
 from typing import Any
-from output import echo
+from src.output import echo
+from src.utils import load_yaml_config, normalize_chromosome, resolve_path
 
 try:
     import pandas as pd
 except ImportError as exc:  # pragma: no cover - runtime guard
     raise SystemExit("Missing dependency: pandas. Install requirements first.") from exc
 
-try:
-    import yaml
-except ImportError as exc:  # pragma: no cover - runtime guard
-    raise SystemExit("Missing dependency: pyyaml. Install requirements first.") from exc
-
-
-def resolve_path(repo_root: Path, path_str: str) -> Path:
-    path = Path(path_str)
-    if path.is_absolute():
-        return path
-    return repo_root / path
-
-
 def normalize_text(value: Any) -> str:
     if pd.isna(value):
         return ""
     return str(value).strip().lower()
-
-
-def normalize_chromosome(value: Any) -> str | None:
-    text = normalize_text(value)
-    if not text:
-        return None
-
-    if text.startswith("chr"):
-        text = text[3:]
-
-    text = text.upper()
-    if text == "23":
-        return "X"
-    if text == "24":
-        return "Y"
-
-    if text.isdigit():
-        return str(int(text))
-
-    if text in {"X", "Y"}:
-        return text
-
-    return text
-
 
 def normalize_allele_series(series: pd.Series) -> pd.Series:
     out = series.fillna("").astype(str).str.strip().str.upper()
@@ -111,15 +75,6 @@ def print_bar(label: str, count: int, total: int, width: int = 40) -> None:
     filled = int(round((pct / 100.0) * width))
     bar = "#" * filled + "-" * (width - filled)
     echo(f"  {label:<10} {count:>10,} ({pct:6.2f}%) |{bar}|")
-
-
-def load_yaml_config(config_path: Path) -> dict[str, Any]:
-    with config_path.open("r", encoding="utf-8") as handle:
-        data = yaml.safe_load(handle) or {}
-    if not isinstance(data, dict):
-        raise ValueError("config.yaml must contain a top-level mapping")
-    return data
-
 
 def pick_input_file(repo_root: Path, config: dict[str, Any]) -> Path:
     cleaning_cfg = config.get("clinvar_cleaning", {}) or {}
