@@ -1,7 +1,6 @@
 project:
   name: mutation-detection
   seed: 42
-
 paths:
   raw_data: data/raw
   processed_data: data/processed
@@ -9,50 +8,46 @@ paths:
   figures: results/figures
   checkpoints: results/checkpoints
   metrics: results/metrics
-
 data_sources:
   clinvar:
     enabled: true
     file: data/raw/clinvar/variant_summary.txt.gz
     delimiter: "\t"
     key_columns:
-      - Chromosome
-      - Start
-      - ReferenceAllele
-      - AlternateAllele
+    - Chromosome
+    - Start
+    - ReferenceAllele
+    - AlternateAllele
     label_column: ClinicalSignificance
     drop_vus: true
   gnomad:
     enabled: true
-    file: data/raw/gnomad/gnomad.exomes.r2.1.1.sites.1.vcf.bgz
+    file: data/raw/gnomad/gnomad.exomes.r2.1.1.sites.vcf.bgz
     benign_proxy_af_threshold: 0.01
     key_columns:
-      - Chromosome
-      - Position
-      - Ref
-      - Alt
+    - Chromosome
+    - Position
+    - Ref
+    - Alt
     af_column: AF
-    notes: "Current local file is chr1 from gnomAD exomes r2.1.1."
   dbnsfp:
     enabled: true
-    file: data/raw/dbnsfp/dbNSFP.tsv.gz
+    file: data/raw/dbnsfp/dbNSFP5.3.1a_grch37.gz
     selected_features:
-      - PhyloP
-      - phastCons
-      - GERP++
-      - BLOSUM62
-      - Grantham
-      - PolyPhen2
-      - SIFT
+    - PhyloP
+    - phastCons
+    - GERP++
+    - BLOSUM62
+    - Grantham
+    - PolyPhen2
+    - SIFT
   uniprot:
     enabled: true
     file: data/raw/uniprot/human_proteome.fasta
     required_for: esm2_model
-
 label_mapping:
   Pathogenic: 1
   Benign: 0
-
 training:
   target_column: label
   test_size: 0.2
@@ -60,131 +55,122 @@ training:
   batch_size: 32
   epochs: 20
   learning_rate: 0.001
-
 clinvar_cleaning:
   input_file: data/raw/clinvar/variant_summary.txt.gz
   output_file: data/intermediate/clinvar_labeled_clean.parquet
-  metadata_file: data/intermediate/clinvar_metadata.json
   variant_type: single nucleotide variant
   molecular_consequence_column: MolecularConsequence
   molecular_consequence: missense_variant
   molecular_consequence_non_empty_ratio_min: 0.1
   labels_kept:
-    - Pathogenic
-    - Likely pathogenic
-    - Benign
-    - Likely benign
+  - Pathogenic
+  - Likely pathogenic
+  - Benign
+  - Likely benign
   label_positive:
-    - Pathogenic
-    - Likely pathogenic
+  - Pathogenic
+  - Likely pathogenic
   label_negative:
-    - Benign
-    - Likely benign
+  - Benign
+  - Likely benign
   min_review_stars: 1
   allowed_chromosomes:
-    - "1"
-    - "2"
-    - "3"
-    - "4"
-    - "5"
-    - "6"
-    - "7"
-    - "8"
-    - "9"
-    - "10"
-    - "11"
-    - "12"
-    - "13"
-    - "14"
-    - "15"
-    - "16"
-    - "17"
-    - "18"
-    - "19"
-    - "20"
-    - "21"
-    - "22"
-    - "X"
-    - "Y"
-
+  - '1'
+  - '2'
+  - '3'
+  - '4'
+  - '5'
+  - '6'
+  - '7'
+  - '8'
+  - '9'
+  - '10'
+  - '11'
+  - '12'
+  - '13'
+  - '14'
+  - '15'
+  - '16'
+  - '17'
+  - '18'
+  - '19'
+  - '20'
+  - '21'
+  - '22'
+  - X
+  - Y
 dbnsfp_features:
-  version: "5.3.1a"
+  version: 5.3.1a
   key_columns:
     chr:
-      - "#chr"
-      - "chr"
+    - '#chr'
+    - chr
     pos:
-      - "pos(1-based)"
-      - "pos"
+    - pos(1-based)
+    - pos
     ref:
-      - "ref"
+    - ref
     alt:
-      - "alt"
+    - alt
     ref_aa:
-      - "aaref"
+    - aaref
     alt_aa:
-      - "aaalt"
-
+    - aaalt
   conservation:
     phyloP100way_vertebrate:
-      - "phyloP100way_vertebrate"
+    - phyloP100way_vertebrate
     phyloP30way_mammalian:
-      - "phyloP30way_mammalian"
-      - "phyloP470way_mammalian"
+    - phyloP30way_mammalian
+    - phyloP470way_mammalian
     phastCons100way_vertebrate:
-      - "phastCons100way_vertebrate"
+    - phastCons100way_vertebrate
     phastCons30way_mammalian:
-      - "phastCons30way_mammalian"
-      - "phastCons470way_mammalian"
+    - phastCons30way_mammalian
+    - phastCons470way_mammalian
     GERP++_RS:
-      - "GERP++_RS"
+    - GERP++_RS
     GERP++_NR:
-      - "GERP++_NR"
+    - GERP++_NR
     SiPhy_29way_logOdds:
-      - "SiPhy_29way_logOdds"
-
+    - SiPhy_29way_logOdds
   physicochemical:
     Grantham_distance:
-      - "Grantham"
+    - Grantham
     BLOSUM62_score:
-      - "BLOSUM62"
-
+    - BLOSUM62
   structural:
     secondary_structure_prediction:
-      - "PSIPRED_pred"
-      - "PSIPRED2_pred"
-      - "secondary_structure"
+    - PSIPRED_pred
+    - PSIPRED2_pred
+    - secondary_structure
     solvent_accessibility:
-      - "ASAquick"
-      - "solvent_accessibility"
-      - "RSA"
+    - ASAquick
+    - solvent_accessibility
+    - RSA
     disorder_prediction_score:
-      - "disorder_score"
-      - "IUPred_score"
-      - "VSL2_score"
+    - disorder_score
+    - IUPred_score
+    - VSL2_score
     pfam_domain:
-      - "Pfam_domain"
-      - "Interpro_domain"
-
+    - Pfam_domain
+    - Interpro_domain
   amino_acid_properties:
-    - hydrophobicity_ref
-    - hydrophobicity_alt
-    - molecular_weight_ref
-    - molecular_weight_alt
-    - pI_ref
-    - pI_alt
-
+  - hydrophobicity_ref
+  - hydrophobicity_alt
+  - molecular_weight_ref
+  - molecular_weight_alt
+  - pI_ref
+  - pI_alt
   derived_changes:
-    - polarity_change
-    - volume_change
-    - charge_change
-
+  - polarity_change
+  - volume_change
+  - charge_change
   exclude_predictors:
-    - "REVEL"
-    - "ClinPred"
-    - "MetaLR"
-    - "MetaSVM"
-    - "MetaRNN"
-    - "BayesDel"
-    - "VEST4"
-    - "M-CAP"
+  - REVEL
+  - ClinPred
+  - MetaLR
+  - MetaSVM
+  - MetaRNN
+  - BayesDel
+  - VEST4
+  - M-CAP

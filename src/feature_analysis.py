@@ -12,6 +12,7 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+from output import echo
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -120,9 +121,9 @@ def step1_drop_flagged_columns(df: pd.DataFrame) -> tuple[pd.DataFrame, list[str
     if to_drop:
         df = df.drop(columns=to_drop)
 
-    print("STEP 1 — Columns dropped from quality checks")
-    print(f"- 100% NaN columns dropped: {all_nan if all_nan else 'none'}")
-    print(f"- zero-variance columns dropped: {zero_var if zero_var else 'none'}")
+    echo("STEP 1 — Columns dropped from quality checks")
+    echo(f"- 100% NaN columns dropped: {all_nan if all_nan else 'none'}")
+    echo(f"- zero-variance columns dropped: {zero_var if zero_var else 'none'}")
 
     return df, all_nan, zero_var
 
@@ -203,7 +204,7 @@ def choose_drop_feature(
 def step2_drop_correlated_columns(df: pd.DataFrame, corr_pairs: list[dict[str, Any]]) -> tuple[pd.DataFrame, list[dict[str, Any]]]:
     dropped_records: list[dict[str, Any]] = []
 
-    print("\nSTEP 2 — Correlation filtering")
+    echo("\nSTEP 2 — Correlation filtering")
 
     for pair in corr_pairs:
         col_a = pair.get("feature_1")
@@ -233,10 +234,10 @@ def step2_drop_correlated_columns(df: pd.DataFrame, corr_pairs: list[dict[str, A
         }
         dropped_records.append(rec)
 
-        print(f"- Dropped {drop_col} due to r={corr:.2f} correlation with {keep_col} ({reason})")
+        echo(f"- Dropped {drop_col} due to r={corr:.2f} correlation with {keep_col} ({reason})")
 
     if not dropped_records:
-        print("- No correlated columns dropped")
+        echo("- No correlated columns dropped")
 
     return df, dropped_records
 
@@ -331,17 +332,17 @@ def version_summary(name: str, df: pd.DataFrame, pre_impute_max_missing: float |
     missing_pct_per_col = (df.isna().mean() * 100.0).sort_values(ascending=False)
     max_missing_pct = float(missing_pct_per_col.max()) if len(missing_pct_per_col) else 0.0
 
-    print(f"\n{name.upper()} VERSION SUMMARY")
-    print(f"- rows: {len(df):,}")
-    print(f"- total columns: {len(df.columns):,}")
-    print(f"- feature columns: {len(feature_cols):,}")
-    print(f"- label distribution: benign={benign:,}, pathogenic={pathogenic:,}, ratio={ratio if ratio is not None else 'NA'}")
+    echo(f"\n{name.upper()} VERSION SUMMARY")
+    echo(f"- rows: {len(df):,}")
+    echo(f"- total columns: {len(df.columns):,}")
+    echo(f"- feature columns: {len(feature_cols):,}")
+    echo(f"- label distribution: benign={benign:,}, pathogenic={pathogenic:,}, ratio={ratio if ratio is not None else 'NA'}")
     if pre_impute_max_missing is not None:
-        print(f"- max missing % before imputation: {pre_impute_max_missing:.4f}")
-    print(f"- max missing % after processing: {max_missing_pct:.4f}")
-    print("- feature dtypes:")
+        echo(f"- max missing % before imputation: {pre_impute_max_missing:.4f}")
+    echo(f"- max missing % after processing: {max_missing_pct:.4f}")
+    echo("- feature dtypes:")
     for col in feature_cols:
-        print(f"  {col}: {df[col].dtype}")
+        echo(f"  {col}: {df[col].dtype}")
 
     return {
         "rows": int(len(df)),
@@ -358,9 +359,9 @@ def version_summary(name: str, df: pd.DataFrame, pre_impute_max_missing: float |
 def main() -> None:
     df = load_input()
 
-    print("Loaded input dataset")
-    print(f"- path: {INPUT_PATH}")
-    print(f"- rows: {len(df):,}, columns: {len(df.columns):,}")
+    echo("Loaded input dataset")
+    echo(f"- path: {INPUT_PATH}")
+    echo(f"- rows: {len(df):,}, columns: {len(df.columns):,}")
 
     # Step 1
     df, _, _ = step1_drop_flagged_columns(df)
@@ -387,10 +388,10 @@ def main() -> None:
         pre_impute_max_missing=balanced_info["max_missing_pct_pre_imputation"],
     )
 
-    print("\nSaved outputs")
-    print(f"- strict dataset: {STRICT_OUTPUT}")
-    print(f"- balanced dataset: {BALANCED_OUTPUT}")
-    print("- metadata: skipped (documented in notebooks)")
+    echo("\nSaved outputs")
+    echo(f"- strict dataset: {STRICT_OUTPUT}")
+    echo(f"- balanced dataset: {BALANCED_OUTPUT}")
+    echo("- metadata: skipped (documented in notebooks)")
 
 
 if __name__ == "__main__":

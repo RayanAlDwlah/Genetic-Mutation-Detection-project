@@ -33,3 +33,11 @@ env/
 .DS_Store
 .vscode/
 .idea/
+
+# Intermediate artifacts
+data/intermediate/*
+!data/intermediate/.gitkeep
+
+# Generated figures
+results/figures/*
+!results/figures/.gitkeep
