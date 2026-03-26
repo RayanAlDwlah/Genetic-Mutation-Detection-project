@@ -13,7 +13,6 @@ from sklearn.preprocessing import OneHotEncoder
 
 from src.evaluation import compute_classification_metrics, select_best_threshold
 from src.models.xgboost_model import XGBTuningConfig, tune_xgboost
-from src.output import echo
 from src.utils import require_file, resolve_path
 
 
@@ -267,7 +266,7 @@ def main() -> None:
         ]
     ).to_csv(params_out, index=False)
 
-    echo("Training complete")
+    print("Training complete")
 
 
 if __name__ == "__main__":
