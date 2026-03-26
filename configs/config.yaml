@@ -50,11 +50,12 @@ label_mapping:
   Benign: 0
 training:
   target_column: label
-  test_size: 0.2
-  val_size: 0.1
-  batch_size: 32
-  epochs: 20
-  learning_rate: 0.001
+  test_size: 0.15
+  val_size: 0.15
+  # Reserved for CNN and ESM-2 models (not used by XGBoost):
+  # batch_size: 32
+  # epochs: 20
+  # learning_rate: 0.001
 clinvar_cleaning:
   input_file: data/raw/clinvar/variant_summary.txt.gz
   output_file: data/intermediate/clinvar_labeled_clean.parquet
