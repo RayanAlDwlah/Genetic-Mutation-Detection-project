@@ -8,7 +8,6 @@ import re
 import sys
 from pathlib import Path
 from typing import Any
-from src.output import echo
 from src.utils import load_yaml_config, normalize_chromosome, resolve_path
 
 try:
@@ -58,23 +57,23 @@ def chromosome_sort_key(chrom: str) -> tuple[int, int | str]:
 
 
 def print_before_after(step_name: str, before_rows: int, after_rows: int) -> None:
-    echo(f"{step_name}: {before_rows:,} -> {after_rows:,}")
+    print(f"{step_name}: {before_rows:,} -> {after_rows:,}")
 
 
 def print_series_counts(title: str, series: pd.Series) -> None:
-    echo(title)
+    print(title)
     if series.empty:
-        echo("  (empty)")
+        print("  (empty)")
         return
     for key, value in series.items():
-        echo(f"  {key}: {int(value):,}")
+        print(f"  {key}: {int(value):,}")
 
 
 def print_bar(label: str, count: int, total: int, width: int = 40) -> None:
     pct = (count / total * 100.0) if total else 0.0
     filled = int(round((pct / 100.0) * width))
     bar = "#" * filled + "-" * (width - filled)
-    echo(f"  {label:<10} {count:>10,} ({pct:6.2f}%) |{bar}|")
+    print(f"  {label:<10} {count:>10,} ({pct:6.2f}%) |{bar}|")
 
 def pick_input_file(repo_root: Path, config: dict[str, Any]) -> Path:
     cleaning_cfg = config.get("clinvar_cleaning", {}) or {}
@@ -150,25 +149,25 @@ def run_pipeline(config_path: Path, strict: bool) -> None:
         )
     )
 
-    echo("=== STEP 1: Load raw ClinVar ===")
-    echo(f"Source file: {input_path}")
+    print("=== STEP 1: Load raw ClinVar ===")
+    print(f"Source file: {input_path}")
     df = pd.read_csv(input_path, sep="\t", low_memory=False)
-    echo(f"Total rows: {len(df):,}")
-    echo(f"Total columns: {df.shape[1]:,}")
-    echo("Column names:")
+    print(f"Total rows: {len(df):,}")
+    print(f"Total columns: {df.shape[1]:,}")
+    print("Column names:")
     for col in df.columns.tolist():
-        echo(f"  - {col}")
+        print(f"  - {col}")
     memory_mb = df.memory_usage(deep=True).sum() / (1024 ** 2)
-    echo(f"Memory usage: {memory_mb:,.2f} MB")
+    print(f"Memory usage: {memory_mb:,.2f} MB")
 
-    echo("\n=== STEP 2: Filter variant type ===")
+    print("\n=== STEP 2: Filter variant type ===")
     if "Type" not in df.columns:
         raise KeyError("Required column is missing: Type")
     before = len(df)
     df = df[df["Type"].map(normalize_text) == variant_type_target].copy()
     print_before_after("Rows", before, len(df))
 
-    echo("\n=== STEP 3: Filter molecular consequence ===")
+    print("\n=== STEP 3: Filter molecular consequence ===")
     before = len(df)
     molecular_filter_applied = True
     molecular_fallback_reason = ""
@@ -203,9 +202,9 @@ def run_pipeline(config_path: Path, strict: bool) -> None:
         print_before_after("Rows", before, len(df))
     else:
         print_before_after("Rows", before, len(df))
-        echo(f"Fallback note: {molecular_fallback_reason}")
+        print(f"Fallback note: {molecular_fallback_reason}")
 
-    echo("\n=== STEP 4: Filter clinical significance ===")
+    print("\n=== STEP 4: Filter clinical significance ===")
     if "ClinicalSignificance" not in df.columns:
         raise KeyError("Required column is missing: ClinicalSignificance")
 
@@ -222,7 +221,7 @@ def run_pipeline(config_path: Path, strict: bool) -> None:
         df["ClinicalSignificance"].value_counts().sort_values(ascending=False),
     )
 
-    echo("\n=== STEP 5: Create binary label ===")
+    print("\n=== STEP 5: Create binary label ===")
     positive_set = {normalize_text(v) for v in positive_labels}
     negative_set = {normalize_text(v) for v in negative_labels}
 
@@ -240,15 +239,15 @@ def run_pipeline(config_path: Path, strict: bool) -> None:
 
     class_counts = df["label"].value_counts().sort_index()
     total_labeled = int(class_counts.sum())
-    echo("Class distribution:")
+    print("Class distribution:")
     for label in [0, 1]:
         count = int(class_counts.get(label, 0))
         pct = (count / total_labeled * 100.0) if total_labeled else 0.0
-        echo(f"  label={label}: {count:,} ({pct:.2f}%)")
+        print(f"  label={label}: {count:,} ({pct:.2f}%)")
 
-    echo("\n=== STEP 6: Filter by review quality ===")
+    print("\n=== STEP 6: Filter by review quality ===")
     if "ReviewStatus" not in df.columns:
-        echo("ReviewStatus column is missing. Setting review_stars=0 for all rows.")
+        print("ReviewStatus column is missing. Setting review_stars=0 for all rows.")
         df["review_stars"] = 0
     else:
         df["review_stars"] = df["ReviewStatus"].map(extract_review_stars).astype("int8")
@@ -262,7 +261,7 @@ def run_pipeline(config_path: Path, strict: bool) -> None:
     df = df[df["review_stars"] >= min_review_stars].copy()
     print_before_after("Rows", before, len(df))
 
-    echo("\n=== STEP 7: Standardize columns ===")
+    print("\n=== STEP 7: Standardize columns ===")
     required_cols = ["Chromosome", "GeneSymbol"]
     missing_required = [col for col in required_cols if col not in df.columns]
     if missing_required:
@@ -328,7 +327,7 @@ def run_pipeline(config_path: Path, strict: bool) -> None:
     ]
     df = df[keep_columns].copy()
 
-    echo("\n=== STEP 8: Remove duplicates and conflicts ===")
+    print("\n=== STEP 8: Remove duplicates and conflicts ===")
     conflict_key_mask = df.groupby("variant_key")["label"].nunique() > 1
     conflict_keys = set(conflict_key_mask[conflict_key_mask].index.tolist())
     conflicting_labels_removed = int(df["variant_key"].isin(conflict_keys).sum())
@@ -341,40 +340,40 @@ def run_pipeline(config_path: Path, strict: bool) -> None:
     df = df.drop_duplicates(subset=["variant_key"], keep="first").copy()
     duplicates_removed = before - len(df)
 
-    echo(f"Duplicate rows found: {duplicate_rows_found:,}")
-    echo(f"Conflicting label rows removed: {conflicting_labels_removed:,}")
-    echo(f"Final row count after deduplication: {len(df):,}")
+    print(f"Duplicate rows found: {duplicate_rows_found:,}")
+    print(f"Conflicting label rows removed: {conflicting_labels_removed:,}")
+    print(f"Final row count after deduplication: {len(df):,}")
 
-    echo("\n=== STEP 9: Save output ===")
+    print("\n=== STEP 9: Save output ===")
     df.to_parquet(output_path, index=False)
 
     pathogenic_count = int((df["label"] == 1).sum())
     benign_count = int((df["label"] == 0).sum())
     total_rows = int(len(df))
 
-    echo(f"Saved parquet: {output_path}")
+    print(f"Saved parquet: {output_path}")
 
-    echo("\n=== STEP 10: Final summary ===")
-    echo(f"Total clean variants: {total_rows:,}")
+    print("\n=== STEP 10: Final summary ===")
+    print(f"Total clean variants: {total_rows:,}")
 
-    echo("Class distribution (Pathogenic vs Benign):")
+    print("Class distribution (Pathogenic vs Benign):")
     print_bar("Pathogenic", pathogenic_count, total_rows)
     print_bar("Benign", benign_count, total_rows)
 
-    echo("Top 20 genes by variant count:")
+    print("Top 20 genes by variant count:")
     gene_counts = df["gene"].value_counts().head(20)
     if gene_counts.empty:
-        echo("  (empty)")
+        print("  (empty)")
     else:
-        echo(gene_counts.to_string())
+        print(gene_counts.to_string())
 
-    echo("Chromosome distribution:")
+    print("Chromosome distribution:")
     chromosome_counts = df["chr"].value_counts()
     if chromosome_counts.empty:
-        echo("  (empty)")
+        print("  (empty)")
     else:
         for chrom in sorted(chromosome_counts.index.tolist(), key=chromosome_sort_key):
-            echo(f"  {chrom}: {int(chromosome_counts[chrom]):,}")
+            print(f"  {chrom}: {int(chromosome_counts[chrom]):,}")
 
 
 def parse_args() -> argparse.Namespace:
@@ -400,7 +399,7 @@ def main() -> None:
     try:
         run_pipeline(config_path=config_path, strict=args.strict)
     except Exception as exc:  # pragma: no cover - CLI error path
-        echo(f"ERROR: {exc}", file=sys.stderr)
+        print(f"ERROR: {exc}", file=sys.stderr)
         raise
 
 

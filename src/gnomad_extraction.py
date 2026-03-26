@@ -23,7 +23,6 @@ from typing import Any, Callable, Iterable
 
 import numpy as np
 import pandas as pd
-from src.output import echo
 from src.utils import normalize_chromosome, resolve_path
 
 try:
@@ -159,7 +158,7 @@ def load_clinvar_variant_set(path: Path) -> set[str]:
     """Load ClinVar variant_key set for memory-efficient filtering."""
     df = pd.read_parquet(path, columns=["variant_key"])
     keys = set(df["variant_key"].dropna().astype(str))
-    echo(f"Loaded ClinVar variant keys: {len(keys):,}")
+    print(f"Loaded ClinVar variant keys: {len(keys):,}")
     return keys
 
 
@@ -321,7 +320,7 @@ def extract_from_vcf(
                 rows_buffer = []
 
             if processed_records % progress_every == 0:
-                echo(
+                print(
                     f"Processed {processed_records:,} VCF records "
                     f"(backend={backend})"
                 )
@@ -329,7 +328,7 @@ def extract_from_vcf(
         if rows_buffer:
             sink.write_dataframe(pd.DataFrame(rows_buffer))
 
-        echo(f"Finished VCF parsing with {backend}: {processed_records:,} records")
+        print(f"Finished VCF parsing with {backend}: {processed_records:,} records")
         return
 
     except ImportError:
@@ -377,12 +376,12 @@ def extract_from_vcf(
             rows_buffer = []
 
         if processed_records % progress_every == 0:
-            echo(f"Processed {processed_records:,} VCF records (backend={backend})")
+            print(f"Processed {processed_records:,} VCF records (backend={backend})")
 
     if rows_buffer:
         sink.write_dataframe(pd.DataFrame(rows_buffer))
 
-    echo(f"Finished VCF parsing with {backend}: {processed_records:,} records")
+    print(f"Finished VCF parsing with {backend}: {processed_records:,} records")
 
 
 def find_column(columns: Iterable[str], candidates: list[str]) -> str | None:
@@ -463,7 +462,7 @@ def extract_from_table(
         if clinvar_keys is not None:
             standardized = standardized[standardized["variant_key"].isin(clinvar_keys)]
         sink.write_dataframe(standardized)
-        echo(f"Processed parquet table rows: {len(chunk):,}")
+        print(f"Processed parquet table rows: {len(chunk):,}")
         return
 
     sep = "\t" if ".tsv" in name or name.endswith(".txt") else ","
@@ -478,7 +477,7 @@ def extract_from_table(
 
         sink.write_dataframe(standardized)
         total_rows += len(chunk)
-        echo(f"Processed table chunk {idx:,}: input_rows={len(chunk):,}, total_input={total_rows:,}")
+        print(f"Processed table chunk {idx:,}: input_rows={len(chunk):,}, total_input={total_rows:,}")
 
 
 def fetch_gnomad_af(variant_keys: list[str]) -> pd.DataFrame:
@@ -557,7 +556,7 @@ def fetch_gnomad_af(variant_keys: list[str]) -> pd.DataFrame:
         rows.append(build_row(chrom, pos, ref, alt, af=af, af_popmax=af_popmax, an=an, ac=ac))
 
         if idx % 100 == 0:
-            echo(f"API progress: {idx:,}/{len(variant_keys):,}")
+            print(f"API progress: {idx:,}/{len(variant_keys):,}")
 
     out = pd.DataFrame(rows)
     out["AF"] = pd.to_numeric(out["AF"], errors="coerce")
@@ -605,9 +604,9 @@ def main() -> None:
         raise FileNotFoundError(f"Input file not found: {input_path}")
 
     input_format = normalize_input_format(input_path, args.input_format)
-    echo(f"Input: {input_path}")
-    echo(f"Detected format: {input_format}")
-    echo(f"Output: {output_path}")
+    print(f"Input: {input_path}")
+    print(f"Detected format: {input_format}")
+    print(f"Output: {output_path}")
 
     clinvar_keys = None
     if args.clinvar_variants:
@@ -626,13 +625,13 @@ def main() -> None:
 
     summary = sink.finalize()
 
-    echo("Extraction complete:")
-    echo(f"  total_variants={summary['total_variants']:,}")
-    echo(f"  common_variants_count={summary['common_variants_count']:,}")
-    echo(f"  rare_variants_count={summary['rare_variants_count']:,}")
-    echo(f"  mean_AF={summary['mean_AF']:.6g}")
-    echo(f"  median_AF={summary['median_AF']:.6g}")
-    echo(f"Saved parquet: {output_path}")
+    print("Extraction complete:")
+    print(f"  total_variants={summary['total_variants']:,}")
+    print(f"  common_variants_count={summary['common_variants_count']:,}")
+    print(f"  rare_variants_count={summary['rare_variants_count']:,}")
+    print(f"  mean_AF={summary['mean_AF']:.6g}")
+    print(f"  median_AF={summary['median_AF']:.6g}")
+    print(f"Saved parquet: {output_path}")
 
 
 if __name__ == "__main__":

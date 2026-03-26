@@ -9,7 +9,6 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import GroupShuffleSplit
-from src.output import echo
 from src.utils import resolve_path
 
 
@@ -149,11 +148,11 @@ def print_summary(train_df: pd.DataFrame, val_df: pd.DataFrame, test_df: pd.Data
         genes = int(df["gene"].astype(str).nunique()) if "gene" in df.columns else int(df["GeneSymbol"].astype(str).nunique())
         rows.append((name, len(df), genes, pathogenic, benign, pathogenic_ratio))
 
-    echo("\nSplit summary")
-    echo("| Split | Rows | Genes | Pathogenic | Benign | Ratio |")
-    echo("|---|---:|---:|---:|---:|---:|")
+    print("\nSplit summary")
+    print("| Split | Rows | Genes | Pathogenic | Benign | Ratio |")
+    print("|---|---:|---:|---:|---:|---:|")
     for name, n_rows, n_genes, pathogenic, benign, ratio in rows:
-        echo(f"| {name} | {n_rows:,} | {n_genes:,} | {pathogenic:,} | {benign:,} | {ratio:.4f} |")
+        print(f"| {name} | {n_rows:,} | {n_genes:,} | {pathogenic:,} | {benign:,} | {ratio:.4f} |")
 
 
 def main() -> None:
@@ -171,12 +170,12 @@ def main() -> None:
         raise ValueError("Input dataset must contain 'label' column")
 
     group_col = get_gene_column(df)
-    echo(f"Input: {input_path}")
-    echo(f"Rows: {len(df):,}, Columns: {len(df.columns):,}")
-    echo(f"Group column: {group_col}")
+    print(f"Input: {input_path}")
+    print(f"Rows: {len(df):,}, Columns: {len(df.columns):,}")
+    print(f"Group column: {group_col}")
 
     gene_counts = df[group_col].astype(str).value_counts()
-    echo(f"Unique genes: {gene_counts.shape[0]:,}")
+    print(f"Unique genes: {gene_counts.shape[0]:,}")
 
     train_df, val_df, test_df = split_dataframe(
         df=df,
@@ -205,10 +204,10 @@ def main() -> None:
     test_df.to_parquet(test_path, index=False)
 
     print_summary(train_df, val_df, test_df)
-    echo("✅ Gene-level split validated — zero overlap between splits")
-    echo(f"Saved train: {train_path}")
-    echo(f"Saved val: {val_path}")
-    echo(f"Saved test: {test_path}")
+    print("✅ Gene-level split validated — zero overlap between splits")
+    print(f"Saved train: {train_path}")
+    print(f"Saved val: {val_path}")
+    print(f"Saved test: {test_path}")
 
 
 if __name__ == "__main__":
