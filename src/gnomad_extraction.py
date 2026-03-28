@@ -32,8 +32,15 @@ except ImportError:  # pragma: no cover - runtime dependency guard
     pq = None
 
 
+# Seven non-overlapping gnomAD ancestry groups used to compute AF_popmax.
+# AF_popmax = the highest allele frequency across all populations, which is the
+# most conservative estimate for classifying a variant as common or rare.
 POPULATIONS = ["AFR", "AMR", "ASJ", "EAS", "FIN", "NFE", "SAS"]
+
+# Small constant added before log10 to avoid log(0) for variants absent from gnomAD.
+# Variants with AF=0 (ultra-rare or missing) will have log_AF ≈ log10(1e-8) = -8.
 EPSILON = 1e-8
+
 DEFAULT_OUTPUT = "data/intermediate/gnomad_af_clean.parquet"
 
 def variant_key(chrom: str, pos: int, ref: str, alt: str) -> str:
@@ -162,7 +169,13 @@ def load_clinvar_variant_set(path: Path) -> set[str]:
 
 
 class StreamingParquetSink:
-    """Incrementally write rows to parquet while tracking summary statistics."""
+    """Incrementally write variant rows to a Parquet file in chunks.
+
+    gnomAD VCF files are multi-hundred-GB; loading everything into memory is
+    not feasible. This sink accepts DataFrames in small batches and writes them
+    one chunk at a time using a persistent ParquetWriter, keeping memory usage
+    bounded regardless of total variant count.
+    """
 
     ordered_columns = ["variant_key", "AF", "AF_popmax", "AN", "AC", "log_AF", "is_common"]
 
@@ -170,6 +183,7 @@ class StreamingParquetSink:
         self.output_path = output_path
         self.writer = None
 
+        # Running counters updated incrementally to avoid storing all AF values.
         self.total_variants = 0
         self.common_variants_count = 0
         self.rare_variants_count = 0
@@ -189,7 +203,12 @@ class StreamingParquetSink:
         out["AN"] = pd.to_numeric(out["AN"], errors="coerce")
         out["AC"] = pd.to_numeric(out["AC"], errors="coerce")
 
+        # log10(AF + ε) compresses the wide AF range [0, 1] into a model-friendly
+        # scale. Variants not in gnomAD get AF=0, which maps to log_AF ≈ -8.
         out["log_AF"] = np.log10(out["AF"].fillna(0.0) + EPSILON)
+
+        # Common variant threshold: AF > 1% is the standard population genetics
+        # cutoff used by ClinVar and ACMG guidelines to flag likely-benign variants.
         out["is_common"] = out["AF"] > 0.01
 
         out = out[self.ordered_columns]
@@ -624,8 +643,9 @@ def main() -> None:
     print(f"  total_variants={summary['total_variants']:,}")
     print(f"  common_variants_count={summary['common_variants_count']:,}")
     print(f"  rare_variants_count={summary['rare_variants_count']:,}")
+    # mean_AF is computed incrementally (af_sum / af_count) to avoid loading all AF values
+    # into memory. Median is intentionally omitted — it would require storing every AF value.
     print(f"  mean_AF={summary['mean_AF']:.6g}")
-    print(f"  median_AF={summary['median_AF']:.6g}")
     print(f"Saved parquet: {output_path}")
 
 
