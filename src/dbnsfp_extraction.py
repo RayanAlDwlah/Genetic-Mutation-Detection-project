@@ -344,13 +344,35 @@ def extract_from_chunks(
         out["charge_change"] = out["charge_alt"] - out["charge_ref"]
 
         # Compute BLOSUM62/Grantham if source columns are missing or NaN.
-        if "BLOSUM62_score" in out.columns:
-            computed = out.apply(lambda r: matrix_lookup(BLOSUM62_TABLE, r.get("ref_aa"), r.get("alt_aa")), axis=1)
-            out["BLOSUM62_score"] = out["BLOSUM62_score"].where(out["BLOSUM62_score"].notna(), computed)
+        # Vectorized: build flat {ref+alt -> value} dicts then use Series.map()
+        if "BLOSUM62_score" in out.columns or "Grantham_distance" in out.columns:
+            # Normalize aa column to single-letter code (vectorized)
+            def _norm_aa_series(s: pd.Series) -> pd.Series:
+                normed = (
+                    s.fillna("")
+                    .astype(str)
+                    .str.strip()
+                    .str.upper()
+                    .str.replace("*", "", regex=False)
+                )
+                normed = normed.map(lambda x: THREE_TO_ONE_AA.get(x, x) if len(x) == 3 else x)
+                valid = set(AMINO_ACID_PROPERTIES.keys())
+                return normed.where(normed.isin(valid), other=None)
 
-        if "Grantham_distance" in out.columns:
-            computed = out.apply(lambda r: matrix_lookup(GRANTHAM_TABLE, r.get("ref_aa"), r.get("alt_aa")), axis=1)
-            out["Grantham_distance"] = out["Grantham_distance"].where(out["Grantham_distance"].notna(), computed)
+            ref_norm = _norm_aa_series(out["ref_aa"])
+            alt_norm = _norm_aa_series(out["alt_aa"])
+            lookup_key = ref_norm.fillna("") + alt_norm.fillna("")
+            valid_mask = ref_norm.notna() & alt_norm.notna()
+
+            if "BLOSUM62_score" in out.columns:
+                blosum_flat = {r + a: v for r, row in BLOSUM62_TABLE.items() for a, v in row.items()}
+                computed = lookup_key.map(blosum_flat).where(valid_mask, other=np.nan)
+                out["BLOSUM62_score"] = out["BLOSUM62_score"].where(out["BLOSUM62_score"].notna(), computed)
+
+            if "Grantham_distance" in out.columns:
+                grantham_flat = {r + a: v for r, row in GRANTHAM_TABLE.items() for a, v in row.items()}
+                computed = lookup_key.map(grantham_flat).where(valid_mask, other=np.nan)
+                out["Grantham_distance"] = out["Grantham_distance"].where(out["Grantham_distance"].notna(), computed)
 
         extracted_frames.append(out)
 
