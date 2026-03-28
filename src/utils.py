@@ -34,6 +34,7 @@ def normalize_chromosome(value: Any) -> str | None:
         text = text[3:]
 
     text = text.upper()
+    # Some older databases (e.g., Ensembl legacy) encode sex chromosomes as 23/24.
     if text == "23":
         return "X"
     if text == "24":

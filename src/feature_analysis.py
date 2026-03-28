@@ -189,7 +189,9 @@ def choose_drop_feature(
                 return col_b, col_a, "substitution priority"
             return col_a, col_b, "substitution priority"
 
-    # Deterministic fallback for ties.
+    # Deterministic fallback: alphabetically later name is dropped.
+    # This ensures reproducibility — the same pair always produces the same result
+    # regardless of the order features appear in the DataFrame.
     drop = sorted([col_a, col_b])[1]
     keep = col_b if drop == col_a else col_a
     return drop, keep, "deterministic fallback"
@@ -269,6 +271,9 @@ def make_balanced_dataset(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, Any
     feature_cols = get_feature_columns(balanced)
 
     missing_pct = (balanced[feature_cols].isna().mean() * 100.0) if feature_cols else pd.Series(dtype=float)
+    # Drop features missing in more than 20% of rows before imputation.
+    # 20% is a standard threshold balancing completeness vs. sample retention.
+    # Features above this threshold have poor dbNSFP coverage for most variants.
     drop_over_20 = [c for c, v in missing_pct.items() if v > 20.0]
 
     if drop_over_20:
