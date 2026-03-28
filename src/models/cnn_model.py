@@ -1,11 +1,26 @@
-"""CNN placeholder model definition."""
+"""1D CNN model for mutation classification.
+
+NOTE: This module is a structural placeholder reserved for Phase 2 (post-midterm).
+The full implementation will include:
+  - Convolutional feature extraction over encoded amino acid sequences
+  - Multi-head self-attention layer for long-range residue interactions
+  - Training loop with class-weighted loss, early stopping, and AUC evaluation
+
+Current class: SimpleMutationCNN — minimal 1D CNN used for interface validation only.
+"""
 
 import torch
 from torch import nn
 
 
 class SimpleMutationCNN(nn.Module):
-    """A small 1D CNN baseline for sequence inputs."""
+    """Minimal 1D CNN baseline for sequence-based mutation inputs.
+
+    Architecture: two Conv1d layers with ReLU activations, max pooling,
+    global average pooling, and a linear classifier head.
+    This stub is used to verify the data pipeline and import structure.
+    The production model will replace this with a deeper architecture.
+    """
 
     def __init__(self, in_channels: int = 1, num_classes: int = 2) -> None:
         super().__init__()
