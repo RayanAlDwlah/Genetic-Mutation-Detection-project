@@ -17,7 +17,6 @@ from __future__ import annotations
 import argparse
 import math
 import re
-from array import array
 from pathlib import Path
 from typing import Any, Callable, Iterable
 
@@ -176,7 +175,6 @@ class StreamingParquetSink:
         self.rare_variants_count = 0
         self.af_sum = 0.0
         self.af_count = 0
-        self.af_values = array("d")
 
     def _prepare_df(self, df: pd.DataFrame) -> pd.DataFrame:
         out = df.copy()
@@ -206,7 +204,6 @@ class StreamingParquetSink:
         if not af_non_null.empty:
             self.af_sum += float(af_non_null.sum())
             self.af_count += int(len(af_non_null))
-            self.af_values.extend(af_non_null.astype(float).tolist())
 
             self.common_variants_count += int((af_non_null > 0.01).sum())
             self.rare_variants_count += int((af_non_null <= 0.01).sum())
@@ -244,14 +241,12 @@ class StreamingParquetSink:
             empty_df.to_parquet(self.output_path, index=False)
 
         mean_af = (self.af_sum / self.af_count) if self.af_count else 0.0
-        median_af = float(np.median(np.array(self.af_values))) if self.af_count else 0.0
 
         return {
             "total_variants": int(self.total_variants),
             "common_variants_count": int(self.common_variants_count),
             "rare_variants_count": int(self.rare_variants_count),
             "mean_AF": float(mean_af),
-            "median_AF": float(median_af),
         }
 
 
