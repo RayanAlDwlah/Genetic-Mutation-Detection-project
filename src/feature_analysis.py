@@ -12,7 +12,6 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-from src.output import echo
 from src.utils import require_file
 
 
@@ -116,9 +115,9 @@ def step1_drop_flagged_columns(df: pd.DataFrame) -> tuple[pd.DataFrame, list[str
     if to_drop:
         df = df.drop(columns=to_drop)
 
-    echo("STEP 1 — Columns dropped from quality checks")
-    echo(f"- 100% NaN columns dropped: {all_nan if all_nan else 'none'}")
-    echo(f"- zero-variance columns dropped: {zero_var if zero_var else 'none'}")
+    print("STEP 1 — Columns dropped from quality checks")
+    print(f"- 100% NaN columns dropped: {all_nan if all_nan else 'none'}")
+    print(f"- zero-variance columns dropped: {zero_var if zero_var else 'none'}")
 
     return df, all_nan, zero_var
 
@@ -190,7 +189,9 @@ def choose_drop_feature(
                 return col_b, col_a, "substitution priority"
             return col_a, col_b, "substitution priority"
 
-    # Deterministic fallback for ties.
+    # Deterministic fallback: alphabetically later name is dropped.
+    # This ensures reproducibility — the same pair always produces the same result
+    # regardless of the order features appear in the DataFrame.
     drop = sorted([col_a, col_b])[1]
     keep = col_b if drop == col_a else col_a
     return drop, keep, "deterministic fallback"
@@ -199,7 +200,7 @@ def choose_drop_feature(
 def step2_drop_correlated_columns(df: pd.DataFrame, corr_pairs: list[dict[str, Any]]) -> tuple[pd.DataFrame, list[dict[str, Any]]]:
     dropped_records: list[dict[str, Any]] = []
 
-    echo("\nSTEP 2 — Correlation filtering")
+    print("\nSTEP 2 — Correlation filtering")
 
     for pair in corr_pairs:
         col_a = pair.get("feature_1")
@@ -229,10 +230,10 @@ def step2_drop_correlated_columns(df: pd.DataFrame, corr_pairs: list[dict[str, A
         }
         dropped_records.append(rec)
 
-        echo(f"- Dropped {drop_col} due to r={corr:.2f} correlation with {keep_col} ({reason})")
+        print(f"- Dropped {drop_col} due to r={corr:.2f} correlation with {keep_col} ({reason})")
 
     if not dropped_records:
-        echo("- No correlated columns dropped")
+        print("- No correlated columns dropped")
 
     return df, dropped_records
 
@@ -270,6 +271,9 @@ def make_balanced_dataset(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, Any
     feature_cols = get_feature_columns(balanced)
 
     missing_pct = (balanced[feature_cols].isna().mean() * 100.0) if feature_cols else pd.Series(dtype=float)
+    # Drop features missing in more than 20% of rows before imputation.
+    # 20% is a standard threshold balancing completeness vs. sample retention.
+    # Features above this threshold have poor dbNSFP coverage for most variants.
     drop_over_20 = [c for c, v in missing_pct.items() if v > 20.0]
 
     if drop_over_20:
@@ -327,17 +331,17 @@ def version_summary(name: str, df: pd.DataFrame, pre_impute_max_missing: float |
     missing_pct_per_col = (df.isna().mean() * 100.0).sort_values(ascending=False)
     max_missing_pct = float(missing_pct_per_col.max()) if len(missing_pct_per_col) else 0.0
 
-    echo(f"\n{name.upper()} VERSION SUMMARY")
-    echo(f"- rows: {len(df):,}")
-    echo(f"- total columns: {len(df.columns):,}")
-    echo(f"- feature columns: {len(feature_cols):,}")
-    echo(f"- label distribution: benign={benign:,}, pathogenic={pathogenic:,}, ratio={ratio if ratio is not None else 'NA'}")
+    print(f"\n{name.upper()} VERSION SUMMARY")
+    print(f"- rows: {len(df):,}")
+    print(f"- total columns: {len(df.columns):,}")
+    print(f"- feature columns: {len(feature_cols):,}")
+    print(f"- label distribution: benign={benign:,}, pathogenic={pathogenic:,}, ratio={ratio if ratio is not None else 'NA'}")
     if pre_impute_max_missing is not None:
-        echo(f"- max missing % before imputation: {pre_impute_max_missing:.4f}")
-    echo(f"- max missing % after processing: {max_missing_pct:.4f}")
-    echo("- feature dtypes:")
+        print(f"- max missing % before imputation: {pre_impute_max_missing:.4f}")
+    print(f"- max missing % after processing: {max_missing_pct:.4f}")
+    print("- feature dtypes:")
     for col in feature_cols:
-        echo(f"  {col}: {df[col].dtype}")
+        print(f"  {col}: {df[col].dtype}")
 
     return {
         "rows": int(len(df)),
@@ -354,9 +358,9 @@ def version_summary(name: str, df: pd.DataFrame, pre_impute_max_missing: float |
 def main() -> None:
     df = load_input()
 
-    echo("Loaded input dataset")
-    echo(f"- path: {INPUT_PATH}")
-    echo(f"- rows: {len(df):,}, columns: {len(df.columns):,}")
+    print("Loaded input dataset")
+    print(f"- path: {INPUT_PATH}")
+    print(f"- rows: {len(df):,}, columns: {len(df.columns):,}")
 
     # Step 1
     df, _, _ = step1_drop_flagged_columns(df)
@@ -383,10 +387,10 @@ def main() -> None:
         pre_impute_max_missing=balanced_info["max_missing_pct_pre_imputation"],
     )
 
-    echo("\nSaved outputs")
-    echo(f"- strict dataset: {STRICT_OUTPUT}")
-    echo(f"- balanced dataset: {BALANCED_OUTPUT}")
-    echo("- metadata: skipped (documented in notebooks)")
+    print("\nSaved outputs")
+    print(f"- strict dataset: {STRICT_OUTPUT}")
+    print(f"- balanced dataset: {BALANCED_OUTPUT}")
+    print("- metadata: skipped (documented in notebooks)")
 
 
 if __name__ == "__main__":

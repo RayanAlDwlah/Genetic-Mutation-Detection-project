@@ -1,47 +1,113 @@
-# Mutation Detection
+# Genetic Variant Pathogenicity Classification
 
-## Overview
-This project detects and classifies human genetic variants using both classical ML and deep learning. The pipeline covers data ingestion, preprocessing, feature engineering, training, and evaluation for clinically relevant mutation classification.
+Binary classification of human missense genetic variants as **Pathogenic (1)** or **Benign (0)**.
+
+## Project Overview
+
+This project builds a machine learning pipeline that predicts the clinical significance of
+missense variants using conservation scores, amino acid properties, and population allele
+frequencies. The final system includes a gradient-boosted baseline (XGBoost) and two deep
+learning models (1D CNN and ESM-2 transfer learning) evaluated under a strict gene-level
+cross-validation protocol that prevents data leakage.
 
 ## Installation
-1. Create and activate a Python virtual environment.
-2. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-3. Run notebooks in `notebooks/` or production code in `src/`.
 
-## Data
-Project directories:
-- `data/raw/`: original downloaded files.
-- `data/processed/`: cleaned and merged modeling tables.
-- `data/splits/`: train/validation/test split artifacts.
+```bash
+python -m venv .venv
+source .venv/bin/activate       # macOS / Linux
+.venv\Scripts\activate          # Windows
 
-Primary sources (priority order):
+pip install -r requirements.txt
+```
 
-| Source | Role in project | Main file | Key columns | Priority |
-| --- | --- | --- | --- | --- |
-| ClinVar | Supervised labels for pathogenicity | `variant_summary.txt` | `GeneSymbol`, `ClinicalSignificance`, `Chromosome`, `Start`, `ReferenceAllele`, `AlternateAllele`, `ReviewStatus` | 1 (required) |
-| gnomAD | Population allele frequency feature + benign proxy | Exomes sites-only VCF | `Chromosome`, `Position`, `Ref`, `Alt`, `AF`, `AC`, population AFs | 2 |
-| dbNSFP | Precomputed functional and conservation features | `dbNSFP4.x` tables | `PhyloP`, `phastCons`, `GERP++`, `BLOSUM62`, `Grantham`, `PolyPhen2`, `SIFT` | 3 |
-| UniProt | Protein sequences for ESM-2 inputs | Human proteome FASTA | `Protein ID`, `Gene Name`, `Sequence`, `Length`, annotation fields | 4 (ESM-2 track) |
+## Data Sources
 
-Label policy:
-- `Pathogenic` -> `1`
-- `Benign` -> `0`
-- `VUS` is excluded by default from supervised training unless explicitly enabled.
+| Source  | Role                                             | Version   | Genome Build |
+|---------|--------------------------------------------------|-----------|--------------|
+| ClinVar | Supervised labels (Pathogenic / Benign)          | 2026-02   | GRCh37       |
+| gnomAD  | Population allele frequency features             | r2.1.1    | GRCh37       |
+| dbNSFP  | Pre-computed conservation & physicochemical features | 5.3.1a | GRCh37       |
+| UniProt | Protein sequences (for ESM-2 model — Phase 2)   | 2025_01   | N/A          |
+
+**Label policy:**
+- `Pathogenic` / `Likely pathogenic` → `1`
+- `Benign` / `Likely benign` → `0`
+- Variants of Uncertain Significance (VUS) are excluded from supervised training.
+
+**Excluded predictors:** REVEL, ClinPred, MetaLR, MetaSVM, MetaRNN, BayesDel, VEST4, M-CAP.
+These are ClinVar-derived meta-predictors that would introduce circularity into evaluation.
+
+## Directory Structure
+
+```
+data/
+  raw/           Raw downloaded files (never modified)
+  intermediate/  Cleaned single-source files (ClinVar parquet, gnomAD parquet, dbNSFP parquet)
+  processed/     Merged and feature-engineered dataset
+  splits/        Gene-level train / val / test parquet files
+    strict/      High-quality splits (review_stars ≥ 2, no imputation)
+
+results/
+  figures/       All plots (EDA, evaluation, SHAP, ablation)
+  checkpoints/   Saved model weights (.ubj for XGBoost)
+  metrics/       CSV files with evaluation metrics and tuning history
+
+notebooks/       Presentation layer — full analysis story cell by cell
+src/             Logic layer — reusable, importable Python modules
+configs/         YAML configuration (paths, hyperparameter defaults)
+```
+
+## Running the Pipeline
+
+Each step can be run as a script or followed in the corresponding notebook.
+
+```bash
+# Step 1 — Clean ClinVar labels
+python -m src.clinvar_cleaning --config configs/config.yaml
+
+# Step 2 — Extract gnomAD allele frequencies
+python -m src.gnomad_extraction --input data/raw/gnomad/gnomad.exomes.r2.1.1.sites.vcf.bgz \
+    --clinvar-variants data/intermediate/clinvar_labeled_clean.parquet
+
+# Step 3 — Extract dbNSFP features
+python -m src.dbnsfp_extraction --config configs/config.yaml
+
+# Step 4 — Merge datasets
+python -m src.data_merge --config configs/config.yaml
+
+# Step 5 — Feature analysis (correlation filtering + two dataset versions)
+python -m src.feature_analysis --config configs/config.yaml
+
+# Step 6 — Gene-level train/val/test split
+python -m src.data_splitting --config configs/config.yaml
+
+# Step 7 — Train XGBoost baseline
+python -m src.training --config configs/config.yaml
+```
 
 ## Models
-- `src/models/xgboost_model.py`: tabular baseline using engineered features.
-- `src/models/cnn_model.py`: sequence-focused deep learning baseline.
-- `src/models/esm2_model.py`: transformer embedding workflow using UniProt sequences.
 
-Training and evaluation entry points:
-- `src/training.py`
-- `src/evaluation.py`
+| Model                     | File                          | Status          |
+|---------------------------|-------------------------------|-----------------|
+| XGBoost baseline          | `src/models/xgboost_model.py` | ✅ Complete     |
+| 1D CNN + Attention        | `src/models/cnn_model.py`     | 🔜 Phase 2     |
+| ESM-2 Transfer Learning   | `src/models/esm2_model.py`    | 🔜 Phase 2     |
+
+**XGBoost results (test set):** ROC-AUC = 0.955
+
+## Key Design Decisions
+
+- **Gene-level split:** Genes are assigned to only one split. This prevents the model from
+  memorizing gene → label patterns and ensures evaluation reflects generalization to unseen genes.
+- **Circularity protection:** Meta-predictors trained on ClinVar (REVEL, ClinPred, etc.) are
+  excluded from features to avoid inflated performance on ClinVar-based labels.
+- **Two dataset versions:** A *balanced* version (283K variants, review ≥ 1) and a *strict*
+  version (37K variants, review ≥ 2) allow ablation of data quality vs. quantity trade-offs.
 
 ## Team
-Genetic Graduation Project Team.
+
+Genetic Graduation Project — King Khalid University.
 
 ## License
-To be finalized by the team. Current use is academic/research.
+
+Academic/research use only. To be finalized by the team.

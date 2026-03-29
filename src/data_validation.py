@@ -13,14 +13,10 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-import matplotlib
-
-matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from src.output import echo
 from src.utils import require_file
 
 
@@ -377,72 +373,73 @@ def correlation_check(
 
 
 def print_report(report: dict[str, object], critical_issues: list[str]) -> None:
-    echo("\n" + "=" * 88)
-    echo("VALIDATION REPORT")
-    echo("=" * 88)
+    print("\n" + "=" * 88)
+    print("VALIDATION REPORT")
+    print("=" * 88)
 
     overview = report["overview"]
-    echo(f"Rows: {overview['rows']:,} | Columns: {overview['columns']:,}")
+    print(f"Rows: {overview['rows']:,} | Columns: {overview['columns']:,}")
 
     dup = report["duplicate_check"]
-    echo("\n[1] Duplicate Check")
-    echo(f"- duplicate variant_keys: {dup['duplicate_variant_keys_count']:,}")
-    echo(f"- near-duplicate positions (same chr:pos, >1 variant): {dup['near_duplicate_positions_count']:,}")
+    print("\n[1] Duplicate Check")
+    print(f"- duplicate variant_keys: {dup['duplicate_variant_keys_count']:,}")
+    print(f"- near-duplicate positions (same chr:pos, >1 variant): {dup['near_duplicate_positions_count']:,}")
 
     labels = report["label_integrity"]
-    echo("\n[2] Label Integrity")
-    echo(f"- NaN labels: {labels['nan_label_count']:,}")
-    echo(f"- invalid labels: {labels['invalid_label_count']:,}")
-    echo(f"- variant_keys with both labels: {labels['variant_keys_with_both_labels_count']:,}")
+    print("\n[2] Label Integrity")
+    print(f"- NaN labels: {labels['nan_label_count']:,}")
+    print(f"- invalid labels: {labels['invalid_label_count']:,}")
+    print(f"- variant_keys with both labels: {labels['variant_keys_with_both_labels_count']:,}")
 
     column_q = report["column_quality"]
-    echo("\n[3] Column Quality")
-    echo(f"- all-NaN columns: {len(column_q['all_nan_columns'])}")
-    echo(f"- >80% missing columns: {len(column_q['high_missing_columns_gt80pct'])}")
-    echo(f"- zero variance columns: {len(column_q['zero_variance_columns'])}")
+    print("\n[3] Column Quality")
+    print(f"- all-NaN columns: {len(column_q['all_nan_columns'])}")
+    print(f"- >80% missing columns: {len(column_q['high_missing_columns_gt80pct'])}")
+    print(f"- zero variance columns: {len(column_q['zero_variance_columns'])}")
 
     outliers = report["outlier_detection"]
-    echo("\n[4] Outlier Detection")
-    echo(f"- numeric columns checked: {len(outliers['numeric_columns_checked'])}")
-    echo(f"- columns with potential outliers (>5*IQR): {len(outliers['columns_with_outliers'])}")
+    print("\n[4] Outlier Detection")
+    print(f"- numeric columns checked: {len(outliers['numeric_columns_checked'])}")
+    print(f"- columns with potential outliers (>5*IQR): {len(outliers['columns_with_outliers'])}")
 
     cls = report["class_balance"]
-    echo("\n[5] Class Balance")
+    print("\n[5] Class Balance")
     ratio = cls["pathogenic_to_benign_ratio"]
     ratio_str = "NA" if ratio is None else f"{ratio:.4f}"
-    echo(f"- benign(0): {cls['benign_count']:,} | pathogenic(1): {cls['pathogenic_count']:,}")
-    echo(f"- pathogenic:benign ratio: {ratio_str}")
+    print(f"- benign(0): {cls['benign_count']:,} | pathogenic(1): {cls['pathogenic_count']:,}")
+    print(f"- pathogenic:benign ratio: {ratio_str}")
     if cls["warning"]:
-        echo(f"- WARNING: {cls['recommendation']}")
+        print(f"- WARNING: {cls['recommendation']}")
 
     gene = report["gene_distribution"]
-    echo("\n[6] Gene Distribution")
-    echo(f"- unique genes: {gene['unique_genes']:,}")
-    echo(f"- genes with single variant: {gene['genes_with_single_variant_count']:,}")
-    echo(f"- genes only pathogenic: {gene['genes_only_pathogenic_count']:,}")
-    echo(f"- genes only benign: {gene['genes_only_benign_count']:,}")
+    print("\n[6] Gene Distribution")
+    print(f"- unique genes: {gene['unique_genes']:,}")
+    print(f"- genes with single variant: {gene['genes_with_single_variant_count']:,}")
+    print(f"- genes only pathogenic: {gene['genes_only_pathogenic_count']:,}")
+    print(f"- genes only benign: {gene['genes_only_benign_count']:,}")
 
     corr = report["feature_correlation"]
-    echo("\n[7] Feature Correlation")
-    echo(
+    print("\n[7] Feature Correlation")
+    print(
         "- pairs with |corr| > 0.95: "
         f"{len(corr['high_correlation_pairs_abs_gt_0_95']):,}"
     )
 
-    echo("\nCritical Issues")
+    print("\nCritical Issues")
     if critical_issues:
         for issue in critical_issues:
-            echo(f"- {issue}")
+            print(f"- {issue}")
     else:
-        echo("- none")
+        print("- none")
 
-    echo("\nArtifacts")
-    echo(f"- Correlation heatmap: {CORR_FIG_PATH}")
-    echo(f"- Class distribution plot: {CLASS_FIG_PATH}")
-    echo(f"- Missing values plot: {MISSING_FIG_PATH}")
+    print("\nArtifacts")
+    print(f"- Correlation heatmap: {CORR_FIG_PATH}")
+    print(f"- Class distribution plot: {CLASS_FIG_PATH}")
+    print(f"- Missing values plot: {MISSING_FIG_PATH}")
 
 
 def main() -> None:
+    plt.switch_backend("agg")
     require_file(INPUT_PATH)
     FIGURES_DIR.mkdir(parents=True, exist_ok=True)
 

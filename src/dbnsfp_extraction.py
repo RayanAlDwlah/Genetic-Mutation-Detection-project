@@ -21,7 +21,6 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-from src.output import echo
 from src.utils import load_yaml_config, normalize_chromosome, resolve_path
 
 
@@ -201,7 +200,7 @@ def get_text_header_columns(path: Path, delimiter: str) -> list[str]:
 def load_clinvar_variant_set(path: Path) -> set[str]:
     df = pd.read_parquet(path, columns=["variant_key"])
     variants = set(df["variant_key"].dropna().astype(str))
-    echo(f"Loaded ClinVar variants: {len(variants):,}")
+    print(f"Loaded ClinVar variants: {len(variants):,}")
     return variants
 
 
@@ -306,7 +305,7 @@ def extract_from_chunks(
             out = out[out["variant_key"].isin(clinvar_variants)].copy()
             if out.empty:
                 if chunk_idx % 10 == 0:
-                    echo(f"Chunk {chunk_idx:,}: processed={processed_rows:,}, matched=0")
+                    print(f"Chunk {chunk_idx:,}: processed={processed_rows:,}, matched=0")
                 continue
 
         ref_aa_col = aa_cols.get("ref_aa")
@@ -345,18 +344,40 @@ def extract_from_chunks(
         out["charge_change"] = out["charge_alt"] - out["charge_ref"]
 
         # Compute BLOSUM62/Grantham if source columns are missing or NaN.
-        if "BLOSUM62_score" in out.columns:
-            computed = out.apply(lambda r: matrix_lookup(BLOSUM62_TABLE, r.get("ref_aa"), r.get("alt_aa")), axis=1)
-            out["BLOSUM62_score"] = out["BLOSUM62_score"].where(out["BLOSUM62_score"].notna(), computed)
+        # Vectorized: build flat {ref+alt -> value} dicts then use Series.map()
+        if "BLOSUM62_score" in out.columns or "Grantham_distance" in out.columns:
+            # Normalize aa column to single-letter code (vectorized)
+            def _norm_aa_series(s: pd.Series) -> pd.Series:
+                normed = (
+                    s.fillna("")
+                    .astype(str)
+                    .str.strip()
+                    .str.upper()
+                    .str.replace("*", "", regex=False)
+                )
+                normed = normed.map(lambda x: THREE_TO_ONE_AA.get(x, x) if len(x) == 3 else x)
+                valid = set(AMINO_ACID_PROPERTIES.keys())
+                return normed.where(normed.isin(valid), other=None)
 
-        if "Grantham_distance" in out.columns:
-            computed = out.apply(lambda r: matrix_lookup(GRANTHAM_TABLE, r.get("ref_aa"), r.get("alt_aa")), axis=1)
-            out["Grantham_distance"] = out["Grantham_distance"].where(out["Grantham_distance"].notna(), computed)
+            ref_norm = _norm_aa_series(out["ref_aa"])
+            alt_norm = _norm_aa_series(out["alt_aa"])
+            lookup_key = ref_norm.fillna("") + alt_norm.fillna("")
+            valid_mask = ref_norm.notna() & alt_norm.notna()
+
+            if "BLOSUM62_score" in out.columns:
+                blosum_flat = {r + a: v for r, row in BLOSUM62_TABLE.items() for a, v in row.items()}
+                computed = lookup_key.map(blosum_flat).where(valid_mask, other=np.nan)
+                out["BLOSUM62_score"] = out["BLOSUM62_score"].where(out["BLOSUM62_score"].notna(), computed)
+
+            if "Grantham_distance" in out.columns:
+                grantham_flat = {r + a: v for r, row in GRANTHAM_TABLE.items() for a, v in row.items()}
+                computed = lookup_key.map(grantham_flat).where(valid_mask, other=np.nan)
+                out["Grantham_distance"] = out["Grantham_distance"].where(out["Grantham_distance"].notna(), computed)
 
         extracted_frames.append(out)
 
         if chunk_idx % 5 == 0:
-            echo(
+            print(
                 f"Chunk {chunk_idx:,}: processed={processed_rows:,}, "
                 f"matched={sum(len(df) for df in extracted_frames):,}"
             )
@@ -407,14 +428,14 @@ def apply_missingness_policy(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, 
             drop_cols_80.append(col)
 
     if high_missing_50:
-        echo("Columns with >50% missing values:")
+        print("Columns with >50% missing values:")
         for col in high_missing_50:
-            echo(f"  - {col}: {missing_summary[col]:.2f}%")
+            print(f"  - {col}: {missing_summary[col]:.2f}%")
 
     if drop_cols_80:
-        echo("Dropping columns with >80% missing values:")
+        print("Dropping columns with >80% missing values:")
         for col in drop_cols_80:
-            echo(f"  - {col}: {missing_summary[col]:.2f}%")
+            print(f"  - {col}: {missing_summary[col]:.2f}%")
         df = df.drop(columns=drop_cols_80)
 
     return df, missing_summary, drop_cols_80
@@ -489,10 +510,10 @@ def main() -> None:
     aa_cols = resolve_columns(available_columns, aa_candidate_cfg)
     feature_cols = resolve_columns(available_columns, feature_candidates)
 
-    echo(f"Input: {input_path}")
-    echo(f"Input format: {input_format}")
-    echo(f"Output: {output_path}")
-    echo(f"Config: {config_path}")
+    print(f"Input: {input_path}")
+    print(f"Input format: {input_format}")
+    print(f"Output: {output_path}")
+    print(f"Config: {config_path}")
 
     clinvar_variants = None
     if args.clinvar_variants:
@@ -518,9 +539,9 @@ def main() -> None:
 
     detected_circular = check_circularity(all_feature_cols + used_source_columns, excluded_predictors)
     if detected_circular:
-        echo("WARNING: Detected excluded circularity predictors in extracted columns:")
+        print("WARNING: Detected excluded circularity predictors in extracted columns:")
         for col in detected_circular:
-            echo(f"  - {col}")
+            print(f"  - {col}")
         extracted_df = extracted_df.drop(columns=[c for c in detected_circular if c in extracted_df.columns], errors="ignore")
 
     extracted_df, missing_summary, dropped_high_missing = apply_missingness_policy(extracted_df)
@@ -538,10 +559,10 @@ def main() -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     extracted_df.to_parquet(output_path, index=False)
 
-    echo("Extraction finished.")
-    echo(f"Total variants extracted: {len(extracted_df):,}")
-    echo(f"Features extracted: {len(final_feature_cols)}")
-    echo(f"Saved parquet: {output_path}")
+    print("Extraction finished.")
+    print(f"Total variants extracted: {len(extracted_df):,}")
+    print(f"Features extracted: {len(final_feature_cols)}")
+    print(f"Saved parquet: {output_path}")
 
 
 if __name__ == "__main__":
