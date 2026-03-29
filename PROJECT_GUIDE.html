@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Genetic Variant Classification — Project Guide</title>
+<style>
+  /* ═══════════════════════ Design Tokens ═══════════════════════ */
+  :root {
+    --blue:        #1a73e8;
+    --blue-dark:   #0d47a1;
+    --blue-light:  #e8f0fe;
+    --green:       #0f9d58;
+    --green-light: #e6f4ea;
+    --amber:       #f59f00;
+    --amber-light: #fff3cd;
+    --red:         #d93025;
+    --purple:      #7c3aed;
+    --purple-light:#f3f0ff;
+    --gray-50:     #f8f9fa;
+    --gray-100:    #f1f3f4;
+    --gray-200:    #e8eaed;
+    --gray-400:    #9aa0a6;
+    --gray-600:    #5f6368;
+    --gray-800:    #202124;
+    --border:      #dadce0;
+    --radius-sm:   6px;
+    --radius:      10px;
+    --radius-lg:   16px;
+    --shadow-sm:   0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.05);
+    --shadow:      0 4px 12px rgba(0,0,0,.08), 0 2px 6px rgba(0,0,0,.05);
+    --shadow-md:   0 8px 24px rgba(0,0,0,.10), 0 4px 8px rgba(0,0,0,.06);
+    --transition:  all .2s ease;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-size: 15px; color: var(--gray-800);
+    background: #f4f6fb; line-height: 1.65;
+  }
+  a { color: var(--blue); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  kbd {
+    background: var(--gray-100); border: 1px solid var(--border);
+    border-radius: 4px; padding: 1px 6px; font-size: .85em;
+  }
+
+  /* ═══════════════════════ Layout ═══════════════════════ */
+  .page-wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px 80px; }
+
+  /* ═══════════════════════ Hero ═══════════════════════ */
+  .hero {
+    background: linear-gradient(140deg, #0d47a1 0%, #1a73e8 45%, #1565c0 100%);
+    color: #fff; padding: 60px 48px 52px;
+    border-radius: 0 0 24px 24px; margin-bottom: 40px;
+    position: relative; overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 600px 400px at 80% -20%, rgba(255,255,255,.08) 0%, transparent 70%),
+      radial-gradient(ellipse 300px 300px at 10% 100%, rgba(255,255,255,.05) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero-inner { position: relative; max-width: 1120px; margin: 0 auto; }
+  .hero h1 { font-size: 2.1rem; font-weight: 800; letter-spacing: -.02em; margin-bottom: 10px; }
+  .hero .subtitle { font-size: 1.05rem; opacity: .88; max-width: 700px; line-height: 1.6; }
+  .hero .meta {
+    margin-top: 22px; display: flex; gap: 20px;
+    flex-wrap: wrap; font-size: .88rem; opacity: .78;
+  }
+  .hero .meta span {
+    display: flex; align-items: center; gap: 7px;
+    background: rgba(255,255,255,.12); border-radius: 20px;
+    padding: 4px 12px;
+  }
+
+  /* ═══════════════════════ Sections ═══════════════════════ */
+  section { background: #fff; border-radius: var(--radius-lg); padding: 32px 36px; margin-bottom: 24px; box-shadow: var(--shadow-sm); }
+  h2.section-title {
+    font-size: 1.4rem; font-weight: 700; color: var(--gray-800);
+    margin-bottom: 20px; padding-bottom: 12px;
+    border-bottom: 2px solid var(--blue-light);
+    display: flex; align-items: center; gap: 10px;
+  }
+  h3.sub-title { font-size: 1.05rem; font-weight: 600; margin: 22px 0 10px; color: var(--gray-800); }
+
+  /* ═══════════════════════ Cards ═══════════════════════ */
+  .card {
+    background: #fff; border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px 24px;
+    margin-bottom: 14px; box-shadow: var(--shadow-sm);
+    transition: var(--transition);
+  }
+  .card:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; margin-bottom: 24px; }
+
+  /* ═══════════════════════ Stats ═══════════════════════ */
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin-bottom: 24px; }
+  .stat {
+    background: linear-gradient(135deg, var(--blue-light) 0%, #fff 100%);
+    border: 1px solid #c5d8fd; border-radius: var(--radius);
+    padding: 18px 20px; text-align: center;
+  }
+  .stat .val { font-size: 2rem; font-weight: 800; color: var(--blue); line-height: 1.1; }
+  .stat .label { font-size: .8rem; color: var(--gray-600); margin-top: 5px; font-weight: 500; }
+
+  /* ═══════════════════════ Tables ═══════════════════════ */
+  .tbl-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); margin-bottom: 20px; }
+  table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+  thead th { background: var(--gray-50); padding: 11px 14px; text-align: left; font-weight: 600; color: var(--gray-800); white-space: nowrap; border-bottom: 2px solid var(--border); }
+  tbody td { padding: 10px 14px; border-bottom: 1px solid var(--gray-200); vertical-align: top; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: var(--gray-50); }
+
+  /* ═══════════════════════ Code ═══════════════════════ */
+  pre { background: #1a1b26; color: #c0caf5; border-radius: var(--radius); padding: 20px 22px; overflow-x: auto; font-size: .84rem; line-height: 1.6; margin: 14px 0 20px; }
+  code { font-family: 'Fira Code', 'Cascadia Code', Consolas, monospace; }
+  p code, li code, td code { background: var(--gray-100); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; font-size: .88em; }
+  .kw  { color: #bb9af7; }
+  .str { color: #9ece6a; }
+  .cmt { color: #565f89; font-style: italic; }
+  .num { color: #ff9e64; }
+  .fn  { color: #7aa2f7; }
+
+  /* ═══════════════════════ Badges ═══════════════════════ */
+  .badge { display: inline-block; border-radius: 20px; padding: 2px 10px; font-size: .76rem; font-weight: 600; letter-spacing: .02em; }
+  .badge-done  { background: #dcfce7; color: #15803d; }
+  .badge-later { background: #fef9c3; color: #92400e; }
+  .badge-info  { background: var(--blue-light); color: var(--blue); }
+  .badge-req   { background: #ffe4e6; color: #be123c; }
+
+  /* ═══════════════════════ Pipeline ═══════════════════════ */
+  .pipeline { display: flex; flex-direction: column; gap: 0; position: relative; margin: 20px 0 28px; }
+  .pipeline::before { content: ''; position: absolute; left: 22px; top: 28px; bottom: 28px; width: 2px; background: linear-gradient(to bottom, var(--blue), var(--blue-light)); }
+  .pipe-step { display: flex; gap: 18px; align-items: flex-start; padding: 14px 0; position: relative; }
+  .pipe-icon { width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: .9rem; font-weight: 700; flex-shrink: 0; z-index: 1; border: 2px solid; }
+  .pipe-done  { background: #dcfce7; border-color: #22c55e; color: #15803d; }
+  .pipe-later { background: #fef9c3; border-color: #eab308; color: #92400e; }
+  .pipe-body  { flex: 1; padding-top: 4px; }
+  .pipe-title { font-weight: 600; font-size: .95rem; }
+  .pipe-desc  { font-size: .85rem; color: var(--gray-600); margin-top: 4px; }
+  .pipe-file  { font-size: .8rem; color: var(--blue); margin-top: 4px; }
+
+  /* ═══════════════════════ Alerts ═══════════════════════ */
+  .alert { border-radius: var(--radius); padding: 14px 18px; margin: 14px 0; display: flex; gap: 12px; align-items: flex-start; font-size: .9rem; }
+  .alert-info    { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; }
+  .alert-success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
+  .alert-warn    { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
+  .alert-icon    { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+
+  /* ═══════════════════════ Result box ═══════════════════════ */
+  .result-box {
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    border: 1px solid #86efac; border-radius: var(--radius);
+    padding: 24px 28px; margin: 20px 0;
+  }
+  .result-box h3 { color: #14532d; margin-bottom: 16px; font-size: 1.1rem; }
+  .metric-row { display: flex; gap: 24px; flex-wrap: wrap; }
+  .metric { text-align: center; }
+  .metric .m-val { font-size: 1.8rem; font-weight: 800; color: #16a34a; line-height: 1.1; }
+  .metric .m-label { font-size: .78rem; color: #15803d; margin-top: 3px; font-weight: 500; }
+
+  /* ═══════════════════════ TOC ═══════════════════════ */
+  .toc { background: var(--gray-50); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px 26px; margin-bottom: 24px; }
+  .toc h2 { font-size: .88rem; color: var(--gray-600); margin-bottom: 12px; text-transform: uppercase; letter-spacing: .07em; font-weight: 700; }
+  .toc ol { padding-left: 18px; columns: 2; column-gap: 24px; }
+  .toc li { margin-bottom: 7px; font-size: .9rem; }
+  @media (max-width: 600px) { .toc ol { columns: 1; } }
+
+  /* ═══════════════════════ Focus box ═══════════════════════ */
+  .focus { border-left: 4px solid var(--blue); background: #f0f7ff; padding: 14px 18px; border-radius: 0 var(--radius) var(--radius) 0; margin: 14px 0; }
+  .focus strong { color: var(--blue); display: block; margin-bottom: 6px; }
+
+  ul, ol { padding-left: 20px; }
+  li { margin-bottom: 4px; }
+  p { margin-bottom: 10px; }
+  p:last-child { margin-bottom: 0; }
+
+  /* ═══════════════════════ Team Section (Arabic) ═══════════════════════ */
+  .team-section {
+    direction: rtl;
+    text-align: right;
+    font-family: 'Segoe UI', 'Tahoma', 'Arial', system-ui, sans-serif;
+  }
+  .team-section h2.section-title { direction: rtl; }
+  .team-section p { direction: rtl; }
+  .team-section .phase-badge {
+    display: inline-block; padding: 3px 12px; border-radius: 20px;
+    font-size: .78rem; font-weight: 600; margin-bottom: 10px;
+  }
+  .phase1-badge { background: #dcfce7; color: #15803d; }
+  .phase2-badge { background: #f3f0ff; color: #6d28d9; }
+
+  .member-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 16px; margin: 18px 0 28px;
+  }
+  .member-card {
+    border: 1px solid var(--border); border-radius: var(--radius);
+    overflow: hidden; box-shadow: var(--shadow-sm);
+    transition: var(--transition);
+  }
+  .member-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+  .member-header {
+    padding: 16px 20px;
+    display: flex; align-items: center; gap: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .member-num {
+    width: 42px; height: 42px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem; font-weight: 800; flex-shrink: 0;
+    color: #fff;
+  }
+  .m1 { background: linear-gradient(135deg, #1a73e8, #0d47a1); }
+  .m2 { background: linear-gradient(135deg, #0f9d58, #066e39); }
+  .m3 { background: linear-gradient(135deg, #f59f00, #d48000); }
+  .m4 { background: linear-gradient(135deg, #e53935, #b71c1c); }
+  .m5 { background: linear-gradient(135deg, #7c3aed, #4c1d95); }
+  .m6 { background: linear-gradient(135deg, #0891b2, #155e75); }
+
+  .member-name { font-weight: 700; font-size: 1rem; }
+  .member-role { font-size: .82rem; color: var(--gray-600); margin-top: 2px; }
+  .member-body { padding: 14px 20px; }
+  .task-group { margin-bottom: 10px; }
+  .task-group:last-child { margin-bottom: 0; }
+  .task-group-label {
+    font-size: .76rem; font-weight: 700; letter-spacing: .04em;
+    text-transform: uppercase; margin-bottom: 5px;
+  }
+  .task-group-label.p1 { color: #15803d; }
+  .task-group-label.p2 { color: #6d28d9; }
+  .task-list { list-style: none; padding: 0; }
+  .task-list li { font-size: .87rem; color: var(--gray-600); padding: 3px 0; display: flex; align-items: flex-start; gap: 7px; }
+  .task-list li::before { content: '●'; font-size: .5rem; color: var(--gray-400); margin-top: 5px; flex-shrink: 0; }
+
+  .team-note {
+    background: linear-gradient(135deg, #fdf4ff, #f3f0ff);
+    border: 1px solid #e9d5ff; border-radius: var(--radius);
+    padding: 18px 22px; margin-top: 20px; direction: rtl;
+  }
+  .team-note h3 { color: #6d28d9; margin-bottom: 10px; font-size: 1rem; }
+  .team-note p { font-size: .9rem; color: var(--gray-600); margin-bottom: 8px; }
+
+  /* Focus guide (en inside team section) */
+  .focus-guide-table-wrap { direction: ltr; text-align: left; margin-top: 16px; }
+  .focus-guide-table-wrap .tbl-wrap th,
+  .focus-guide-table-wrap .tbl-wrap td { text-align: left; }
+
+  /* ═══════════════════════ Footer ═══════════════════════ */
+  .footer { text-align: center; font-size: .85rem; color: var(--gray-600); padding: 24px 0 8px; }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════ HERO ════════════════════════ -->
+<div class="hero">
+  <div class="hero-inner">
+    <h1>Genetic Variant Pathogenicity Classification</h1>
+    <p class="subtitle">
+      An end-to-end machine learning pipeline that predicts whether a human missense
+      genetic variant is <strong>Pathogenic</strong> or <strong>Benign</strong> — using
+      conservation scores, amino acid properties, and population allele frequencies.
+    </p>
+    <div class="meta">
+      <span>🎓 Graduation Project — King Khalid University</span>
+      <span>📅 Phase 1 Complete · March 2026</span>
+      <span>🧬 Binary Classification · GRCh37</span>
+      <span>🏆 XGBoost ROC-AUC = 0.955</span>
+    </div>
+  </div>
+</div>
+
+<div class="page-wrap">
+
+<!-- TOC -->
+<nav class="toc">
+  <h2>Contents</h2>
+  <ol>
+    <li><a href="#overview">Project Overview</a></li>
+    <li><a href="#results">Key Results</a></li>
+    <li><a href="#setup">Environment Setup</a></li>
+    <li><a href="#data">Data Sources</a></li>
+    <li><a href="#pipeline">Pipeline Steps</a></li>
+    <li><a href="#structure">Project Structure</a></li>
+    <li><a href="#notebooks">Notebooks Guide</a></li>
+    <li><a href="#src">Source Code Guide</a></li>
+    <li><a href="#features">Features Reference</a></li>
+    <li><a href="#design">Key Design Decisions</a></li>
+    <li><a href="#team">توزيع المهام — الفريق</a></li>
+    <li><a href="#phase2">Phase 2 — After Midterm</a></li>
+  </ol>
+</nav>
+
+<!-- ════════════════════════ 1. OVERVIEW ════════════════════════ -->
+<section id="overview">
+<h2 class="section-title">📌 1. Project Overview</h2>
+
+<p>
+  This project builds an end-to-end ML pipeline to classify human missense single-nucleotide variants (SNVs).
+  A <strong>missense variant</strong> is a single DNA base change that alters one amino acid in a protein.
+  When such changes disrupt critical protein function, they can cause genetic diseases.
+</p>
+
+<div class="card-grid">
+  <div class="card">
+    <strong>🎯 Task</strong>
+    <p style="margin-top:8px">Binary classification: Is a given missense variant
+    <strong>Pathogenic</strong> (disease-causing) or <strong>Benign</strong> (harmless)?</p>
+  </div>
+  <div class="card">
+    <strong>📊 Data</strong>
+    <p style="margin-top:8px">Labels from <strong>ClinVar</strong>.
+    Features from <strong>gnomAD</strong> (population frequencies) and
+    <strong>dbNSFP</strong> (conservation + physicochemical properties).</p>
+  </div>
+  <div class="card">
+    <strong>🤖 Models</strong>
+    <p style="margin-top:8px"><strong>Phase 1:</strong> XGBoost gradient boosting (complete).
+    <strong>Phase 2:</strong> 1D CNN and ESM-2 protein language model (after midterm).</p>
+  </div>
+</div>
+
+<div class="alert alert-info">
+  <span class="alert-icon">ℹ️</span>
+  <div><strong>Why missense variants?</strong> They are the most common type of disease-causing
+  point mutation. Databases like ClinVar contain hundreds of thousands of expert-curated examples,
+  making them ideal for supervised classification.</div>
+</div>
+</section>
+
+<!-- ════════════════════════ 2. RESULTS ════════════════════════ -->
+<section id="results">
+<h2 class="section-title">🏆 2. Key Results (Phase 1)</h2>
+
+<div class="result-box">
+  <h3>XGBoost Baseline — Test Set Performance (45,263 variants)</h3>
+  <div class="metric-row">
+    <div class="metric"><div class="m-val">0.955</div><div class="m-label">ROC-AUC</div></div>
+    <div class="metric"><div class="m-val">0.948</div><div class="m-label">PR-AUC</div></div>
+    <div class="metric"><div class="m-val">~0.90</div><div class="m-label">F1 Score</div></div>
+    <div class="metric"><div class="m-val">0.445</div><div class="m-label">Best Threshold</div></div>
+    <div class="metric"><div class="m-val">14</div><div class="m-label">Tuning Trials</div></div>
+  </div>
+</div>
+
+<div class="tbl-wrap">
+  <table>
+    <thead><tr><th>Split</th><th>Rows</th><th>Genes</th><th>Pathogenic</th><th>Benign</th><th>Path%</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Train</strong></td><td>195,124</td><td>10,961</td><td>91,329</td><td>103,795</td><td>46.8%</td></tr>
+      <tr><td><strong>Validation</strong></td><td>43,005</td><td>2,349</td><td>19,062</td><td>23,943</td><td>44.3%</td></tr>
+      <tr><td><strong>Test</strong></td><td>45,263</td><td>2,349</td><td>22,463</td><td>22,800</td><td>49.6%</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<p>
+  Split is <strong>gene-level</strong>: no gene appears in more than one split.
+  This prevents the model from memorizing gene → label associations and ensures
+  the evaluation reflects true generalization to unseen genes.
+</p>
+</section>
+
+<!-- ════════════════════════ 3. SETUP ════════════════════════ -->
+<section id="setup">
+<h2 class="section-title">⚙️ 3. Environment Setup</h2>
+
+<h3 class="sub-title">Requirements</h3>
+<ul>
+  <li>Python 3.11+</li>
+  <li>8 GB RAM minimum (16 GB recommended during gnomAD extraction)</li>
+  <li>~50 GB free disk space for raw data files</li>
+</ul>
+
+<h3 class="sub-title">Installation</h3>
+<pre><code><span class="cmt"># 1. Create and activate a virtual environment</span>
+python -m venv .venv
+source .venv/bin/activate          <span class="cmt"># macOS / Linux</span>
+<span class="cmt"># .venv\Scripts\activate           # Windows</span>
+
+<span class="cmt"># 2. Install all dependencies</span>
+pip install -r requirements.txt
+
+<span class="cmt"># 3. Verify key packages are installed</span>
+python -c <span class="str">"import xgboost, shap, pandas; print('All packages OK')"</span></code></pre>
+
+<h3 class="sub-title">Running a Notebook</h3>
+<pre><code><span class="cmt"># Always start Jupyter from the project root (required for relative paths)</span>
+jupyter notebook
+
+<span class="cmt"># Open any notebook in notebooks/ and run cells with Shift+Enter</span>
+<span class="cmt"># Run cells in order from top to bottom — do not skip cells</span></code></pre>
+
+<div class="alert alert-warn">
+  <span class="alert-icon">⚠️</span>
+  <div>Always launch Jupyter from the <strong>project root directory</strong> (the folder containing
+  <code>README.md</code>). Notebooks use <code>../data/</code> relative paths that only work from there.</div>
+</div>
+</section>
+
+<!-- ════════════════════════ 4. DATA ════════════════════════ -->
+<section id="data">
+<h2 class="section-title">📂 4. Data Sources</h2>
+
+<div class="tbl-wrap">
+  <table>
+    <thead><tr><th>Source</th><th>What it provides</th><th>Version</th><th>Size</th><th>When needed</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>ClinVar</strong></td>
+        <td>Expert-curated clinical labels: Pathogenic / Benign. Our ground truth for supervised training.</td>
+        <td>2026-02</td><td>~300 MB</td><td><span class="badge badge-info">Phase 1</span></td>
+      </tr>
+      <tr>
+        <td><strong>gnomAD</strong></td>
+        <td>Population allele frequencies from 140,000+ healthy individuals. Common variants are likely benign (ACMG BA1).</td>
+        <td>r2.1.1</td><td>~500 GB VCF</td><td><span class="badge badge-info">Phase 1</span></td>
+      </tr>
+      <tr>
+        <td><strong>dbNSFP</strong></td>
+        <td>Pre-computed conservation scores (phyloP, phastCons, GERP++) and amino acid physicochemical properties for every possible missense variant.</td>
+        <td>5.3.1a</td><td>~100 GB</td><td><span class="badge badge-info">Phase 1</span></td>
+      </tr>
+      <tr>
+        <td><strong>UniProt</strong></td>
+        <td>Human protein sequences (FASTA). Used to extract full sequence context for the ESM-2 model.</td>
+        <td>2025_01</td><td>~270 MB</td><td><span class="badge badge-later">Phase 2</span></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="focus">
+  <strong>⚠️ Circularity Protection — Excluded Features</strong>
+  The following features are <strong>intentionally excluded</strong> from all models:<br>
+  REVEL, ClinPred, MetaLR, MetaSVM, MetaRNN, BayesDel, VEST4, M-CAP.<br>
+  These are ensemble meta-predictors trained on ClinVar data themselves.
+  Using them as features would inflate performance numbers artificially (circular evaluation).
+</div>
+</section>
+
+<!-- ════════════════════════ 5. PIPELINE ════════════════════════ -->
+<section id="pipeline">
+<h2 class="section-title">🔄 5. Pipeline Steps</h2>
+
+<div class="pipeline">
+  <div class="pipe-step">
+    <div class="pipe-icon pipe-done">01</div>
+    <div class="pipe-body">
+      <div class="pipe-title">Data Download &amp; Verification <span class="badge badge-done">Done</span></div>
+      <div class="pipe-desc">Documents raw data sources, download links, and verifies all files are present before processing begins.</div>
+      <div class="pipe-file">📓 notebooks/01_data_download_verify.ipynb</div>
+    </div>
+  </div>
+  <div class="pipe-step">
+    <div class="pipe-icon pipe-done">02</div>
+    <div class="pipe-body">
+      <div class="pipe-title">ClinVar Cleaning &amp; Labeling <span class="badge badge-done">Done</span></div>
+      <div class="pipe-desc">Filter SNVs → keep Pathogenic/Benign labels → apply review quality filter (≥1 star) → remove conflicts → deduplicate → save as parquet.</div>
+      <div class="pipe-file">📓 notebooks/02_clinvar_cleaning.ipynb &nbsp;|&nbsp; 🐍 src/clinvar_cleaning.py</div>
+    </div>
+  </div>
+  <div class="pipe-step">
+    <div class="pipe-icon pipe-done">03</div>
+    <div class="pipe-body">
+      <div class="pipe-title">Feature Engineering &amp; Merging <span class="badge badge-done">Done</span></div>
+      <div class="pipe-desc">INNER JOIN with dbNSFP (restricts to missense variants) → LEFT JOIN with gnomAD (adds allele frequencies; AF=0 proxy for unmatched ultra-rare variants).</div>
+      <div class="pipe-file">📓 notebooks/03_feature_engineering.ipynb &nbsp;|&nbsp; 🐍 src/data_merge.py · src/gnomad_extraction.py · src/dbnsfp_extraction.py</div>
+    </div>
+  </div>
+  <div class="pipe-step">
+    <div class="pipe-icon pipe-done">04</div>
+    <div class="pipe-body">
+      <div class="pipe-title">Data Validation <span class="badge badge-done">Done</span></div>
+      <div class="pipe-desc">Quality checks: duplicates, label integrity, class balance (ratio > 0.33), high correlations (|r| > 0.95), gene distribution.</div>
+      <div class="pipe-file">📓 notebooks/04_data_validation.ipynb &nbsp;|&nbsp; 🐍 src/data_validation.py</div>
+    </div>
+  </div>
+  <div class="pipe-step">
+    <div class="pipe-icon pipe-done">05</div>
+    <div class="pipe-body">
+      <div class="pipe-title">Feature Analysis &amp; Dataset Versions <span class="badge badge-done">Done</span></div>
+      <div class="pipe-desc">Drop 100%-NaN and zero-variance columns; remove correlated features (|r| > 0.95); create two dataset versions: <em>Balanced</em> (283K, median-imputed) and <em>Strict</em> (37K, no imputation).</div>
+      <div class="pipe-file">📓 notebooks/05_feature_analysis.ipynb &nbsp;|&nbsp; 🐍 src/feature_analysis.py</div>
+    </div>
+  </div>
+  <div class="pipe-step">
+    <div class="pipe-icon pipe-done">06</div>
+    <div class="pipe-body">
+      <div class="pipe-title">Gene-Level Train / Val / Test Split <span class="badge badge-done">Done</span></div>
+      <div class="pipe-desc">70/15/15 split using GroupShuffleSplit on gene. Each gene assigned to exactly one split. Zero overlap verified programmatically.</div>
+      <div class="pipe-file">📓 notebooks/06_data_splitting.ipynb &nbsp;|&nbsp; 🐍 src/data_splitting.py</div>
+    </div>
+  </div>
+  <div class="pipe-step">
+    <div class="pipe-icon pipe-done">07</div>
+    <div class="pipe-body">
+      <div class="pipe-title">Exploratory Data Analysis <span class="badge badge-done">Done</span></div>
+      <div class="pipe-desc">Training data only: conservation score distributions, allele frequency patterns, feature correlations, gene distribution. 9 figures saved.</div>
+      <div class="pipe-file">📓 notebooks/07_EDA.ipynb</div>
+    </div>
+  </div>
+  <div class="pipe-step">
+    <div class="pipe-icon pipe-done">08</div>
+    <div class="pipe-body">
+      <div class="pipe-title">XGBoost Baseline + SHAP + Ablation <span class="badge badge-done">Done</span></div>
+      <div class="pipe-desc">14-trial random search → threshold optimization on validation → evaluation on test set → SHAP TreeExplainer (5K samples) → strict vs. balanced ablation → feature group ablation (4 subsets).</div>
+      <div class="pipe-file">📓 notebooks/08_baseline_models.ipynb &nbsp;|&nbsp; 🐍 src/models/xgboost_model.py · src/evaluation.py · src/training.py</div>
+    </div>
+  </div>
+  <div class="pipe-step">
+    <div class="pipe-icon pipe-later">09</div>
+    <div class="pipe-body">
+      <div class="pipe-title">1D CNN + Attention <span class="badge badge-later">Phase 2</span></div>
+      <div class="pipe-desc">Deep learning model over encoded amino acid sequences with a multi-head self-attention layer for long-range residue interactions.</div>
+      <div class="pipe-file">📓 notebooks/09_cnn_attention.ipynb &nbsp;|&nbsp; 🐍 src/models/cnn_model.py</div>
+    </div>
+  </div>
+  <div class="pipe-step">
+    <div class="pipe-icon pipe-later">10</div>
+    <div class="pipe-body">
+      <div class="pipe-title">ESM-2 Transfer Learning <span class="badge badge-later">Phase 2</span></div>
+      <div class="pipe-desc">Fine-tune ESM-2 protein language model (facebook/esm2_t6_8M_UR50D) on ClinVar variants using per-residue embeddings at the mutation site.</div>
+      <div class="pipe-file">📓 notebooks/10_esm2_transfer.ipynb &nbsp;|&nbsp; 🐍 src/models/esm2_model.py</div>
+    </div>
+  </div>
+  <div class="pipe-step">
+    <div class="pipe-icon pipe-later">11</div>
+    <div class="pipe-body">
+      <div class="pipe-title">Final Model Comparison <span class="badge badge-later">Phase 2</span></div>
+      <div class="pipe-desc">Side-by-side comparison of all three models (XGBoost, CNN, ESM-2) on the identical held-out test set. ROC curves, PR curves, and calibration plots.</div>
+      <div class="pipe-file">📓 notebooks/11_final_comparison.ipynb</div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ════════════════════════ 6. STRUCTURE ════════════════════════ -->
+<section id="structure">
+<h2 class="section-title">🗂️ 6. Project Structure</h2>
+
+<pre><code>GenticGraduationProject/
+│
+├── <span class="fn">notebooks/</span>          <span class="cmt"># Presentation layer — full analysis story, cell by cell</span>
+│   ├── 01_data_download_verify.ipynb
+│   ├── 02_clinvar_cleaning.ipynb
+│   ├── 03_feature_engineering.ipynb
+│   ├── 04_data_validation.ipynb
+│   ├── 05_feature_analysis.ipynb
+│   ├── 06_data_splitting.ipynb
+│   ├── 07_EDA.ipynb
+│   └── 08_baseline_models.ipynb
+│
+├── <span class="fn">src/</span>               <span class="cmt"># Logic layer — reusable, importable Python modules</span>
+│   ├── utils.py               <span class="cmt"># Path resolution, chromosome normalization</span>
+│   ├── clinvar_cleaning.py    <span class="cmt"># ClinVar filtering and binary labeling</span>
+│   ├── gnomad_extraction.py   <span class="cmt"># Streaming gnomAD VCF extraction</span>
+│   ├── dbnsfp_extraction.py   <span class="cmt"># dbNSFP feature extraction</span>
+│   ├── data_merge.py          <span class="cmt"># Three-way join: ClinVar + gnomAD + dbNSFP</span>
+│   ├── data_validation.py     <span class="cmt"># Quality checks on merged dataset</span>
+│   ├── feature_analysis.py    <span class="cmt"># Correlation filtering, dataset versions</span>
+│   ├── data_splitting.py      <span class="cmt"># Gene-level train / val / test split</span>
+│   ├── training.py            <span class="cmt"># End-to-end XGBoost training pipeline</span>
+│   ├── evaluation.py          <span class="cmt"># Metrics: ROC-AUC, PR-AUC, F1, MCC, Brier</span>
+│   └── models/
+│       ├── xgboost_model.py   <span class="cmt"># XGBoost hyperparameter tuning (Phase 1 ✅)</span>
+│       ├── cnn_model.py       <span class="cmt"># 1D CNN stub (Phase 2)</span>
+│       └── esm2_model.py      <span class="cmt"># ESM-2 loader stub (Phase 2)</span>
+│
+├── <span class="fn">data/</span>
+│   ├── raw/                   <span class="cmt"># Original downloaded files — never modified</span>
+│   ├── intermediate/          <span class="cmt"># Single-source cleaned files (.parquet)</span>
+│   ├── processed/             <span class="cmt"># Merged + feature-engineered dataset</span>
+│   └── splits/                <span class="cmt"># train / val / test parquet files</span>
+│       └── strict/            <span class="cmt"># High-quality splits (review_stars ≥ 2)</span>
+│
+├── <span class="fn">results/</span>
+│   ├── figures/               <span class="cmt"># All saved plots (.png)</span>
+│   ├── checkpoints/           <span class="cmt"># Saved model weights (xgboost_best.ubj)</span>
+│   └── metrics/               <span class="cmt"># Evaluation and tuning CSV files</span>
+│
+├── <span class="fn">configs/</span>
+│   └── config.yaml            <span class="cmt"># All configurable settings (paths, hyperparams)</span>
+│
+└── requirements.txt</code></pre>
+
+<div class="alert alert-info">
+  <span class="alert-icon">💡</span>
+  <div>
+    <strong>Two-layer architecture:</strong> Notebooks tell the story.
+    <code>src/</code> holds the logic. Read notebooks to understand <em>what</em>
+    happened and <em>why</em>. Read <code>src/</code> to understand <em>how</em>
+    it works technically.
+  </div>
+</div>
+</section>
+
+<!-- ════════════════════════ 7. NOTEBOOKS ════════════════════════ -->
+<section id="notebooks">
+<h2 class="section-title">📓 7. Notebooks Guide</h2>
+
+<div class="tbl-wrap">
+  <table>
+    <thead><tr><th>Notebook</th><th>Purpose</th><th>Key outputs</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>01_data_download_verify</code></td>
+        <td>Documents data sources, shows download links, verifies raw files exist</td>
+        <td>File presence table</td>
+        <td><span class="badge badge-done">Done</span></td>
+      </tr>
+      <tr>
+        <td><code>02_clinvar_cleaning</code></td>
+        <td>Raw ClinVar → clean labeled missense variants with binary labels</td>
+        <td><code>data/intermediate/clinvar_labeled_clean.parquet</code></td>
+        <td><span class="badge badge-done">Done</span></td>
+      </tr>
+      <tr>
+        <td><code>03_feature_engineering</code></td>
+        <td>Describes gnomAD + dbNSFP extraction and the three-way merge strategy</td>
+        <td>Merge logic and data flow documentation</td>
+        <td><span class="badge badge-done">Done</span></td>
+      </tr>
+      <tr>
+        <td><code>04_data_validation</code></td>
+        <td>Quality checks: duplicates, label integrity, class balance, correlation heatmap</td>
+        <td><code>results/figures/correlation_matrix.png</code></td>
+        <td><span class="badge badge-done">Done</span></td>
+      </tr>
+      <tr>
+        <td><code>05_feature_analysis</code></td>
+        <td>Correlation filtering; creates Balanced (283K) and Strict (37K) dataset versions</td>
+        <td><code>data/processed/final_balanced.parquet</code>, <code>final_strict.parquet</code></td>
+        <td><span class="badge badge-done">Done</span></td>
+      </tr>
+      <tr>
+        <td><code>06_data_splitting</code></td>
+        <td>Gene-level 70/15/15 split. Verifies zero gene overlap between splits.</td>
+        <td><code>data/splits/{train,val,test}.parquet</code></td>
+        <td><span class="badge badge-done">Done</span></td>
+      </tr>
+      <tr>
+        <td><code>07_EDA</code></td>
+        <td>Exploratory analysis of training data: conservation, AF, correlations, genes</td>
+        <td>9 figures in <code>results/figures/eda_*.png</code></td>
+        <td><span class="badge badge-done">Done</span></td>
+      </tr>
+      <tr>
+        <td><code>08_baseline_models</code></td>
+        <td>XGBoost: tuning → threshold optimization → evaluation → SHAP → ablation studies</td>
+        <td>Model weights, metrics CSVs, SHAP + ablation plots in <code>results/</code></td>
+        <td><span class="badge badge-done">Done</span></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h3 class="sub-title">How to read a notebook</h3>
+<ol>
+  <li>Read the top <strong>markdown cell</strong> first — it explains the phase purpose and key decisions.</li>
+  <li>Run cells top to bottom with <kbd>Shift+Enter</kbd>. Printed numbers confirm the pipeline worked.</li>
+  <li>Charts are followed by an <strong>Analysis</strong> cell that interprets the result in plain English.</li>
+  <li>You do not need to understand every line of code — focus on outputs and charts.</li>
+</ol>
+</section>
+
+<!-- ════════════════════════ 8. SRC ════════════════════════ -->
+<section id="src">
+<h2 class="section-title">🐍 8. Source Code Guide (src/)</h2>
+
+<div class="card">
+  <h3 class="sub-title" style="margin-top:0">src/utils.py</h3>
+  <p><strong>What it does:</strong> Shared helpers used across all pipeline scripts.</p>
+  <ul>
+    <li><code>normalize_chromosome(value)</code> — converts any chromosome format (e.g., <code>chr1</code>, <code>23</code>) to standard form (<code>1</code>, <code>X</code>)</li>
+    <li><code>resolve_path(repo_root, path)</code> — makes relative paths absolute against the project root</li>
+    <li><code>load_yaml_config(path)</code> — loads <code>configs/config.yaml</code></li>
+    <li><code>require_file(path)</code> — raises a clear error if a required file is missing</li>
+  </ul>
+</div>
+
+<div class="card">
+  <h3 class="sub-title" style="margin-top:0">src/clinvar_cleaning.py</h3>
+  <p><strong>What it does:</strong> 5-step pipeline to produce a clean, labeled ClinVar dataset.</p>
+  <p><strong>Steps:</strong> Filter SNVs → keep 4 clinical labels → assign binary labels (0/1) → filter by review stars → normalize chromosomes → deduplicate → remove conflicting labels.</p>
+  <p><strong>Run:</strong> <code>python -m src.clinvar_cleaning --config configs/config.yaml</code></p>
+</div>
+
+<div class="card">
+  <h3 class="sub-title" style="margin-top:0">src/gnomad_extraction.py</h3>
+  <p><strong>What it does:</strong> Extracts allele frequencies (AF, AC, AN, AF_popmax, log_AF, is_common) from the gnomAD VCF.</p>
+  <p><strong>Special feature:</strong> Uses a <code>StreamingParquetSink</code> to process the 500 GB+ VCF in chunks, keeping memory usage constant regardless of file size.</p>
+  <p><strong>Run:</strong> <code>python -m src.gnomad_extraction --input data/raw/gnomad/...vcf.bgz --clinvar-variants data/intermediate/clinvar_labeled_clean.parquet</code></p>
+</div>
+
+<div class="card">
+  <h3 class="sub-title" style="margin-top:0">src/dbnsfp_extraction.py</h3>
+  <p><strong>What it does:</strong> Reads the 100 GB+ dbNSFP table and extracts conservation scores, amino acid properties, and BLOSUM62/Grantham substitution scores for each variant.</p>
+  <p><strong>Important:</strong> Automatically excludes all ClinVar-derived meta-predictors (REVEL, ClinPred, etc.) to prevent circular evaluation.</p>
+</div>
+
+<div class="card">
+  <h3 class="sub-title" style="margin-top:0">src/evaluation.py</h3>
+  <p><strong>What it does:</strong> Computes all classification metrics from predicted probabilities.</p>
+  <ul>
+    <li><code>compute_classification_metrics(y_true, y_prob, threshold)</code> — returns ROC-AUC, PR-AUC, F1, MCC, precision, recall, Brier loss</li>
+    <li><code>select_best_threshold(y_true, y_prob)</code> — grid search over [0.20, 0.80] on the validation set to maximize F1</li>
+  </ul>
+</div>
+
+<div class="card">
+  <h3 class="sub-title" style="margin-top:0">src/models/xgboost_model.py</h3>
+  <p><strong>What it does:</strong> Configures and runs XGBoost hyperparameter tuning.</p>
+  <p><strong>Strategy:</strong> 14 trials — trial 0 uses conservative defaults, trials 1-13 sample from random ranges.
+  Best model selected by: <code>0.65 × ROC-AUC + 0.35 × PR-AUC</code>.</p>
+  <p><strong>Key class:</strong> <code>XGBTuningConfig(n_trials=14, n_estimators=2500, early_stopping_rounds=80)</code></p>
+</div>
+</section>
+
+<!-- ════════════════════════ 9. FEATURES ════════════════════════ -->
+<section id="features">
+<h2 class="section-title">📊 9. Features Reference</h2>
+
+<h3 class="sub-title">Conservation Scores (from dbNSFP)</h3>
+<div class="tbl-wrap">
+  <table>
+    <thead><tr><th>Feature</th><th>What it measures</th><th>High value means</th></tr></thead>
+    <tbody>
+      <tr><td><code>phyloP100way_vertebrate</code></td><td>Conservation across 100 vertebrate species (rate test)</td><td>Strongly conserved — likely functionally critical</td></tr>
+      <tr><td><code>phyloP30way_mammalian</code></td><td>Conservation across 30 mammals</td><td>Strongly conserved in mammals</td></tr>
+      <tr><td><code>phastCons100way_vertebrate</code></td><td>Probability of being inside a conserved element (100 species)</td><td>Inside a conserved region</td></tr>
+      <tr><td><code>phastCons30way_mammalian</code></td><td>Probability of being inside a conserved element (30 mammals)</td><td>Inside a conserved mammalian region</td></tr>
+      <tr><td><code>GERP++_RS</code></td><td>Rejected Substitutions — evolutionary constraint score</td><td>Strong negative selection pressure</td></tr>
+      <tr><td><code>GERP++_NR</code></td><td>Neutral Rate — expected substitution rate without selection</td><td>Region expected to be unconstrained</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h3 class="sub-title">Allele Frequency (from gnomAD)</h3>
+<div class="tbl-wrap">
+  <table>
+    <thead><tr><th>Feature</th><th>What it measures</th></tr></thead>
+    <tbody>
+      <tr><td><code>log_AF</code></td><td>log10(AF + 1e-8). Compressed frequency scale. AF=0 maps to −8. Prevents extreme skew.</td></tr>
+      <tr><td><code>AC</code></td><td>Allele Count — number of individuals carrying this variant in gnomAD</td></tr>
+      <tr><td><code>AN</code></td><td>Total alleles examined (effective sample size)</td></tr>
+      <tr><td><code>AF_popmax</code></td><td>Highest allele frequency across 7 population groups</td></tr>
+      <tr><td><code>is_common</code></td><td>Boolean: AF &gt; 1% — ACMG BA1 stand-alone benign evidence criterion</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h3 class="sub-title">Amino Acid Properties (from dbNSFP)</h3>
+<div class="tbl-wrap">
+  <table>
+    <thead><tr><th>Feature</th><th>What it measures</th></tr></thead>
+    <tbody>
+      <tr><td><code>hydrophobicity_ref / alt</code></td><td>Water-repellency of the reference / alternate amino acid</td></tr>
+      <tr><td><code>molecular_weight_ref / alt</code></td><td>Molecular size of the reference / alternate amino acid</td></tr>
+      <tr><td><code>volume_ref / alt</code></td><td>Physical volume of the reference / alternate amino acid</td></tr>
+      <tr><td><code>polarity_ref / alt</code></td><td>Charge distribution of the amino acid</td></tr>
+      <tr><td><code>blosum62_score</code></td><td>BLOSUM62 substitution likelihood. Negative = evolutionarily unusual swap.</td></tr>
+      <tr><td><code>grantham_score</code></td><td>Physicochemical distance between ref and alt amino acids. &gt;100 = radical change.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h3 class="sub-title">Categorical Features</h3>
+<div class="tbl-wrap">
+  <table>
+    <thead><tr><th>Feature</th><th>What it measures</th><th>Encoding</th></tr></thead>
+    <tbody>
+      <tr><td><code>pfam_domain</code></td><td>Protein domain the variant falls in (e.g., Kinase, Zinc-finger)</td><td>One-Hot (min_frequency=25)</td></tr>
+      <tr><td><code>chr</code></td><td>Chromosome (1–22, X, Y)</td><td>One-Hot</td></tr>
+      <tr><td><code>ref_aa</code></td><td>Original amino acid (20 standard amino acids)</td><td>One-Hot</td></tr>
+      <tr><td><code>alt</code></td><td>Alternate nucleotide (A, C, G, T)</td><td>One-Hot</td></tr>
+    </tbody>
+  </table>
+</div>
+</section>
+
+<!-- ════════════════════════ 10. DESIGN ════════════════════════ -->
+<section id="design">
+<h2 class="section-title">🔬 10. Key Design Decisions</h2>
+
+<div class="card">
+  <h3 class="sub-title" style="margin-top:0">Gene-Level Split (Most Critical)</h3>
+  <p>
+    In a random split, variants from the same gene appear in both training and test sets.
+    Since pathogenicity is partly gene-specific (e.g., BRCA1 variants tend to be pathogenic),
+    a random-split model would learn <em>gene identity → label</em> instead of
+    <em>functional features → label</em>. This would inflate ROC-AUC by 5–15%.
+  </p>
+  <p>
+    <strong>Solution:</strong> Use <code>GroupShuffleSplit</code> with <code>gene</code> as the
+    group key. Every gene is assigned to exactly one split. Zero gene overlap is verified
+    programmatically in Notebook 06.
+  </p>
+</div>
+
+<div class="card">
+  <h3 class="sub-title" style="margin-top:0">Circularity Protection</h3>
+  <p>
+    Meta-predictors like REVEL and ClinPred are trained on ClinVar data themselves.
+    Including them as features would mean predicting ClinVar labels using models
+    already optimized for ClinVar labels — performance numbers would be inflated
+    and not reproducible on external benchmarks.
+  </p>
+  <p><strong>Solution:</strong> Explicitly exclude all 8 ClinVar-derived composite scores
+  from the feature set at the extraction stage.</p>
+</div>
+
+<div class="card">
+  <h3 class="sub-title" style="margin-top:0">Two Dataset Versions (Ablation)</h3>
+  <p><strong>Balanced:</strong> 283K variants, review stars ≥ 1 (includes single-submitter entries),
+  missing values imputed with training-set median. More data → better generalization.</p>
+  <p><strong>Strict:</strong> 37K variants, review stars ≥ 2 (multiple submitters or expert panel),
+  no imputation. Higher-confidence labels → cleaner signal.</p>
+  <p>The ablation study in Notebook 08 evaluates the same model on both test sets to
+  quantify the data quantity vs. quality trade-off.</p>
+</div>
+
+<div class="card">
+  <h3 class="sub-title" style="margin-top:0">Threshold Optimization</h3>
+  <p>
+    Default classifiers use a 0.5 decision threshold. In clinical genetics, false negatives
+    (missed disease-causing variants) carry higher cost than false positives
+    (unnecessary follow-up). <strong>Solution:</strong> Grid search over [0.20, 0.80]
+    on the <em>validation set only</em>, maximizing F1 score. The best threshold (0.445)
+    is then applied to the held-out test set without further adjustment.
+  </p>
+</div>
+</section>
+
+<!-- ════════════════════════ 11. TEAM (ARABIC) ════════════════════════ -->
+<section id="team" class="team-section">
+<h2 class="section-title">👥 ١١. توزيع المهام — الفريق</h2>
+
+<p style="font-size:.95rem; color:var(--gray-600); margin-bottom:20px;">
+  يتكون الفريق من ستة أعضاء. كل عضو مسؤول عن مجموعة محددة من النوت بوكات وملفات الكود.
+  المرحلة الأولى (قبل الميد) مكتملة بالكامل. المرحلة الثانية (بعد الميد) موضحة لكل عضو أدناه.
+</p>
+
+<div class="member-grid">
+
+  <!-- ─── Member 1 ─── -->
+  <div class="member-card">
+    <div class="member-header">
+      <div class="member-num m1">١</div>
+      <div>
+        <div class="member-name">مهندس البيانات</div>
+        <div class="member-role">تنظيف وتجهيز ClinVar</div>
+      </div>
+    </div>
+    <div class="member-body">
+      <div class="task-group">
+        <div class="task-group-label p1">المرحلة الأولى ✅</div>
+        <ul class="task-list">
+          <li>نوت بوك 01 — مصادر البيانات والتحقق من الملفات</li>
+          <li>نوت بوك 02 — تنظيف ClinVar وإنشاء التسميات الثنائية</li>
+          <li>فهم مخطط ClinVar: نجوم المراجعة، معنى Pathogenic/Benign</li>
+          <li>تشغيل: <code>src/clinvar_cleaning.py</code></li>
+        </ul>
+      </div>
+      <div class="task-group">
+        <div class="task-group-label p2">المرحلة الثانية 🔜</div>
+        <ul class="task-list">
+          <li>دعم استخراج تسلسلات UniProt للبروتين</li>
+          <li>ربط تسلسلات البروتين بمتغيرات ClinVar</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Member 2 ─── -->
+  <div class="member-card">
+    <div class="member-header">
+      <div class="member-num m2">٢</div>
+      <div>
+        <div class="member-name">مهندس السمات</div>
+        <div class="member-role">استخراج gnomAD و dbNSFP والدمج</div>
+      </div>
+    </div>
+    <div class="member-body">
+      <div class="task-group">
+        <div class="task-group-label p1">المرحلة الأولى ✅</div>
+        <ul class="task-list">
+          <li>نوت بوك 03 — هندسة السمات واستراتيجية الدمج</li>
+          <li>فهم ترددات الأليلات من gnomAD ودرجات الحفاظ من dbNSFP</li>
+          <li>تشغيل: <code>src/gnomad_extraction.py</code> و <code>src/dbnsfp_extraction.py</code></li>
+          <li>فهم لماذا استُبعدت REVEL وClinPred من السمات</li>
+        </ul>
+      </div>
+      <div class="task-group">
+        <div class="task-group-label p2">المرحلة الثانية 🔜</div>
+        <ul class="task-list">
+          <li>تجهيز التسلسلات كمدخلات لنموذج CNN</li>
+          <li>ترميز الأحماض الأمينية (One-hot أو Embedding)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Member 3 ─── -->
+  <div class="member-card">
+    <div class="member-header">
+      <div class="member-num m3">٣</div>
+      <div>
+        <div class="member-name">قائد جودة البيانات</div>
+        <div class="member-role">التحقق من البيانات وتحليل السمات</div>
+      </div>
+    </div>
+    <div class="member-body">
+      <div class="task-group">
+        <div class="task-group-label p1">المرحلة الأولى ✅</div>
+        <ul class="task-list">
+          <li>نوت بوك 04 — فحوصات جودة البيانات المدمجة</li>
+          <li>نوت بوك 05 — فلترة الارتباطات وإنشاء إصداري البيانات</li>
+          <li>تشغيل: <code>src/data_validation.py</code> و <code>src/feature_analysis.py</code></li>
+          <li>فهم الفرق بين البيانات المتوازنة (283K) والصارمة (37K)</li>
+        </ul>
+      </div>
+      <div class="task-group">
+        <div class="task-group-label p2">المرحلة الثانية 🔜</div>
+        <ul class="task-list">
+          <li>التحقق من جودة مدخلات نماذج المرحلة الثانية</li>
+          <li>مقارنة توزيع السمات عبر النماذج الثلاثة</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Member 4 ─── -->
+  <div class="member-card">
+    <div class="member-header">
+      <div class="member-num m4">٤</div>
+      <div>
+        <div class="member-name">مهندس التعلم الآلي — التقسيم والاستكشاف</div>
+        <div class="member-role">تقسيم البيانات والتحليل الاستكشافي + CNN</div>
+      </div>
+    </div>
+    <div class="member-body">
+      <div class="task-group">
+        <div class="task-group-label p1">المرحلة الأولى ✅</div>
+        <ul class="task-list">
+          <li>نوت بوك 06 — التقسيم على مستوى الجين (70/15/15)</li>
+          <li>نوت بوك 07 — التحليل الاستكشافي للبيانات (9 مخططات)</li>
+          <li>فهم سبب التقسيم على مستوى الجين ومنع تسريب البيانات</li>
+          <li>تشغيل: <code>src/data_splitting.py</code></li>
+        </ul>
+      </div>
+      <div class="task-group">
+        <div class="task-group-label p2">المرحلة الثانية 🔜</div>
+        <ul class="task-list">
+          <li>نوت بوك 09 — نموذج 1D CNN + طبقة الانتباه</li>
+          <li>تطوير <code>src/models/cnn_model.py</code> (الهيكل الأساسي موجود)</li>
+          <li>حلقة التدريب، Early stopping، تقييم ROC-AUC</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Member 5 ─── -->
+  <div class="member-card">
+    <div class="member-header">
+      <div class="member-num m5">٥</div>
+      <div>
+        <div class="member-name">مهندس النموذج الأساسي</div>
+        <div class="member-role">XGBoost + SHAP + ESM-2</div>
+      </div>
+    </div>
+    <div class="member-body">
+      <div class="task-group">
+        <div class="task-group-label p1">المرحلة الأولى ✅</div>
+        <ul class="task-list">
+          <li>نوت بوك 08 — XGBoost (ضبط المعاملات، التقييم، SHAP، الدراسات الاستقصائية)</li>
+          <li>تشغيل: <code>src/training.py</code> و <code>src/evaluation.py</code></li>
+          <li>فهم مقاييس التقييم: ROC-AUC، PR-AUC، F1، MCC، ضبط العتبة</li>
+          <li>تفسير مخططات SHAP: أهمية السمات وتأثيرها على التنبؤ</li>
+        </ul>
+      </div>
+      <div class="task-group">
+        <div class="task-group-label p2">المرحلة الثانية 🔜</div>
+        <ul class="task-list">
+          <li>نوت بوك 10 — نقل التعلم باستخدام ESM-2</li>
+          <li>تطوير <code>src/models/esm2_model.py</code> (الهيكل الأساسي موجود)</li>
+          <li>استخراج التضمينات من موقع الطفرة وإضافة رأس التصنيف</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Member 6 ─── -->
+  <div class="member-card">
+    <div class="member-header">
+      <div class="member-num m6">٦</div>
+      <div>
+        <div class="member-name">قائد المشروع</div>
+        <div class="member-role">التنسيق العام + المقارنة النهائية</div>
+      </div>
+    </div>
+    <div class="member-body">
+      <div class="task-group">
+        <div class="task-group-label p1">المرحلة الأولى ✅</div>
+        <ul class="task-list">
+          <li>الإشراف على جميع النوت بوكات وملفات <code>src/</code></li>
+          <li>إدارة <code>configs/config.yaml</code> و <code>README.md</code></li>
+          <li>التحقق من اتساق المسارات والإعدادات عبر كامل المشروع</li>
+          <li>إعداد التقارير والعروض التقديمية للفريق</li>
+        </ul>
+      </div>
+      <div class="task-group">
+        <div class="task-group-label p2">المرحلة الثانية 🔜</div>
+        <ul class="task-list">
+          <li>نوت بوك 11 — المقارنة النهائية للنماذج الثلاثة</li>
+          <li>منحنيات ROC وPR جنباً إلى جنب، مخططات المعايرة</li>
+          <li>إعداد التقرير والعرض النهائي للمشروع</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /member-grid -->
+
+<div class="team-note">
+  <h3>ملاحظة مهمة للفريق</h3>
+  <p>يجب على كل عضو تشغيل النوت بوكات المخصصة له من البداية للنهاية والتأكد من أن جميع الخلايا تعمل بدون أخطاء قبل موعد التسليم.</p>
+  <p>لتشغيل أي نوت بوك: افتح Terminal، انتقل إلى مجلد المشروع الرئيسي، ثم شغّل <code>jupyter notebook</code>.</p>
+  <p>تأكد دائماً من تفعيل البيئة الافتراضية أولاً: <code>source .venv/bin/activate</code></p>
+</div>
+
+<!-- Focus guide (kept in English for clarity) -->
+<div class="focus-guide-table-wrap" style="direction:ltr;text-align:left;margin-top:24px;">
+  <h3 class="sub-title" style="direction:rtl;text-align:right;margin-bottom:10px;">دليل البداية السريعة — ماذا تقرأ أولاً؟</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>If you want to understand…</th><th>Start here</th></tr></thead>
+      <tbody>
+        <tr><td>The overall project goal</td><td>This document + <code>README.md</code></td></tr>
+        <tr><td>Where the labels come from</td><td>Notebook 02 (ClinVar cleaning)</td></tr>
+        <tr><td>What features we use and why</td><td>Notebook 03 + Section 9 (Features Reference)</td></tr>
+        <tr><td>Why our evaluation is trustworthy</td><td>Notebook 06 (splitting) + Section 10 (design decisions)</td></tr>
+        <tr><td>What the data looks like</td><td>Notebook 07 (EDA)</td></tr>
+        <tr><td>How the model works and what it learned</td><td>Notebook 08 (baseline + SHAP)</td></tr>
+        <tr><td>How to run a specific pipeline step</td><td>Section 5 (pipeline steps) above</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+</section>
+
+<!-- ════════════════════════ 12. PHASE 2 ════════════════════════ -->
+<section id="phase2">
+<h2 class="section-title">🔜 12. Phase 2 — After Midterm</h2>
+
+<div class="card-grid">
+  <div class="card">
+    <strong>📓 Notebook 09 — 1D CNN + Attention</strong>
+    <p style="margin-top:8px">Train a convolutional neural network over encoded amino acid sequences.
+    Add a multi-head attention layer to capture long-range residue interactions.
+    Compare against XGBoost baseline on the same gene-level test split.</p>
+    <p style="margin-top:6px"><code>src/models/cnn_model.py</code> — architecture stub is ready</p>
+  </div>
+  <div class="card">
+    <strong>📓 Notebook 10 — ESM-2 Transfer Learning</strong>
+    <p style="margin-top:8px">Extract per-residue embeddings from ESM-2
+    (<code>facebook/esm2_t6_8M_UR50D</code>), a protein language model pretrained on 250M
+    protein sequences. Add a classification head on the mutation-site embedding and fine-tune.</p>
+    <p style="margin-top:6px"><code>src/models/esm2_model.py</code> — loader stub is ready</p>
+  </div>
+  <div class="card">
+    <strong>📓 Notebook 11 — Final Model Comparison</strong>
+    <p style="margin-top:8px">Head-to-head comparison of all three models (XGBoost, CNN, ESM-2)
+    on the identical held-out test set. ROC curves, PR curves, and calibration plots side by side.</p>
+    <p style="margin-top:6px">Owned by: Project Lead (Member 6)</p>
+  </div>
+</div>
+
+<div class="alert alert-success">
+  <span class="alert-icon">✅</span>
+  <div>
+    <strong>Phase 1 is complete and ready for submission.</strong><br>
+    All Phase 1 notebooks execute end-to-end without errors. The XGBoost model achieves
+    ROC-AUC = 0.955 on the held-out test set. SHAP analysis confirms that conservation
+    scores and allele frequency are the dominant predictors — consistent with biological
+    knowledge of pathogenicity.
+  </div>
+</div>
+</section>
+
+<div class="footer">
+  Genetic Graduation Project &nbsp;·&nbsp; King Khalid University &nbsp;·&nbsp; Phase 1 — March 2026
+</div>
+
+</div><!-- /page-wrap -->
+</body>
+</html>

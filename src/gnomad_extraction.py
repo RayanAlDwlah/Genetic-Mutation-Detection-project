@@ -17,13 +17,11 @@ from __future__ import annotations
 import argparse
 import math
 import re
-from array import array
 from pathlib import Path
 from typing import Any, Callable, Iterable
 
 import numpy as np
 import pandas as pd
-from src.output import echo
 from src.utils import normalize_chromosome, resolve_path
 
 try:
@@ -34,8 +32,15 @@ except ImportError:  # pragma: no cover - runtime dependency guard
     pq = None
 
 
+# Seven non-overlapping gnomAD ancestry groups used to compute AF_popmax.
+# AF_popmax = the highest allele frequency across all populations, which is the
+# most conservative estimate for classifying a variant as common or rare.
 POPULATIONS = ["AFR", "AMR", "ASJ", "EAS", "FIN", "NFE", "SAS"]
+
+# Small constant added before log10 to avoid log(0) for variants absent from gnomAD.
+# Variants with AF=0 (ultra-rare or missing) will have log_AF ≈ log10(1e-8) = -8.
 EPSILON = 1e-8
+
 DEFAULT_OUTPUT = "data/intermediate/gnomad_af_clean.parquet"
 
 def variant_key(chrom: str, pos: int, ref: str, alt: str) -> str:
@@ -159,12 +164,18 @@ def load_clinvar_variant_set(path: Path) -> set[str]:
     """Load ClinVar variant_key set for memory-efficient filtering."""
     df = pd.read_parquet(path, columns=["variant_key"])
     keys = set(df["variant_key"].dropna().astype(str))
-    echo(f"Loaded ClinVar variant keys: {len(keys):,}")
+    print(f"Loaded ClinVar variant keys: {len(keys):,}")
     return keys
 
 
 class StreamingParquetSink:
-    """Incrementally write rows to parquet while tracking summary statistics."""
+    """Incrementally write variant rows to a Parquet file in chunks.
+
+    gnomAD VCF files are multi-hundred-GB; loading everything into memory is
+    not feasible. This sink accepts DataFrames in small batches and writes them
+    one chunk at a time using a persistent ParquetWriter, keeping memory usage
+    bounded regardless of total variant count.
+    """
 
     ordered_columns = ["variant_key", "AF", "AF_popmax", "AN", "AC", "log_AF", "is_common"]
 
@@ -172,12 +183,12 @@ class StreamingParquetSink:
         self.output_path = output_path
         self.writer = None
 
+        # Running counters updated incrementally to avoid storing all AF values.
         self.total_variants = 0
         self.common_variants_count = 0
         self.rare_variants_count = 0
         self.af_sum = 0.0
         self.af_count = 0
-        self.af_values = array("d")
 
     def _prepare_df(self, df: pd.DataFrame) -> pd.DataFrame:
         out = df.copy()
@@ -192,7 +203,12 @@ class StreamingParquetSink:
         out["AN"] = pd.to_numeric(out["AN"], errors="coerce")
         out["AC"] = pd.to_numeric(out["AC"], errors="coerce")
 
+        # log10(AF + ε) compresses the wide AF range [0, 1] into a model-friendly
+        # scale. Variants not in gnomAD get AF=0, which maps to log_AF ≈ -8.
         out["log_AF"] = np.log10(out["AF"].fillna(0.0) + EPSILON)
+
+        # Common variant threshold: AF > 1% is the standard population genetics
+        # cutoff used by ClinVar and ACMG guidelines to flag likely-benign variants.
         out["is_common"] = out["AF"] > 0.01
 
         out = out[self.ordered_columns]
@@ -207,7 +223,6 @@ class StreamingParquetSink:
         if not af_non_null.empty:
             self.af_sum += float(af_non_null.sum())
             self.af_count += int(len(af_non_null))
-            self.af_values.extend(af_non_null.astype(float).tolist())
 
             self.common_variants_count += int((af_non_null > 0.01).sum())
             self.rare_variants_count += int((af_non_null <= 0.01).sum())
@@ -245,14 +260,12 @@ class StreamingParquetSink:
             empty_df.to_parquet(self.output_path, index=False)
 
         mean_af = (self.af_sum / self.af_count) if self.af_count else 0.0
-        median_af = float(np.median(np.array(self.af_values))) if self.af_count else 0.0
 
         return {
             "total_variants": int(self.total_variants),
             "common_variants_count": int(self.common_variants_count),
             "rare_variants_count": int(self.rare_variants_count),
             "mean_AF": float(mean_af),
-            "median_AF": float(median_af),
         }
 
 
@@ -321,7 +334,7 @@ def extract_from_vcf(
                 rows_buffer = []
 
             if processed_records % progress_every == 0:
-                echo(
+                print(
                     f"Processed {processed_records:,} VCF records "
                     f"(backend={backend})"
                 )
@@ -329,7 +342,7 @@ def extract_from_vcf(
         if rows_buffer:
             sink.write_dataframe(pd.DataFrame(rows_buffer))
 
-        echo(f"Finished VCF parsing with {backend}: {processed_records:,} records")
+        print(f"Finished VCF parsing with {backend}: {processed_records:,} records")
         return
 
     except ImportError:
@@ -377,12 +390,12 @@ def extract_from_vcf(
             rows_buffer = []
 
         if processed_records % progress_every == 0:
-            echo(f"Processed {processed_records:,} VCF records (backend={backend})")
+            print(f"Processed {processed_records:,} VCF records (backend={backend})")
 
     if rows_buffer:
         sink.write_dataframe(pd.DataFrame(rows_buffer))
 
-    echo(f"Finished VCF parsing with {backend}: {processed_records:,} records")
+    print(f"Finished VCF parsing with {backend}: {processed_records:,} records")
 
 
 def find_column(columns: Iterable[str], candidates: list[str]) -> str | None:
@@ -463,7 +476,7 @@ def extract_from_table(
         if clinvar_keys is not None:
             standardized = standardized[standardized["variant_key"].isin(clinvar_keys)]
         sink.write_dataframe(standardized)
-        echo(f"Processed parquet table rows: {len(chunk):,}")
+        print(f"Processed parquet table rows: {len(chunk):,}")
         return
 
     sep = "\t" if ".tsv" in name or name.endswith(".txt") else ","
@@ -478,7 +491,7 @@ def extract_from_table(
 
         sink.write_dataframe(standardized)
         total_rows += len(chunk)
-        echo(f"Processed table chunk {idx:,}: input_rows={len(chunk):,}, total_input={total_rows:,}")
+        print(f"Processed table chunk {idx:,}: input_rows={len(chunk):,}, total_input={total_rows:,}")
 
 
 def fetch_gnomad_af(variant_keys: list[str]) -> pd.DataFrame:
@@ -557,7 +570,7 @@ def fetch_gnomad_af(variant_keys: list[str]) -> pd.DataFrame:
         rows.append(build_row(chrom, pos, ref, alt, af=af, af_popmax=af_popmax, an=an, ac=ac))
 
         if idx % 100 == 0:
-            echo(f"API progress: {idx:,}/{len(variant_keys):,}")
+            print(f"API progress: {idx:,}/{len(variant_keys):,}")
 
     out = pd.DataFrame(rows)
     out["AF"] = pd.to_numeric(out["AF"], errors="coerce")
@@ -605,9 +618,9 @@ def main() -> None:
         raise FileNotFoundError(f"Input file not found: {input_path}")
 
     input_format = normalize_input_format(input_path, args.input_format)
-    echo(f"Input: {input_path}")
-    echo(f"Detected format: {input_format}")
-    echo(f"Output: {output_path}")
+    print(f"Input: {input_path}")
+    print(f"Detected format: {input_format}")
+    print(f"Output: {output_path}")
 
     clinvar_keys = None
     if args.clinvar_variants:
@@ -626,13 +639,14 @@ def main() -> None:
 
     summary = sink.finalize()
 
-    echo("Extraction complete:")
-    echo(f"  total_variants={summary['total_variants']:,}")
-    echo(f"  common_variants_count={summary['common_variants_count']:,}")
-    echo(f"  rare_variants_count={summary['rare_variants_count']:,}")
-    echo(f"  mean_AF={summary['mean_AF']:.6g}")
-    echo(f"  median_AF={summary['median_AF']:.6g}")
-    echo(f"Saved parquet: {output_path}")
+    print("Extraction complete:")
+    print(f"  total_variants={summary['total_variants']:,}")
+    print(f"  common_variants_count={summary['common_variants_count']:,}")
+    print(f"  rare_variants_count={summary['rare_variants_count']:,}")
+    # mean_AF is computed incrementally (af_sum / af_count) to avoid loading all AF values
+    # into memory. Median is intentionally omitted — it would require storing every AF value.
+    print(f"  mean_AF={summary['mean_AF']:.6g}")
+    print(f"Saved parquet: {output_path}")
 
 
 if __name__ == "__main__":

@@ -13,7 +13,6 @@ from sklearn.preprocessing import OneHotEncoder
 
 from src.evaluation import compute_classification_metrics, select_best_threshold
 from src.models.xgboost_model import XGBTuningConfig, tune_xgboost
-from src.output import echo
 from src.utils import require_file, resolve_path
 
 
@@ -58,9 +57,15 @@ def select_feature_columns(df: pd.DataFrame) -> tuple[list[str], list[str]]:
     excluded = {
         "label",
         "variant_key",
-        "ClinicalSignificance",  # near-label leakage
-        "PhenotypeIDS",  # high-cardinality raw IDs text
-        "gene",  # split grouping key
+        # ClinicalSignificance is the source of our labels — including it as a feature
+        # would trivialize the task (label leakage).
+        "ClinicalSignificance",
+        # PhenotypeIDS contains raw free-text OMIM IDs; too sparse to encode usefully.
+        "PhenotypeIDS",
+        # gene is the grouping key for our gene-level split. Including it as a feature
+        # would allow the model to memorize gene → label mappings, undermining the
+        # split's purpose of testing generalization to unseen genes.
+        "gene",
     }
 
     numeric_cols: list[str] = []
@@ -92,11 +97,16 @@ def _make_one_hot_encoder() -> OneHotEncoder:
 
     try:
         return OneHotEncoder(
+            # handle_unknown='ignore' maps unseen categories to an all-zero vector,
+            # so test variants with rare pfam domains don't cause inference errors.
             handle_unknown="ignore",
             sparse_output=True,
+            # Collapse categories appearing in fewer than 25 training samples into
+            # a shared "infrequent" bin to reduce dimensionality.
             min_frequency=25,
         )
     except TypeError:
+        # sklearn < 1.2 uses 'sparse' instead of 'sparse_output'.
         return OneHotEncoder(
             handle_unknown="ignore",
             sparse=True,
@@ -267,7 +277,7 @@ def main() -> None:
         ]
     ).to_csv(params_out, index=False)
 
-    echo("Training complete")
+    print("Training complete")
 
 
 if __name__ == "__main__":

@@ -30,6 +30,7 @@ def compute_classification_metrics(
     """Compute binary classification metrics from probabilities."""
 
     y_true_arr = np.asarray(y_true).astype(int)
+    # Clip probabilities away from 0/1 to prevent log(0) in log_loss and brier_score_loss.
     y_prob_arr = np.clip(np.asarray(y_prob).astype(float), 1e-12, 1.0 - 1e-12)
     y_pred = (y_prob_arr >= threshold).astype(int)
 
@@ -65,7 +66,13 @@ def select_best_threshold(
     max_threshold: float = 0.80,
     steps: int = 121,
 ) -> tuple[float, pd.DataFrame]:
-    """Choose threshold that maximizes F1 on validation set."""
+    """Choose threshold that maximizes F1 on validation set.
+
+    Search range [0.20, 0.80] is intentionally conservative — thresholds
+    below 0.20 or above 0.80 produce extreme precision/recall trade-offs
+    that are not useful in a balanced clinical classification setting.
+    The threshold is always tuned on the validation set, never on the test set.
+    """
 
     y_true_arr = np.asarray(y_true).astype(int)
     y_prob_arr = np.asarray(y_prob).astype(float)

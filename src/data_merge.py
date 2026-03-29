@@ -14,7 +14,6 @@ from math import log10
 from pathlib import Path
 
 import pandas as pd
-from src.output import echo
 from src.utils import require_file
 
 
@@ -42,7 +41,7 @@ def _require_columns(df: pd.DataFrame, required: list[str], table_name: str) -> 
 def _drop_duplicate_variant_keys(df: pd.DataFrame, table_name: str) -> tuple[pd.DataFrame, int]:
     dup_count = int(df.duplicated(subset=["variant_key"]).sum())
     if dup_count > 0:
-        echo(f"{table_name}: found {dup_count:,} duplicate rows by variant_key; keeping first.")
+        print(f"{table_name}: found {dup_count:,} duplicate rows by variant_key; keeping first.")
         df = df.drop_duplicates(subset=["variant_key"], keep="first").copy()
     return df, dup_count
 
@@ -71,7 +70,7 @@ def main() -> None:
     require_file(DBNSFP_PATH, "dbNSFP input")
     require_file(GNOMAD_PATH, "gnomAD input")
 
-    echo(f"Loading ClinVar: {CLINVAR_PATH}")
+    print(f"Loading ClinVar: {CLINVAR_PATH}")
     clinvar = pd.read_parquet(CLINVAR_PATH)
     _require_columns(
         clinvar,
@@ -80,11 +79,11 @@ def main() -> None:
     )
     clinvar, clinvar_dup = _drop_duplicate_variant_keys(clinvar, "ClinVar")
     clinvar_rows = len(clinvar)
-    echo(f"ClinVar rows: {clinvar_rows:,}")
+    print(f"ClinVar rows: {clinvar_rows:,}")
     if clinvar_dup:
-        echo(f"ClinVar duplicate keys removed: {clinvar_dup:,}")
+        print(f"ClinVar duplicate keys removed: {clinvar_dup:,}")
 
-    echo(f"Loading dbNSFP: {DBNSFP_PATH}")
+    print(f"Loading dbNSFP: {DBNSFP_PATH}")
     dbnsfp = pd.read_parquet(DBNSFP_PATH)
     _require_columns(dbnsfp, ["variant_key"], "dbNSFP")
 
@@ -103,18 +102,18 @@ def main() -> None:
     rows_filtered_out = clinvar_rows - rows_after_dbnsfp_inner
 
     approx_k = f"~{round(rows_after_dbnsfp_inner / 1000):,}K"
-    echo(
+    print(
         f"Missense filter applied via dbNSFP inner join: "
         f"{clinvar_rows:,} -> {approx_k} rows"
     )
-    echo(
+    print(
         f"After dbNSFP inner join: {rows_after_dbnsfp_inner:,} rows "
         f"(filtered out {rows_filtered_out:,} from ClinVar)"
     )
     if dbnsfp_dup:
-        echo(f"dbNSFP duplicate keys removed before merge: {dbnsfp_dup:,}")
+        print(f"dbNSFP duplicate keys removed before merge: {dbnsfp_dup:,}")
 
-    echo(f"Loading gnomAD: {GNOMAD_PATH}")
+    print(f"Loading gnomAD: {GNOMAD_PATH}")
     gnomad = pd.read_parquet(GNOMAD_PATH)
     _require_columns(gnomad, ["variant_key", "AF", "AF_popmax", "log_AF", "is_common"], "gnomAD")
 
@@ -146,20 +145,20 @@ def main() -> None:
     merged["is_common"] = merged["is_common"].fillna(False).astype(bool)
     merged["has_dbnsfp_features"] = True  # Always true after INNER join with dbNSFP.
 
-    echo(
+    print(
         f"After gnomAD merge: matched={gnomad_matched:,}, "
         f"unmatched={gnomad_unmatched:,} (AF defaults applied)"
     )
     if gnomad_dup:
-        echo(f"gnomAD duplicate keys removed before merge: {gnomad_dup:,}")
+        print(f"gnomAD duplicate keys removed before merge: {gnomad_dup:,}")
 
     _run_sanity_checks(merged, expected_rows=rows_after_dbnsfp_inner)
 
     PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
     merged.to_parquet(OUTPUT_PATH, index=False)
 
-    echo(f"Final merged dataset: {len(merged):,} rows, {len(merged.columns):,} columns")
-    echo(f"Saved merged parquet: {OUTPUT_PATH}")
+    print(f"Final merged dataset: {len(merged):,} rows, {len(merged.columns):,} columns")
+    print(f"Saved merged parquet: {OUTPUT_PATH}")
 
 
 if __name__ == "__main__":
