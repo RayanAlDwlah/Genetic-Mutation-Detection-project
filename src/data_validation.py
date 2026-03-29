@@ -28,6 +28,8 @@ CORR_FIG_PATH = FIGURES_DIR / "correlation_matrix.png"
 CLASS_FIG_PATH = FIGURES_DIR / "class_distribution.png"
 MISSING_FIG_PATH = FIGURES_DIR / "missing_values.png"
 
+FIGURE_DPI = 180
+
 def safe_float(value: float | int | np.floating | np.integer | None) -> float | None:
     if value is None:
         return None
@@ -59,7 +61,7 @@ def build_class_distribution_plot(df: pd.DataFrame) -> None:
     for idx, value in enumerate(values):
         ax.text(idx, value, f"{value:,}", ha="center", va="bottom", fontsize=9)
     plt.tight_layout()
-    plt.savefig(CLASS_FIG_PATH, dpi=180)
+    plt.savefig(CLASS_FIG_PATH, dpi=FIGURE_DPI)
     plt.close()
 
 
@@ -78,7 +80,7 @@ def build_missing_values_plot(column_quality: dict[str, dict[str, object]]) -> N
     ax.set_ylabel("Column")
     ax.set_xlim(0, 100)
     plt.tight_layout()
-    plt.savefig(MISSING_FIG_PATH, dpi=180)
+    plt.savefig(MISSING_FIG_PATH, dpi=FIGURE_DPI)
     plt.close()
 
 
@@ -106,7 +108,7 @@ def duplicate_check(df: pd.DataFrame) -> dict[str, object]:
         grouped = df.groupby(["chr", "pos"], dropna=False)["variant_key"].unique()
         for _, row in top_pos.iterrows():
             key = (row["chr"], row["pos"])
-            variants = grouped.get(key, [])
+            variants = grouped.loc[key].tolist() if key in grouped.index else []
             near_examples.append(
                 {
                     "chr": str(row["chr"]),
@@ -313,7 +315,7 @@ def correlation_check(
         plt.figure(figsize=(6, 4))
         plt.title("Correlation Matrix (No Numeric Columns)")
         plt.tight_layout()
-        plt.savefig(CORR_FIG_PATH, dpi=180)
+        plt.savefig(CORR_FIG_PATH, dpi=FIGURE_DPI)
         plt.close()
         return {
             "numeric_columns": [],
@@ -330,7 +332,7 @@ def correlation_check(
     sns.heatmap(corr, cmap="coolwarm", vmin=-1, vmax=1, center=0, square=True)
     plt.title("Numeric Feature Correlation Matrix")
     plt.tight_layout()
-    plt.savefig(CORR_FIG_PATH, dpi=180)
+    plt.savefig(CORR_FIG_PATH, dpi=FIGURE_DPI)
     plt.close()
 
     high_pairs: list[dict[str, object]] = []

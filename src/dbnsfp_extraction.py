@@ -310,8 +310,8 @@ def extract_from_chunks(
 
         ref_aa_col = aa_cols.get("ref_aa")
         alt_aa_col = aa_cols.get("alt_aa")
-        out["ref_aa"] = chunk.loc[out.index, ref_aa_col].map(normalize_aa) if ref_aa_col else None
-        out["alt_aa"] = chunk.loc[out.index, alt_aa_col].map(normalize_aa) if alt_aa_col else None
+        out["ref_aa"] = chunk.loc[out.index, ref_aa_col].map(normalize_aa).values if ref_aa_col else None
+        out["alt_aa"] = chunk.loc[out.index, alt_aa_col].map(normalize_aa).values if alt_aa_col else None
 
         for feature_name, source_col in feature_cols.items():
             if source_col is None:
@@ -336,8 +336,8 @@ def extract_from_chunks(
 
         # Derived amino-acid properties (always computed from ref_aa / alt_aa).
         for suffix, prop in [("hydrophobicity", "hydrophobicity"), ("molecular_weight", "molecular_weight"), ("pI", "pI"), ("volume", "volume"), ("polarity", "polarity"), ("charge", "charge")]:
-            out[f"{suffix}_ref"] = out["ref_aa"].map(lambda aa: AMINO_ACID_PROPERTIES.get(aa, {}).get(prop) if aa else np.nan)
-            out[f"{suffix}_alt"] = out["alt_aa"].map(lambda aa: AMINO_ACID_PROPERTIES.get(aa, {}).get(prop) if aa else np.nan)
+            out[f"{suffix}_ref"] = out["ref_aa"].map(lambda aa: AMINO_ACID_PROPERTIES.get(aa, {}).get(prop) if (aa and pd.notna(aa)) else np.nan)
+            out[f"{suffix}_alt"] = out["alt_aa"].map(lambda aa: AMINO_ACID_PROPERTIES.get(aa, {}).get(prop) if (aa and pd.notna(aa)) else np.nan)
 
         out["polarity_change"] = out["polarity_alt"] - out["polarity_ref"]
         out["volume_change"] = out["volume_alt"] - out["volume_ref"]
@@ -447,7 +447,8 @@ def check_circularity(columns: list[str], excluded_predictors: list[str]) -> lis
     for col in columns:
         normalized_col = normalize_name(col)
         for predictor in excluded_predictors:
-            if normalize_name(predictor) and normalize_name(predictor) in normalized_col:
+            norm_pred = normalize_name(predictor)
+            if norm_pred and norm_pred in normalized_col:
                 detected.append(col)
                 break
     return sorted(set(detected))

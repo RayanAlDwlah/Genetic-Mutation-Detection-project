@@ -10,6 +10,7 @@ Merge order (Option A):
 
 from __future__ import annotations
 
+import argparse
 from math import log10
 from pathlib import Path
 
@@ -99,6 +100,10 @@ def main() -> None:
     # Option A fix: INNER JOIN to apply missense filtering via dbNSFP coverage.
     merged = clinvar.merge(dbnsfp, on="variant_key", how="inner", validate="one_to_one")
     rows_after_dbnsfp_inner = len(merged)
+    if rows_after_dbnsfp_inner == 0:
+        raise AssertionError(
+            "INNER JOIN with dbNSFP returned 0 rows — check variant_key format consistency."
+        )
     rows_filtered_out = clinvar_rows - rows_after_dbnsfp_inner
 
     approx_k = f"~{round(rows_after_dbnsfp_inner / 1000):,}K"
@@ -124,10 +129,10 @@ def main() -> None:
     ]
     gnomad = gnomad[gnomad_cols].copy()
     gnomad, gnomad_dup = _drop_duplicate_variant_keys(gnomad, "gnomAD")
-    gnomad_keys = set(gnomad["variant_key"].astype(str))
+    gnomad_keys = set(gnomad["variant_key"].dropna().astype(str))
 
     # Keep all missense-filtered rows; enrich with gnomAD when available.
-    merged = merged.merge(gnomad, on="variant_key", how="left", validate="one_to_one")
+    merged = merged.merge(gnomad, on="variant_key", how="left", validate="one_to_one").copy()
 
     gnomad_matched = int(merged["variant_key"].isin(gnomad_keys).sum())
     gnomad_unmatched = rows_after_dbnsfp_inner - gnomad_matched
@@ -138,9 +143,9 @@ def main() -> None:
     merged.loc[gnomad_missing_mask, "log_AF"] = GNOMAD_DEFAULT_LOG_AF
     merged.loc[gnomad_missing_mask, "is_common"] = GNOMAD_DEFAULT_IS_COMMON
     if "AN" in merged.columns:
-        merged.loc[gnomad_missing_mask, "AN"] = merged.loc[gnomad_missing_mask, "AN"].fillna(0)
+        merged["AN"] = merged["AN"].fillna(0)
     if "AC" in merged.columns:
-        merged.loc[gnomad_missing_mask, "AC"] = merged.loc[gnomad_missing_mask, "AC"].fillna(0)
+        merged["AC"] = merged["AC"].fillna(0)
 
     merged["is_common"] = merged["is_common"].fillna(False).astype(bool)
     merged["has_dbnsfp_features"] = True  # Always true after INNER join with dbNSFP.
@@ -161,5 +166,12 @@ def main() -> None:
     print(f"Saved merged parquet: {OUTPUT_PATH}")
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Merge ClinVar + dbNSFP + gnomAD datasets")
+    parser.add_argument("--config", default="configs/config.yaml", help="Path to config YAML (unused, for API consistency)")
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
+    parse_args()
     main()

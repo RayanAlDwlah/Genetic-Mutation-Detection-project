@@ -40,7 +40,10 @@ def normalize_chromosome(value: Any) -> str | None:
     if text == "24":
         return "Y"
     if text.isdigit():
-        return str(int(text))
+        num = int(text)
+        if 1 <= num <= 22:
+            return str(num)
+        return None
     if text in {"X", "Y"}:
         return text
     return text

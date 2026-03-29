@@ -32,10 +32,10 @@ def build_xgboost_model(
 
     base_params: dict[str, Any] = {
         "objective": "binary:logistic",
-        # XGBoost monitors all three metrics during training. Early stopping is
-        # triggered by the last metric in the list — here "logloss" — because
-        # calibrated probabilities matter as much as ranking quality.
-        "eval_metric": ["auc", "aucpr", "logloss"],
+        # XGBoost monitors these metrics during training. Early stopping is triggered
+        # by the last metric — "aucpr" — which matches the composite selection
+        # objective (0.65*AUC + 0.35*PRAUC) used in tune_xgboost().
+        "eval_metric": ["auc", "aucpr"],
         # "hist" builds approximate histograms for fast split-finding (GPU/CPU).
         "tree_method": "hist",
         "n_estimators": n_estimators,
@@ -80,7 +80,8 @@ def _sample_params(rng: np.random.Generator, scale_pos_weight: float) -> dict[st
         "reg_alpha": float(10 ** rng.uniform(-4, 0.5)),
         "reg_lambda": float(10 ** rng.uniform(-0.3, 1.0)),
         "max_delta_step": int(rng.integers(0, 4)),
-        "scale_pos_weight": float(rng.uniform(max(0.7, scale_pos_weight * 0.8), scale_pos_weight * 1.2 + 1e-8)),
+        # scale_pos_weight is fixed from class distribution — not a tunable parameter.
+        "scale_pos_weight": scale_pos_weight,
     }
 
 
@@ -109,9 +110,10 @@ def tune_xgboost(
             else _sample_params(rng, scale_pos_weight)
         )
 
+        trial_seed = int(np.random.default_rng(config.seed + trial_idx * 997).integers(0, 2**31))
         model = build_xgboost_model(
             params,
-            seed=config.seed + trial_idx,
+            seed=trial_seed,
             n_estimators=config.n_estimators,
             early_stopping_rounds=config.early_stopping_rounds,
         )
