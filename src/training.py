@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import random
 from pathlib import Path
 
 import numpy as np
@@ -66,6 +67,11 @@ def select_feature_columns(df: pd.DataFrame) -> tuple[list[str], list[str]]:
         # would allow the model to memorize gene → label mappings, undermining the
         # split's purpose of testing generalization to unseen genes.
         "gene",
+        # review_stars reflects ClinVar curation quality, not biology. High-confidence
+        # pathogenic variants tend to have higher stars, creating indirect label leakage.
+        "review_stars",
+        # pos is raw genomic position with no biological meaning without gene context.
+        "pos",
     }
 
     numeric_cols: list[str] = []
@@ -128,8 +134,9 @@ def prepare_split_features(
     test_x = test_df[selected_cols].copy()
 
     if numeric_cols:
-        for x in (train_x, val_x, test_x):
-            x[numeric_cols] = x[numeric_cols].replace([np.inf, -np.inf], np.nan)
+        train_x[numeric_cols] = train_x[numeric_cols].replace([np.inf, -np.inf], np.nan)
+        val_x[numeric_cols] = val_x[numeric_cols].replace([np.inf, -np.inf], np.nan)
+        test_x[numeric_cols] = test_x[numeric_cols].replace([np.inf, -np.inf], np.nan)
 
         medians = train_x[numeric_cols].median(numeric_only=True)
         train_x[numeric_cols] = train_x[numeric_cols].fillna(medians)
@@ -170,7 +177,7 @@ def prepare_split_features(
 
     try:
         feature_names = preprocessor.get_feature_names_out().tolist()
-    except Exception:
+    except AttributeError:
         feature_names = [f"f_{i}" for i in range(x_train_enc.shape[1])]
 
     return x_train_enc, x_val_enc, x_test_enc, feature_names
@@ -178,6 +185,8 @@ def prepare_split_features(
 
 def main() -> None:
     args = parse_args()
+    random.seed(args.seed)
+    np.random.seed(args.seed)
     repo_root = Path(__file__).resolve().parents[1]
 
     train_path = resolve_path(repo_root, args.train)
@@ -255,6 +264,9 @@ def main() -> None:
 
     for p in (model_out, metrics_out, tuning_out, threshold_curve_out, features_out, params_out):
         p.parent.mkdir(parents=True, exist_ok=True)
+
+    if history.empty:
+        raise RuntimeError("Tuning history is empty; no successful trials completed.")
 
     best_model.save_model(str(model_out))
     history.to_csv(tuning_out, index=False)

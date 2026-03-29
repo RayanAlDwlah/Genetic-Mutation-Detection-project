@@ -34,7 +34,12 @@ def compute_classification_metrics(
     y_prob_arr = np.clip(np.asarray(y_prob).astype(float), 1e-12, 1.0 - 1e-12)
     y_pred = (y_prob_arr >= threshold).astype(int)
 
-    tn, fp, fn, tp = confusion_matrix(y_true_arr, y_pred, labels=[0, 1]).ravel()
+    cm = confusion_matrix(y_true_arr, y_pred, labels=[0, 1])
+    if cm.size != 4:
+        raise ValueError(
+            f"Confusion matrix shape {cm.shape}: both classes must be present in y_true."
+        )
+    tn, fp, fn, tp = cm.ravel()
 
     return {
         "threshold": float(threshold),
@@ -45,7 +50,7 @@ def compute_classification_metrics(
         "precision": float(precision_score(y_true_arr, y_pred, zero_division=0)),
         "recall": float(recall_score(y_true_arr, y_pred, zero_division=0)),
         "f1": float(f1_score(y_true_arr, y_pred, zero_division=0)),
-        "mcc": float(matthews_corrcoef(y_true_arr, y_pred)),
+        "mcc": float(mcc_val) if not np.isnan(mcc_val := matthews_corrcoef(y_true_arr, y_pred)) else 0.0,
         "brier_loss": float(brier_score_loss(y_true_arr, y_prob_arr)),
         "log_loss": float(log_loss(y_true_arr, y_prob_arr, labels=[0, 1])),
         "tn": int(tn),
