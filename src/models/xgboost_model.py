@@ -32,7 +32,11 @@ def build_xgboost_model(
 
     base_params: dict[str, Any] = {
         "objective": "binary:logistic",
+        # XGBoost monitors all three metrics during training. Early stopping is
+        # triggered by the last metric in the list — here "logloss" — because
+        # calibrated probabilities matter as much as ranking quality.
         "eval_metric": ["auc", "aucpr", "logloss"],
+        # "hist" builds approximate histograms for fast split-finding (GPU/CPU).
         "tree_method": "hist",
         "n_estimators": n_estimators,
         "early_stopping_rounds": early_stopping_rounds,
@@ -44,8 +48,12 @@ def build_xgboost_model(
 
 
 def _baseline_params(scale_pos_weight: float) -> dict[str, Any]:
-    """A robust baseline used as trial 0."""
+    """Conservative baseline parameter set used as trial 0.
 
+    Values are chosen from published XGBoost recommendations for tabular
+    biomedical data: shallow trees (max_depth=5) to limit overfitting,
+    moderate regularization (reg_lambda=2), and light subsampling.
+    """
     return {
         "max_depth": 5,
         "learning_rate": 0.05,
