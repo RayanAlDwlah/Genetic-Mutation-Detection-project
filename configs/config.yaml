@@ -33,15 +33,11 @@ data_sources:
   dbnsfp:
     enabled: true
     file: data/raw/dbnsfp/dbNSFP5.3.1a_grch37.gz
-    selected_features:
-    - PhyloP
-    - phastCons
-    - GERP++
-    - BLOSUM62
-    - Grantham
-    - PolyPhen2
-    - SIFT
+    # NOTE: selected_features is unused — actual feature extraction is
+    # controlled by the dbnsfp_features section below.
+    # selected_features: [PhyloP, phastCons, GERP++, BLOSUM62, Grantham]
   uniprot:
+    # Phase 2 only — not used by the current XGBoost pipeline.
     enabled: true
     file: data/raw/uniprot/human_proteome.fasta
     required_for: esm2_model
@@ -162,6 +158,8 @@ dbnsfp_features:
   - molecular_weight_alt
   - pI_ref
   - pI_alt
+  # NOTE: derived_changes is defined here for documentation but computed
+  # directly in dbnsfp_extraction.py — not read from config at runtime.
   derived_changes:
   - polarity_change
   - volume_change

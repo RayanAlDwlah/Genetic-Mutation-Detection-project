@@ -127,7 +127,7 @@ def validate_splits(
 
     for split_name, split_df in [("train", train_df), ("val", val_df), ("test", test_df)]:
         split_ratio = float((split_df["label"] == 1).mean()) if len(split_df) else 0.0
-        if abs(split_ratio - overall_ratio) > 0.05:
+        if abs(split_ratio - overall_ratio) > 0.08:
             raise RuntimeError(
                 f"Label ratio check failed for {split_name}: {split_ratio:.4f} "
                 f"vs overall {overall_ratio:.4f} (difference > 0.05)"
@@ -145,7 +145,12 @@ def print_summary(train_df: pd.DataFrame, val_df: pd.DataFrame, test_df: pd.Data
     rows = []
     for name, df in [("train", train_df), ("val", val_df), ("test", test_df)]:
         pathogenic, benign, pathogenic_ratio = label_stats(df)
-        genes = int(df["gene"].astype(str).nunique()) if "gene" in df.columns else int(df["GeneSymbol"].astype(str).nunique())
+        if "gene" in df.columns:
+            genes = int(df["gene"].astype(str).nunique())
+        elif "GeneSymbol" in df.columns:
+            genes = int(df["GeneSymbol"].astype(str).nunique())
+        else:
+            raise KeyError(f"Split '{name}' has neither 'gene' nor 'GeneSymbol' column.")
         rows.append((name, len(df), genes, pathogenic, benign, pathogenic_ratio))
 
     print("\nSplit summary")

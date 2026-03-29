@@ -212,9 +212,8 @@ def run_pipeline(config_path: Path, strict: bool) -> None:
     allowed_values = set(canonical_by_normalized.keys())
 
     before = len(df)
-    clinical_norm = df["ClinicalSignificance"].map(normalize_text)
-    df = df[clinical_norm.isin(allowed_values)].copy()
-    df["ClinicalSignificance"] = clinical_norm[clinical_norm.isin(allowed_values)].map(canonical_by_normalized)
+    df = df[df["ClinicalSignificance"].map(normalize_text).isin(allowed_values)].copy()
+    df["ClinicalSignificance"] = df["ClinicalSignificance"].map(normalize_text).map(canonical_by_normalized)
     print_before_after("Rows", before, len(df))
     print_series_counts(
         "ClinicalSignificance counts:",

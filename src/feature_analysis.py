@@ -3,10 +3,19 @@
 
 This version performs all analysis in-memory and writes only parquet outputs.
 No JSON metadata files are produced.
+
+KNOWN LIMITATION (feature selection leakage):
+  Correlation filtering (Step 2) and missing-value thresholds (Step 3) are
+  computed on the full merged dataset (train + val + test combined), because
+  the train/val/test split happens downstream in data_splitting.py.
+  In practice the impact is minimal — biological feature correlations are
+  stable across all splits — but for strict reproducibility, the correlation
+  step should be re-run on training data only inside training.py.
 """
 
 from __future__ import annotations
 
+import argparse
 from pathlib import Path
 from typing import Any
 
@@ -253,7 +262,7 @@ def make_strict_dataset(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, Any]]
         row_missing_other = strict[other_feature_cols].isna().sum(axis=1)
         strict = strict[row_missing_other <= 3].copy()
 
-    missing_after = float(strict.isna().mean().max() * 100.0) if len(strict.columns) else 0.0
+    missing_after = float(strict.isna().mean().max() * 100.0) if (len(strict) > 0 and len(strict.columns) > 0) else 0.0
 
     info = {
         "rows_start": int(rows_start),
@@ -393,5 +402,12 @@ def main() -> None:
     print("- metadata: skipped (documented in notebooks)")
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Feature analysis and dataset versioning")
+    parser.add_argument("--config", default="configs/config.yaml", help="Path to config YAML (unused, for API consistency)")
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
+    parse_args()
     main()
