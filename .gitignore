@@ -33,9 +33,13 @@ data/splits/strict/*
 # Training artifacts
 checkpoints/
 results/checkpoints/
+!results/checkpoints/
 results/checkpoints/*
 !results/checkpoints/.gitkeep
-results/metrics/*.csv
+!results/checkpoints/*.ubj
+results/metrics/*
+!results/metrics/.gitkeep
+!results/metrics/*.csv
 
 # Assistant worktrees
 .claude/
@@ -60,3 +64,4 @@ data/intermediate/*
 # Generated figures
 results/figures/*
 !results/figures/.gitkeep
+!results/figures/*.png
