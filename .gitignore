@@ -13,8 +13,19 @@ data/raw/*
 # Processed and split datasets can be large
 data/processed/*
 !data/processed/.gitkeep
+!data/processed/final_balanced.parquet
+!data/processed/final_strict.parquet
+!data/processed/merged_clinvar_gnomad_dbnsfp.parquet
 data/splits/*
 !data/splits/.gitkeep
+!data/splits/train.parquet
+!data/splits/val.parquet
+!data/splits/test.parquet
+!data/splits/strict/
+data/splits/strict/*
+!data/splits/strict/train.parquet
+!data/splits/strict/val.parquet
+!data/splits/strict/test.parquet
 
 # Large CSV files
 *.csv
@@ -42,6 +53,9 @@ env/
 # Intermediate artifacts
 data/intermediate/*
 !data/intermediate/.gitkeep
+!data/intermediate/clinvar_labeled_clean.parquet
+!data/intermediate/dbnsfp_selected_features.parquet
+!data/intermediate/gnomad_af_clean.parquet
 
 # Generated figures
 results/figures/*
