@@ -373,7 +373,7 @@
 <ul>
   <li>Python 3.11+</li>
   <li>8 GB RAM minimum (16 GB recommended during gnomAD extraction)</li>
-  <li>~50 GB free disk space for raw data files</li>
+  <li>No extra data download is needed for the quick training run from GitHub; rebuilding from raw sources requires large additional storage.</li>
 </ul>
 
 <h3 class="sub-title">Installation</h3>
@@ -387,6 +387,13 @@ pip install -r requirements.txt
 
 <span class="cmt"># 3. Verify key packages are installed</span>
 python -c <span class="str">"import xgboost, shap, pandas; print('All packages OK')"</span></code></pre>
+
+<div class="alert alert-success">
+  <span class="alert-icon">✅</span>
+  <div>The repository includes compact parquet snapshots in <code>data/intermediate/</code>,
+  <code>data/processed/</code>, and <code>data/splits/</code>, so a teammate can clone the repo and
+  run <code>python -m src.training</code> immediately.</div>
+</div>
 
 <h3 class="sub-title">Running a Notebook</h3>
 <pre><code><span class="cmt"># Always start Jupyter from the project root (required for relative paths)</span>
@@ -440,6 +447,13 @@ jupyter notebook
   REVEL, ClinPred, MetaLR, MetaSVM, MetaRNN, BayesDel, VEST4, M-CAP.<br>
   These are ensemble meta-predictors trained on ClinVar data themselves.
   Using them as features would inflate performance numbers artificially (circular evaluation).
+</div>
+
+<div class="alert alert-info">
+  <span class="alert-icon">ℹ️</span>
+  <div>The huge raw ClinVar, gnomAD, dbNSFP, and UniProt source files are not committed to GitHub.
+  The repo instead tracks the smaller cleaned/processed parquet snapshots needed for collaboration
+  and baseline training.</div>
 </div>
 </section>
 

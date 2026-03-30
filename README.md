@@ -20,6 +20,19 @@ source .venv/bin/activate       # macOS / Linux
 pip install -r requirements.txt
 ```
 
+## Quick Start From a GitHub Clone
+
+This repository intentionally keeps the huge upstream raw sources out of git, but it now
+tracks the compact parquet snapshots in `data/intermediate/`, `data/processed/`, and
+`data/splits/`. A collaborator can therefore clone the repo and run the baseline training
+immediately:
+
+```bash
+python -m src.training
+```
+
+Artifacts are written to `results/checkpoints/` and `results/metrics/`.
+
 ## Data Sources
 
 | Source  | Role                                             | Version   | Genome Build |
@@ -37,14 +50,18 @@ pip install -r requirements.txt
 **Excluded predictors:** REVEL, ClinPred, MetaLR, MetaSVM, MetaRNN, BayesDel, VEST4, M-CAP.
 These are ClinVar-derived meta-predictors that would introduce circularity into evaluation.
 
+Raw source files under `data/raw/` are intentionally excluded from git because they are too
+large for GitHub. Only the cleaned/processed parquet snapshots needed for reproducible runs are
+versioned in the repository.
+
 ## Directory Structure
 
 ```
 data/
-  raw/           Raw downloaded files (never modified)
-  intermediate/  Cleaned single-source files (ClinVar parquet, gnomAD parquet, dbNSFP parquet)
-  processed/     Merged and feature-engineered dataset
-  splits/        Gene-level train / val / test parquet files
+  raw/           Raw downloaded files for full rebuilds (not committed)
+  intermediate/  Versioned cleaned parquet snapshots for ClinVar / gnomAD / dbNSFP
+  processed/     Versioned merged and feature-engineered datasets
+  splits/        Versioned gene-level train / val / test parquet files
     strict/      High-quality splits (review_stars ≥ 2, no imputation)
 
 results/
@@ -57,9 +74,16 @@ src/             Logic layer — reusable, importable Python modules
 configs/         YAML configuration (paths, hyperparameter defaults)
 ```
 
-## Running the Pipeline
+## Running the Project
 
-Each step can be run as a script or followed in the corresponding notebook.
+A fresh clone can train the XGBoost baseline immediately:
+
+```bash
+python -m src.training
+```
+
+To rebuild the full pipeline from raw sources, first download the upstream data into
+`data/raw/`, then run each step below or follow the corresponding notebook.
 
 ```bash
 # Step 1 — Clean ClinVar labels
@@ -82,7 +106,7 @@ python -m src.feature_analysis --config configs/config.yaml
 python -m src.data_splitting --config configs/config.yaml
 
 # Step 7 — Train XGBoost baseline
-python -m src.training --config configs/config.yaml
+python -m src.training
 ```
 
 ## Models
