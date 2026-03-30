@@ -1,2 +1,2 @@
-max_depth,learning_rate,min_child_weight,subsample,colsample_bytree,gamma,reg_alpha,reg_lambda,max_delta_step,scale_pos_weight,best_threshold,n_numeric_features,n_categorical_features,n_encoded_features
-7,0.04086242739123187,3,0.7452134010171797,0.9028257727087576,0.9237544605027748,0.0005317689871975315,2.2457334490470573,0,1.1364955271600476,0.4600000000000001,22,4,74
+max_depth,learning_rate,min_child_weight,subsample,colsample_bytree,gamma,reg_alpha,reg_lambda,max_delta_step,scale_pos_weight,best_threshold,selected_trial_score,selected_trial_roc_auc,selected_trial_pr_auc,n_numeric_features,n_categorical_features,n_encoded_features,categorical_columns
+7,0.04086242739123187,3,0.7452134010171797,0.9028257727087576,0.9237544605027748,0.0005317689871975315,2.2457334490470573,0,1.1364955271600476,0.4600000000000001,0.9510268798321333,0.9546782525014941,0.9442457591604633,20,4,72,chr|ref|alt|ref_aa
