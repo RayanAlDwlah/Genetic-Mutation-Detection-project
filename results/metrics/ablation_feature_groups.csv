@@ -1,0 +1,5 @@
+Model,Val ROC-AUC,vs Full Model
+A: Conservation,0.8398,-0.1154
+B: AA Properties,0.8038,-0.1514
+C: No AF,0.9464,-0.0088
+D: All (baseline),0.9498,-0.0054
