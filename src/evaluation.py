@@ -30,16 +30,15 @@ def compute_classification_metrics(
     """Compute binary classification metrics from probabilities."""
 
     y_true_arr = np.asarray(y_true).astype(int)
+    if len(np.unique(y_true_arr)) < 2:
+        raise ValueError(
+            "Both classes (0 and 1) must be present in y_true to compute metrics."
+        )
     # Clip probabilities away from 0/1 to prevent log(0) in log_loss and brier_score_loss.
     y_prob_arr = np.clip(np.asarray(y_prob).astype(float), 1e-12, 1.0 - 1e-12)
     y_pred = (y_prob_arr >= threshold).astype(int)
 
-    cm = confusion_matrix(y_true_arr, y_pred, labels=[0, 1])
-    if cm.size != 4:
-        raise ValueError(
-            f"Confusion matrix shape {cm.shape}: both classes must be present in y_true."
-        )
-    tn, fp, fn, tp = cm.ravel()
+    tn, fp, fn, tp = confusion_matrix(y_true_arr, y_pred, labels=[0, 1]).ravel()
 
     return {
         "threshold": float(threshold),
