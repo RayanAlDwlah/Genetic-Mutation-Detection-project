@@ -86,6 +86,51 @@ def load_input() -> pd.DataFrame:
     return df
 
 
+def filter_missense_only(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, Any]]:
+    """Keep only rows with valid amino acid change annotations.
+
+    LEAKAGE FIX (April 2026):
+    Prior to this filter, 64% of pathogenic variants had null alt_aa vs only
+    2% of benign — a ~60pt label-correlated signal the model could exploit
+    ("missing AA features => pathogenic"). Removing these rows eliminates the
+    leakage and enforces "true missense only" semantics throughout the pipeline.
+
+    A row is kept only when both ref_aa and alt_aa are non-null.
+    """
+    rows_start = len(df)
+    path_before = int((df["label"] == 1).sum())
+    ben_before = int((df["label"] == 0).sum())
+
+    has_ref = df["ref_aa"].notna() if "ref_aa" in df.columns else pd.Series([False] * len(df), index=df.index)
+    has_alt = df["alt_aa"].notna() if "alt_aa" in df.columns else pd.Series([False] * len(df), index=df.index)
+    keep_mask = has_ref & has_alt
+
+    kept = df.loc[keep_mask].copy()
+    rows_after = len(kept)
+    path_after = int((kept["label"] == 1).sum())
+    ben_after = int((kept["label"] == 0).sum())
+
+    info = {
+        "rows_before": int(rows_start),
+        "rows_after": int(rows_after),
+        "rows_dropped": int(rows_start - rows_after),
+        "pathogenic_before": path_before,
+        "pathogenic_after": path_after,
+        "pathogenic_dropped_pct": round((path_before - path_after) / max(path_before, 1) * 100.0, 4),
+        "benign_before": ben_before,
+        "benign_after": ben_after,
+        "benign_dropped_pct": round((ben_before - ben_after) / max(ben_before, 1) * 100.0, 4),
+        "policy": "keep iff ref_aa.notna() AND alt_aa.notna()",
+    }
+
+    print("STEP 0 — Strict missense filter (leakage fix)")
+    print(f"- rows: {rows_start:,} -> {rows_after:,} (dropped {info['rows_dropped']:,})")
+    print(f"- pathogenic: {path_before:,} -> {path_after:,} ({info['pathogenic_dropped_pct']}% dropped)")
+    print(f"- benign: {ben_before:,} -> {ben_after:,} ({info['benign_dropped_pct']}% dropped)")
+
+    return kept, info
+
+
 def is_conservation_feature(name: str) -> bool:
     n = name.lower()
     return any(k in n for k in CONSERVATION_PRIORITY)
@@ -370,6 +415,9 @@ def main() -> None:
     print("Loaded input dataset")
     print(f"- path: {INPUT_PATH}")
     print(f"- rows: {len(df):,}, columns: {len(df.columns):,}")
+
+    # Step 0 — strict missense filter (leakage fix, April 2026)
+    df, missense_info = filter_missense_only(df)
 
     # Step 1
     df, _, _ = step1_drop_flagged_columns(df)

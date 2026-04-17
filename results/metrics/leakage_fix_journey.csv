@@ -1,0 +1,6 @@
+stage,description,test_roc_auc,test_pr_auc,test_f1,test_brier,rows,features,notes
+1_original,Baseline as reported in knowledge base (pre-audit),0.955,0.955,0.882,,,24,Non-missense contamination + is_common + chr OHE + gene-only split
+2_missense_filter,Phase A.0: strict ref_aa AND alt_aa non-null filter,0.934,0.819,0.769,0.098,195098,33,Removed 88K non-missense rows (64% of pathogenic). Recovered 11 AA features automatically (pre-impute nulls dropped below 20% threshold).
+3_feature_hygiene,Removed is_common / chr OHE / raw ref+alt from training features,0.934,0.816,0.766,0.0995,195098,33,"is_common: 100% benign when True (definitional circularity). chr: 15.5% gain was largely dataset-bias proxy."
+4_paralog_split,Phase B.1: family-level GroupShuffleSplit using HGNC-like prefix heuristic,0.938,0.835,0.775,0.0939,195098,33,"15479 genes -> 7851 families. Test set: 28098 rows, 2260 genes, seed=42."
+5_optuna_tuning,Phase C: Optuna TPE 40-trial re-tune with PR-AUC objective (no composite),0.938,0.836,0.773,0.084,195098,34,"Found baseline ceiling — top 10 trials within 0.001 PR-AUC. Hyperparameter landscape is flat on this task; gains must come from better representations not search."
