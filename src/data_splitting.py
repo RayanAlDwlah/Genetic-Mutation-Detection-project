@@ -1,15 +1,65 @@
 #!/usr/bin/env python3
-"""Gene-level train/val/test splitting with strict overlap validation."""
+"""Paralog-aware (family-level) train/val/test splitting with strict overlap validation.
+
+LEAKAGE FIX (April 2026):
+Previously split on `gene`, which still allowed paralog leakage — 52% of test
+gene-prefix families (e.g. ZNF*, SLC*, KRT*, TMEM*) overlapped with train,
+inflating PR-AUC by ~3.9 points. The splitter now groups genes into families
+(approximate HGNC families via prefix heuristics) and splits at the family level
+so paralogs stay together in the same split.
+"""
 
 from __future__ import annotations
 
 import argparse
+import re
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import GroupShuffleSplit
 from src.utils import resolve_path
+
+
+# Regex-driven prefix → family mapping. Order matters (first match wins).
+# Covers the large paralog clusters that were leaking between splits.
+_FAMILY_PATTERNS: list[tuple[re.Pattern[str], str | None]] = [
+    (re.compile(r"^KRTAP\d+"), "KRTAP"),
+    (re.compile(r"^KRT\d+"), "KRT"),
+    (re.compile(r"^HLA-"), "HLA"),
+    (re.compile(r"^ZNF\d+"), "ZNF"),
+    (re.compile(r"^(SLC\d+)A\d+"), None),       # preserve SLC## subfamily
+    (re.compile(r"^CDH\d+"), "CDH"),
+    (re.compile(r"^PCDH\w*"), "PCDH"),
+    (re.compile(r"^TRIM\d+"), "TRIM"),
+    (re.compile(r"^TMEM\d+"), "TMEM"),
+    (re.compile(r"^CCDC\d+"), "CCDC"),
+    (re.compile(r"^LRRC\d+"), "LRRC"),
+    (re.compile(r"^ANKR\w+"), "ANKR"),
+    (re.compile(r"^(OR\d+)\w\d+"), None),       # olfactory receptor subfamily
+    (re.compile(r"^RPL\d+"), "RPL"),
+    (re.compile(r"^RPS\d+"), "RPS"),
+    (re.compile(r"^MT-"), "MT"),
+]
+_TRAILING_DIGITS = re.compile(r"\d+$")
+
+
+def assign_gene_family(gene: str) -> str:
+    """Map a gene symbol to an approximate HGNC family identifier.
+
+    Uses curated prefix patterns for the largest paralog clusters, then falls
+    back to stripping trailing digits so numbered members (FOXA1/FOXA2/FOXA3)
+    collapse to a shared family (FOXA).
+    """
+    if gene is None:
+        return ""
+    g = str(gene).upper()
+    for pattern, fam in _FAMILY_PATTERNS:
+        m = pattern.match(g)
+        if m:
+            return fam if fam is not None else m.group(1)
+    stripped = _TRAILING_DIGITS.sub("", g)
+    return stripped or g
 
 
 DEFAULT_INPUT = "data/processed/final_balanced.parquet"
@@ -174,13 +224,17 @@ def main() -> None:
     if "label" not in df.columns:
         raise ValueError("Input dataset must contain 'label' column")
 
-    group_col = get_gene_column(df)
+    gene_col = get_gene_column(df)
     print(f"Input: {input_path}")
     print(f"Rows: {len(df):,}, Columns: {len(df.columns):,}")
-    print(f"Group column: {group_col}")
 
-    gene_counts = df[group_col].astype(str).value_counts()
-    print(f"Unique genes: {gene_counts.shape[0]:,}")
+    # Paralog-aware grouping — split by gene family rather than raw gene.
+    df["_gene_family"] = df[gene_col].map(assign_gene_family)
+    group_col = "_gene_family"
+    n_genes = df[gene_col].astype(str).nunique()
+    n_families = df[group_col].nunique()
+    print(f"Gene column: {gene_col} ({n_genes:,} genes)")
+    print(f"Group column: {group_col} ({n_families:,} families, paralog-aware)")
 
     train_df, val_df, test_df = split_dataframe(
         df=df,
@@ -199,6 +253,12 @@ def main() -> None:
         group_col=group_col,
     )
 
+    # Drop helper grouping column from persisted splits and the in-memory df.
+    for split_df in (train_df, val_df, test_df):
+        if "_gene_family" in split_df.columns:
+            split_df.drop(columns=["_gene_family"], inplace=True)
+    df = df.drop(columns=["_gene_family"])
+
     output_dir.mkdir(parents=True, exist_ok=True)
     train_path = output_dir / "train.parquet"
     val_path = output_dir / "val.parquet"
@@ -209,7 +269,7 @@ def main() -> None:
     test_df.to_parquet(test_path, index=False)
 
     print_summary(train_df, val_df, test_df)
-    print("✅ Gene-level split validated — zero overlap between splits")
+    print("✅ Family-level (paralog-aware) split validated — zero family overlap")
     print(f"Saved train: {train_path}")
     print(f"Saved val: {val_path}")
     print(f"Saved test: {test_path}")

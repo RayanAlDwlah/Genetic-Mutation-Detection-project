@@ -43,7 +43,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--features-out", default=DEFAULT_FEATURES_OUT, help="Output selected features CSV")
     parser.add_argument("--params-out", default=DEFAULT_PARAMS_OUT, help="Output best params CSV")
-    parser.add_argument("--trials", type=int, default=14, help="Hyperparameter search trials")
+    parser.add_argument("--trials", type=int, default=40, help="Hyperparameter search trials (Optuna TPE)")
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
     return parser.parse_args()
 
@@ -72,6 +72,22 @@ def select_feature_columns(df: pd.DataFrame) -> tuple[list[str], list[str]]:
         "review_stars",
         # pos is raw genomic position with no biological meaning without gene context.
         "pos",
+        # LEAKAGE FIX (April 2026):
+        # is_common is a near-deterministic label feature: variants flagged is_common=True
+        # are 100% benign (ClinVar labels common gnomAD variants as benign by definition).
+        # Keeping it would be definitional circularity even though the tuned XGBoost
+        # incidentally assigned it 0% gain; removed for academic hygiene.
+        "is_common",
+        # chr is a coarse proxy for known disease loci (chr17=BRCA1, chr13=BRCA2, chrX=DMD...).
+        # With gene-level split, chromosome identity adds ~15% gain largely via dataset
+        # composition artifacts, not biology. Excluded to force the model to learn from
+        # variant-level signals only.
+        "chr",
+        # Raw ref/alt nucleotides add OHE dimensionality (8 cols) but are downstream of
+        # ref_aa/alt_aa which already capture the functional change. Excluded to reduce
+        # noise and duplicated signal.
+        "ref",
+        "alt",
     }
 
     numeric_cols: list[str] = []
