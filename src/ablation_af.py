@@ -19,8 +19,7 @@ import pandas as pd
 from src.evaluation import bootstrap_metrics, compute_classification_metrics
 from src.models.xgboost_model import XGBTuningConfig, tune_xgboost
 from src.training import prepare_split_features, select_feature_columns
-from src.utils import require_file, resolve_path
-
+from src.utils import resolve_path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 AF_FEATURES = {"AF", "AF_popmax", "AN", "AC", "log_AF", "is_common"}
@@ -59,7 +58,9 @@ def train_and_eval(
     neg = int((y_train == 0).sum())
     spw = float(neg / max(pos, 1))
 
-    cfg = XGBTuningConfig(n_trials=max(2, trials), seed=seed, n_estimators=2500, early_stopping_rounds=80)
+    cfg = XGBTuningConfig(
+        n_trials=max(2, trials), seed=seed, n_estimators=2500, early_stopping_rounds=80
+    )
     model, _, _ = tune_xgboost(x_train, y_train, x_val, y_val, config=cfg, scale_pos_weight=spw)
 
     p_test = model.predict_proba(x_test)[:, 1]
@@ -98,8 +99,15 @@ def main() -> None:
     print("Training FULL model (reference)…")
     rows.append(
         train_and_eval(
-            train_df, val_df, test_df, numeric_cols, categorical_cols,
-            args.trials, args.seed, args.n_boot, "full",
+            train_df,
+            val_df,
+            test_df,
+            numeric_cols,
+            categorical_cols,
+            args.trials,
+            args.seed,
+            args.n_boot,
+            "full",
         )
     )
 
@@ -111,8 +119,15 @@ def main() -> None:
     print(f"Training NO-AF model ({len(AF_FEATURES)} features removed)…")
     rows.append(
         train_and_eval(
-            train_df, val_df, test_df, numeric_noaf, categorical_noaf,
-            args.trials, args.seed, args.n_boot, "no_af",
+            train_df,
+            val_df,
+            test_df,
+            numeric_noaf,
+            categorical_noaf,
+            args.trials,
+            args.seed,
+            args.n_boot,
+            "no_af",
         )
     )
 
@@ -124,21 +139,44 @@ def main() -> None:
     print("Training NO-CONSERVATION model (sanity check — expected big drop)…")
     rows.append(
         train_and_eval(
-            train_df, val_df, test_df, numeric_nocons, categorical_cols,
-            args.trials, args.seed, args.n_boot, "no_conservation",
+            train_df,
+            val_df,
+            test_df,
+            numeric_nocons,
+            categorical_cols,
+            args.trials,
+            args.seed,
+            args.n_boot,
+            "no_conservation",
         )
     )
 
     # No AA-properties variant
-    aa_keywords = ("hydrophobicity", "molecular_weight", "pI_", "volume", "polarity", "charge", "Grantham", "BLOSUM")
+    aa_keywords = (
+        "hydrophobicity",
+        "molecular_weight",
+        "pI_",
+        "volume",
+        "polarity",
+        "charge",
+        "Grantham",
+        "BLOSUM",
+    )
     numeric_noaa = [c for c in numeric_cols if not any(k in c for k in aa_keywords)]
     print()
     print("=" * 60)
     print("Training NO-AA-PROPS model…")
     rows.append(
         train_and_eval(
-            train_df, val_df, test_df, numeric_noaa, categorical_cols,
-            args.trials, args.seed, args.n_boot, "no_aa_props",
+            train_df,
+            val_df,
+            test_df,
+            numeric_noaa,
+            categorical_cols,
+            args.trials,
+            args.seed,
+            args.n_boot,
+            "no_aa_props",
         )
     )
 

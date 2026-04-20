@@ -16,7 +16,6 @@ from src.evaluation import compute_classification_metrics, select_best_threshold
 from src.models.xgboost_model import XGBTuningConfig, tune_xgboost
 from src.utils import require_file, resolve_path
 
-
 DEFAULT_TRAIN_PATH = "data/splits/train.parquet"
 DEFAULT_VAL_PATH = "data/splits/val.parquet"
 DEFAULT_TEST_PATH = "data/splits/test.parquet"
@@ -35,17 +34,24 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--test", default=DEFAULT_TEST_PATH, help="Test parquet path")
     parser.add_argument("--model-out", default=DEFAULT_MODEL_OUT, help="Output model path (.ubj)")
     parser.add_argument("--metrics-out", default=DEFAULT_METRICS_OUT, help="Output metrics CSV")
-    parser.add_argument("--tuning-out", default=DEFAULT_TUNING_OUT, help="Output tuning history CSV")
+    parser.add_argument(
+        "--tuning-out", default=DEFAULT_TUNING_OUT, help="Output tuning history CSV"
+    )
     parser.add_argument(
         "--threshold-curve-out",
         default=DEFAULT_THRESHOLD_CURVE_OUT,
         help="Output validation threshold curve CSV",
     )
-    parser.add_argument("--features-out", default=DEFAULT_FEATURES_OUT, help="Output selected features CSV")
+    parser.add_argument(
+        "--features-out", default=DEFAULT_FEATURES_OUT, help="Output selected features CSV"
+    )
     parser.add_argument("--params-out", default=DEFAULT_PARAMS_OUT, help="Output best params CSV")
-    parser.add_argument("--trials", type=int, default=40, help="Hyperparameter search trials (Optuna TPE)")
+    parser.add_argument(
+        "--trials", type=int, default=40, help="Hyperparameter search trials (Optuna TPE)"
+    )
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
     return parser.parse_args()
+
 
 def select_feature_columns(df: pd.DataFrame) -> tuple[list[str], list[str]]:
     """Select numeric and categorical columns while excluding leakage/IDs.

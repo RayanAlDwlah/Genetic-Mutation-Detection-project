@@ -21,7 +21,6 @@ Outputs
 
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -62,15 +61,15 @@ def _load_feature_transformer(
 
     manifest = pd.read_csv(feature_columns_csv)["encoded_feature"].tolist()
     num_cols = [c.removeprefix("num__") for c in manifest if c.startswith("num__")]
-    cat_prefixes = sorted({c.removeprefix("cat__").rsplit("_", 1)[0]
-                           for c in manifest if c.startswith("cat__")})
+    cat_prefixes = sorted(
+        {c.removeprefix("cat__").rsplit("_", 1)[0] for c in manifest if c.startswith("cat__")}
+    )
 
     train = pd.read_parquet(train_split_path)
     transformer = ColumnTransformer(
         transformers=[
             ("num", "passthrough", num_cols),
-            ("cat", OneHotEncoder(handle_unknown="ignore", sparse_output=False),
-             cat_prefixes),
+            ("cat", OneHotEncoder(handle_unknown="ignore", sparse_output=False), cat_prefixes),
         ],
         remainder="drop",
     )
@@ -90,9 +89,7 @@ def _load_calibrator(path: Path | None) -> IsotonicRegression | None:
     return joblib.load(path)
 
 
-def _mark_family_holdout(
-    ext: pd.DataFrame, train_split_path: Path
-) -> pd.Series:
+def _mark_family_holdout(ext: pd.DataFrame, train_split_path: Path) -> pd.Series:
     """Return a bool Series: True if the row's gene family does NOT appear
     in the training data (i.e. truly held-out at the paralog level)."""
     train = pd.read_parquet(train_split_path)
@@ -138,37 +135,43 @@ def evaluate_external(
     preds["p_raw"] = p_raw
     preds["p_calibrated"] = p_cal
     preds["family_holdout"] = is_holdout
-    preds.to_parquet(out_dir / f"external_{source_name}_predictions.parquet",
-                     index=False)
+    preds.to_parquet(out_dir / f"external_{source_name}_predictions.parquet", index=False)
 
     # Evaluate full + holdout slices.
     rows = []
-    for label, mask in [("full", np.ones_like(is_holdout)),
-                        ("family_holdout_only", is_holdout)]:
+    for label, mask in [("full", np.ones_like(is_holdout)), ("family_holdout_only", is_holdout)]:
         if mask.sum() < 20 or y[mask].min() == y[mask].max():
-            rows.append({"slice": label, "n": int(mask.sum()),
-                         "note": "skipped: too few rows or single-class"})
+            rows.append(
+                {
+                    "slice": label,
+                    "n": int(mask.sum()),
+                    "note": "skipped: too few rows or single-class",
+                }
+            )
             continue
-        metrics = compute_classification_metrics(
-            pd.Series(y[mask]), p_cal[mask], threshold=0.5
-        )
+        metrics = compute_classification_metrics(pd.Series(y[mask]), p_cal[mask], threshold=0.5)
         boot = bootstrap_metrics(
-            y[mask], p_cal[mask],
-            threshold=0.5, n_boot=config.n_boot, seed=config.seed,
+            y[mask],
+            p_cal[mask],
+            threshold=0.5,
+            n_boot=config.n_boot,
+            seed=config.seed,
         )
-        rows.append({
-            "slice": label,
-            "n": int(mask.sum()),
-            "n_pos": int(y[mask].sum()),
-            "roc_auc": metrics["roc_auc"],
-            "roc_auc_ci_lo": boot["roc_auc"]["ci_lo"],
-            "roc_auc_ci_hi": boot["roc_auc"]["ci_hi"],
-            "pr_auc": metrics["pr_auc"],
-            "pr_auc_ci_lo": boot["pr_auc"]["ci_lo"],
-            "pr_auc_ci_hi": boot["pr_auc"]["ci_hi"],
-            "brier": metrics["brier_loss"],
-            "f1": metrics["f1"],
-        })
+        rows.append(
+            {
+                "slice": label,
+                "n": int(mask.sum()),
+                "n_pos": int(y[mask].sum()),
+                "roc_auc": metrics["roc_auc"],
+                "roc_auc_ci_lo": boot["roc_auc"]["ci_lo"],
+                "roc_auc_ci_hi": boot["roc_auc"]["ci_hi"],
+                "pr_auc": metrics["pr_auc"],
+                "pr_auc_ci_lo": boot["pr_auc"]["ci_lo"],
+                "pr_auc_ci_hi": boot["pr_auc"]["ci_hi"],
+                "brier": metrics["brier_loss"],
+                "f1": metrics["f1"],
+            }
+        )
     out = pd.DataFrame(rows)
     out.insert(0, "source", source_name)
     out_csv = out_dir / f"external_{source_name}_metrics.csv"

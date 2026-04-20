@@ -8,6 +8,7 @@ import re
 import sys
 from pathlib import Path
 from typing import Any
+
 from src.utils import load_yaml_config, normalize_chromosome, resolve_path
 
 try:
@@ -348,7 +349,7 @@ def run_pipeline(config_path: Path, strict: bool) -> None:
 
     pathogenic_count = int((df["label"] == 1).sum())
     benign_count = int((df["label"] == 0).sum())
-    total_rows = int(len(df))
+    total_rows = len(df)
 
     print(f"Saved parquet: {output_path}")
 

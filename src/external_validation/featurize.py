@@ -28,9 +28,9 @@ import pandas as pd
 
 @dataclass
 class FeaturizationResult:
-    featurized: pd.DataFrame          # ready-to-score rows
-    unmapped: pd.DataFrame            # rows without dbNSFP coverage
-    coverage: float                   # featurized / total
+    featurized: pd.DataFrame  # ready-to-score rows
+    unmapped: pd.DataFrame  # rows without dbNSFP coverage
+    coverage: float  # featurized / total
 
     def summary(self) -> str:
         tot = len(self.featurized) + len(self.unmapped)
@@ -69,6 +69,4 @@ def featurize_external(
     unmapped = merged.loc[~ok, ext.columns.tolist()].reset_index(drop=True)
 
     coverage = len(featurized) / max(len(merged), 1)
-    return FeaturizationResult(
-        featurized=featurized, unmapped=unmapped, coverage=coverage
-    )
+    return FeaturizationResult(featurized=featurized, unmapped=unmapped, coverage=coverage)

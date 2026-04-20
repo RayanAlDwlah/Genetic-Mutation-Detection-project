@@ -19,10 +19,9 @@ import argparse
 from pathlib import Path
 from typing import Any
 
-import numpy as np
 import pandas as pd
-from src.utils import require_file
 
+from src.utils import require_file
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 INPUT_PATH = REPO_ROOT / "data" / "processed" / "merged_clinvar_gnomad_dbnsfp.parquet"
@@ -311,7 +310,7 @@ def make_strict_dataset(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, Any]]
 
     info = {
         "rows_start": int(rows_start),
-        "rows_after": int(len(strict)),
+        "rows_after": len(strict),
         "conservation_features": conservation_cols,
         "max_missing_pct_after_filters": round(missing_after, 4),
         "missing_policy": "zero tolerance for conservation features",
@@ -360,7 +359,7 @@ def make_balanced_dataset(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, Any
             balanced[f"is_imputed_{col}"] = missing_mask.astype(bool)
 
     info = {
-        "rows": int(len(balanced)),
+        "rows": len(balanced),
         "columns_dropped_over_20pct_missing": drop_over_20,
         "max_missing_pct_pre_imputation": round(float(pre_impute_missing_pct.max()) if len(pre_impute_missing_pct) else 0.0, 4),
         "imputed_columns": imputed_columns,
@@ -398,9 +397,9 @@ def version_summary(name: str, df: pd.DataFrame, pre_impute_max_missing: float |
         print(f"  {col}: {df[col].dtype}")
 
     return {
-        "rows": int(len(df)),
-        "columns": int(len(df.columns)),
-        "feature_columns": int(len(feature_cols)),
+        "rows": len(df),
+        "columns": len(df.columns),
+        "feature_columns": len(feature_cols),
         "pathogenic": pathogenic,
         "benign": benign,
         "label_ratio_pathogenic_to_benign": None if ratio is None else round(float(ratio), 6),

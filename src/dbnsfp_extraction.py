@@ -21,8 +21,8 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-from src.utils import load_yaml_config, normalize_chromosome, resolve_path
 
+from src.utils import load_yaml_config, normalize_chromosome, resolve_path
 
 DEFAULT_OUTPUT = "data/intermediate/dbnsfp_selected_features.parquet"
 

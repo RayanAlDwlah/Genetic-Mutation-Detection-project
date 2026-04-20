@@ -18,8 +18,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import GroupShuffleSplit
-from src.utils import resolve_path
 
+from src.utils import resolve_path
 
 # Regex-driven prefix → family mapping. Order matters (first match wins).
 # Covers the large paralog clusters that were leaking between splits.
@@ -28,7 +28,7 @@ _FAMILY_PATTERNS: list[tuple[re.Pattern[str], str | None]] = [
     (re.compile(r"^KRT\d+"), "KRT"),
     (re.compile(r"^HLA-"), "HLA"),
     (re.compile(r"^ZNF\d+"), "ZNF"),
-    (re.compile(r"^(SLC\d+)A\d+"), None),       # preserve SLC## subfamily
+    (re.compile(r"^(SLC\d+)A\d+"), None),  # preserve SLC## subfamily
     (re.compile(r"^CDH\d+"), "CDH"),
     (re.compile(r"^PCDH\w*"), "PCDH"),
     (re.compile(r"^TRIM\d+"), "TRIM"),
@@ -36,7 +36,7 @@ _FAMILY_PATTERNS: list[tuple[re.Pattern[str], str | None]] = [
     (re.compile(r"^CCDC\d+"), "CCDC"),
     (re.compile(r"^LRRC\d+"), "LRRC"),
     (re.compile(r"^ANKR\w+"), "ANKR"),
-    (re.compile(r"^(OR\d+)\w\d+"), None),       # olfactory receptor subfamily
+    (re.compile(r"^(OR\d+)\w\d+"), None),  # olfactory receptor subfamily
     (re.compile(r"^RPL\d+"), "RPL"),
     (re.compile(r"^RPS\d+"), "RPS"),
     (re.compile(r"^MT-"), "MT"),
@@ -75,6 +75,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--test-ratio", type=float, default=0.15, help="Test ratio")
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
     return parser.parse_args()
+
 
 def get_gene_column(df: pd.DataFrame) -> str:
     if "GeneSymbol" in df.columns:
@@ -188,7 +189,6 @@ def validate_splits(
         "train_test_overlap": train_test_overlap,
         "val_test_overlap": val_test_overlap,
     }
-
 
 
 def print_summary(train_df: pd.DataFrame, val_df: pd.DataFrame, test_df: pd.DataFrame) -> None:

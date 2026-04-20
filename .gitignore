@@ -65,3 +65,10 @@ data/intermediate/*
 results/figures/*
 !results/figures/.gitkeep
 !results/figures/*.png
+
+# Stage 0 additions
+.coverage
+coverage.xml
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
