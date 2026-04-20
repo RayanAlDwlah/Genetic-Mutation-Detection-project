@@ -1,0 +1,3 @@
+variant_key,chr,pos,ref,alt,gene,label,study,phenotype
+2:44589149:G:A,2,44589149,G,A,CAMKMT,1,DDD_2017,developmentalDisorder
+16:15007308:G:A,16,15007308,G,A,LOC101927469,1,Yuen2017,autism

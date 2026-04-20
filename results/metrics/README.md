@@ -31,6 +31,15 @@ README that disagree with these CSVs are stale.
 | `xgboost_tuning_history.csv` | `src/training.py` | All 40 Optuna trials with per-trial PR-AUC, ROC-AUC, best_iteration, and sampled params. |
 | `xgboost_feature_columns.csv` | `src/training.py` | Exact ordered feature list the model was trained on (leakage-vetted). |
 
+## External validation
+
+| File | Produced by | Contents |
+|---|---|---|
+| `external_denovo_db_metrics.csv` | `scripts/evaluate_external.py` | ROC/PR/F1/Brier point + 1000-bootstrap 95% CIs for `full` and `family_holdout_only` slices of denovo-db. |
+| `external_denovo_db_coverage.csv` | `scripts/evaluate_external.py` | How many raw external rows were featurized vs unmapped at the dbNSFP / VEP step. |
+| `external_denovo_db_predictions.parquet` | `scripts/evaluate_external.py` | Per-variant raw + isotonic-calibrated probability, family-holdout flag. |
+| `external_denovo_db_unmapped.csv` | `scripts/evaluate_external.py` | External variants we could not featurize (reported openly, never silently dropped). |
+
 ## Ablations
 
 | File | Produced by | Contents |
