@@ -50,7 +50,11 @@ def compute_classification_metrics(
         "precision": float(precision_score(y_true_arr, y_pred, zero_division=0)),
         "recall": float(recall_score(y_true_arr, y_pred, zero_division=0)),
         "f1": float(f1_score(y_true_arr, y_pred, zero_division=0)),
-        "mcc": float(mcc_val) if not np.isnan(mcc_val := matthews_corrcoef(y_true_arr, y_pred)) else 0.0,
+        "mcc": (
+            float(mcc_val)
+            if not np.isnan(mcc_val := matthews_corrcoef(y_true_arr, y_pred))
+            else 0.0
+        ),
         "brier_loss": float(brier_score_loss(y_true_arr, y_prob_arr)),
         "log_loss": float(log_loss(y_true_arr, y_prob_arr, labels=[0, 1])),
         "tn": int(tn),

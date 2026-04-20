@@ -85,7 +85,8 @@ def merge_constraint(
         # Fit medians from the rows where the gene was present (train-only use).
         impute_medians = {
             c: float(merged.loc[merged["_merge"] == "both", c].median())
-            for c in CONSTRAINT_COLS if c in merged.columns
+            for c in CONSTRAINT_COLS
+            if c in merged.columns
         }
 
     for c in CONSTRAINT_COLS:
@@ -107,8 +108,10 @@ def main() -> None:
     args = ap.parse_args()
 
     constraint = load_constraint_table(REPO / args.constraint)
-    print(f"loaded {len(constraint):,} gene constraint rows "
-          f"({constraint['pLI'].notna().sum():,} with pLI)")
+    print(
+        f"loaded {len(constraint):,} gene constraint rows "
+        f"({constraint['pLI'].notna().sum():,} with pLI)"
+    )
 
     train = pd.read_parquet(REPO / args.train)
     val = pd.read_parquet(REPO / args.val)
@@ -125,8 +128,8 @@ def main() -> None:
 
     coverage = {
         "train": 1 - train_m["is_imputed_gnomad_constraint"].mean(),
-        "val":   1 - val_m["is_imputed_gnomad_constraint"].mean(),
-        "test":  1 - test_m["is_imputed_gnomad_constraint"].mean(),
+        "val": 1 - val_m["is_imputed_gnomad_constraint"].mean(),
+        "test": 1 - test_m["is_imputed_gnomad_constraint"].mean(),
     }
     print("\nConstraint coverage (1 - imputed rate):")
     for k, v in coverage.items():

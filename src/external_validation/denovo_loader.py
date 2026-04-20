@@ -119,5 +119,5 @@ def load_denovo_db(tsv_path: Path) -> pd.DataFrame:
         ]
     ].rename(columns={"Gene": "gene", "StudyName": "study", "PrimaryPhenotype": "phenotype"})
     out = out.drop_duplicates("variant_key").reset_index(drop=True)
-    out.attrs["n_unmapped"] = int(len(unmapped))
+    out.attrs["n_unmapped"] = len(unmapped)
     return out

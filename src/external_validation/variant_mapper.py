@@ -91,8 +91,11 @@ def to_canonical_key(
         r, a = parsed
     if not r or not a or r == a:
         return None
-    if any(nuc not in {"A", "C", "G", "T"} for nuc in (r + a)):
-        # indels / multi-nucleotide substitutions are outside the missense-only
-        # scope the training model was fit on; skip rather than mislabel.
+    # Single-nucleotide substitutions only. Indels / multi-nucleotide
+    # changes are outside the missense-only scope the training model was
+    # fit on; skip rather than mislabel.
+    if len(r) != 1 or len(a) != 1:
+        return None
+    if r not in {"A", "C", "G", "T"} or a not in {"A", "C", "G", "T"}:
         return None
     return CanonicalVariant(chrom=c, pos=p, ref=r, alt=a)

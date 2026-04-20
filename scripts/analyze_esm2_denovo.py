@@ -30,10 +30,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from sklearn.metrics import average_precision_score, roc_auc_score
-
 from src.data_splitting import assign_gene_family
 from src.evaluation import bootstrap_metrics
-
 
 REPO = Path(__file__).resolve().parents[1]
 ESM_PATH = REPO / "results/metrics/esm2_denovo_db_scores.parquet"
@@ -60,7 +58,9 @@ def _score_block(y: np.ndarray, s: np.ndarray, name: str, n_boot: int = 1000) ->
     # everything else in results/metrics/.
     boot = bootstrap_metrics(y_, s_, threshold=0.5, n_boot=n_boot, seed=42)
     return {
-        "score": name, "n": int(ok.sum()), "n_pos": int(y_.sum()),
+        "score": name,
+        "n": int(ok.sum()),
+        "n_pos": int(y_.sum()),
         "roc_auc": roc,
         "roc_auc_ci_lo": boot["roc_auc"]["ci_lo"],
         "roc_auc_ci_hi": boot["roc_auc"]["ci_hi"],
@@ -77,10 +77,13 @@ def main() -> None:
     # Resolve overlapping rows via variant_key.
     merged = esm.merge(
         xgb[["variant_key", "gene", "p_calibrated", "p_raw"]],
-        on="variant_key", how="inner",
+        on="variant_key",
+        how="inner",
     )
-    print(f"overlap: ESM-2 scored = {len(esm):,}; XGBoost predictions = "
-          f"{len(xgb):,}; intersection = {len(merged):,}")
+    print(
+        f"overlap: ESM-2 scored = {len(esm):,}; XGBoost predictions = "
+        f"{len(xgb):,}; intersection = {len(merged):,}"
+    )
 
     # Family-holdout flag: gene NOT present in training family set.
     train = pd.read_parquet(TRAIN_SPLIT)
@@ -88,8 +91,10 @@ def main() -> None:
     # `gene` column comes from either parquet — ESM frame has it from the
     # denovo-db loader.
     merged["family_holdout"] = ~merged["gene"].astype(str).map(assign_gene_family).isin(train_fams)
-    print(f"family_holdout rows: {int(merged['family_holdout'].sum())} "
-          f"({merged['family_holdout'].mean():.1%})")
+    print(
+        f"family_holdout rows: {int(merged['family_holdout'].sum())} "
+        f"({merged['family_holdout'].mean():.1%})"
+    )
 
     y = merged["label"].astype(int).to_numpy()
     # Scores.
@@ -101,8 +106,10 @@ def main() -> None:
     s_fuse = np.where(np.isnan(r_xgb) | np.isnan(r_esm), np.nan, (r_xgb + r_esm) / 2)
 
     rows: list[dict] = []
-    for slice_name, mask in [("full", np.ones(len(y), dtype=bool)),
-                             ("family_holdout_only", merged["family_holdout"].to_numpy())]:
+    for slice_name, mask in [
+        ("full", np.ones(len(y), dtype=bool)),
+        ("family_holdout_only", merged["family_holdout"].to_numpy()),
+    ]:
         for name, s in [
             ("xgb_calibrated", p_xgb),
             ("esm2_llr", s_esm),
@@ -112,12 +119,21 @@ def main() -> None:
             r["slice"] = slice_name
             rows.append(r)
 
-    df = pd.DataFrame(rows).reindex(columns=[
-        "slice", "score", "n", "n_pos",
-        "roc_auc", "roc_auc_ci_lo", "roc_auc_ci_hi",
-        "pr_auc", "pr_auc_ci_lo", "pr_auc_ci_hi",
-        "note",
-    ])
+    df = pd.DataFrame(rows).reindex(
+        columns=[
+            "slice",
+            "score",
+            "n",
+            "n_pos",
+            "roc_auc",
+            "roc_auc_ci_lo",
+            "roc_auc_ci_hi",
+            "pr_auc",
+            "pr_auc_ci_lo",
+            "pr_auc_ci_hi",
+            "note",
+        ]
+    )
     df.to_csv(OUT_CSV, index=False)
 
     print()

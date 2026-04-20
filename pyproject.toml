@@ -1,0 +1,206 @@
+[project]
+name = "missense-classifier"
+version = "0.3.0"
+description = "Paralog-aware, externally-validated missense variant classifier with ESM-2 + gnomAD constraint features."
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "Rayan AlDwlah"},
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["src*"]
+
+# ──────────────────────────── pytest ─────────────────────────────────
+[tool.pytest.ini_options]
+minversion = "7.4"
+testpaths = ["tests"]
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+    "--cov=src",
+    "--cov-report=term-missing",
+    "--cov-report=xml:coverage.xml",
+    # Coverage gate: 55% on the *actively-maintained* surface area (see
+    # tool.coverage.run.omit for the frozen data-prep pipeline
+    # exclusions). The uncovered remainder is mostly CLI __main__
+    # wrappers, which are regression-tested end-to-end by the integration
+    # suite instead. Raise this deliberately as Stage 2 adds new modules.
+    "--cov-fail-under=55",
+]
+markers = [
+    "slow: tests that take > 10s (de-selected on CI quick pass)",
+    "integration: end-to-end pipeline tests requiring data splits",
+    "needs_network: tests that hit VEP / Ensembl / HF Hub",
+    "needs_gpu: tests that require CUDA or MPS",
+]
+filterwarnings = [
+    "error",
+    "ignore::DeprecationWarning:optuna.*",
+    "ignore::DeprecationWarning:xgboost.*",
+    "ignore::UserWarning:sklearn.*",
+    "ignore::FutureWarning:pandas.*",
+    # Optuna marks TPESampler(multivariate=True) as experimental but has
+    # kept the API stable for years; our tuning config depends on it.
+    "ignore::optuna.exceptions.ExperimentalWarning",
+]
+
+# ──────────────────────────── coverage ──────────────────────────────
+[tool.coverage.run]
+branch = true
+source = ["src"]
+omit = [
+    # Requires HF network + GPU at runtime; tested via standalone smoke test.
+    "src/esm2_scorer.py",
+    # Requires Ensembl REST; tested via recorded cassettes separately.
+    "src/external_validation/vep_featurize.py",
+    # One-time data-prep pipeline: these modules produced the committed
+    # parquet splits weeks ago and are regression-tested via
+    # tests/integration/test_reproduce_headline.py (which re-scores
+    # against those exact outputs). Adding synthetic unit tests here
+    # would be cargo-culting, not genuine engineering value.
+    "src/clinvar_cleaning.py",
+    "src/gnomad_extraction.py",
+    "src/dbnsfp_extraction.py",
+    "src/data_merge.py",
+    "src/data_validation.py",
+    "src/feature_analysis.py",
+    # Exploratory / archived models (CNN stub, ESM-2 placeholder).
+    "src/models/cnn_model.py",
+    "src/models/esm2_model.py",
+    # Ablation / evaluation drivers — each is a thin __main__ wrapper
+    # covered indirectly by integration tests that consume its output.
+    "src/ablation_af.py",
+    "src/evaluate_baseline.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]
+
+# ──────────────────────────── ruff ──────────────────────────────────
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests", "scripts"]
+
+[tool.ruff.lint]
+select = [
+    "E", "F", "W",       # pycodestyle + pyflakes
+    "I",                 # isort
+    "N",                 # pep8-naming
+    "UP",                # pyupgrade
+    "B",                 # bugbear
+    "A",                 # builtins
+    "C4",                # comprehensions
+    "SIM",               # simplify
+    "RET",               # return
+    "PL",                # pylint
+    "RUF",               # ruff-specific
+]
+ignore = [
+    "E501",              # line too long (black handles)
+    "PLR0913",           # too many args (we have long-arg training fns)
+    "PLR0915",           # too many statements (main() orchestrators are long on purpose)
+    "PLR0912",           # too many branches (same reason)
+    "PLR0911",           # too many return statements
+    "PLR2004",           # magic value (numeric literals in science code are fine)
+    "PLC0415",           # local imports (we lazy-import torch/yaml/sklearn for speed)
+    "N803",              # lowercase argument (X, y from sklearn convention)
+    "N806",              # lowercase in function (X, y)
+    "B905",              # zip(strict=) — many legacy equal-length iterables
+    "B023",              # function uses loop variable (we bind explicitly)
+    "B008",              # function call in default — we use REPO_ROOT / Path()
+    "B017",              # pytest.raises(Exception) used intentionally for frozen-dataclass
+    "RET504",            # unnecessary assign before return (readability > brevity)
+    "RUF002",            # ambiguous unicode in docstring (em-dashes are intentional)
+    "RUF003",            # ambiguous unicode in comment (same)
+    "RUF005",            # list concat style
+    "RUF012",            # mutable class default — used in dataclass-adjacent code
+    "RUF046",            # unnecessary int() cast (we're paranoid about numpy floats)
+    "RUF059",            # unused unpack variable (readable naming beats _)
+    "SIM105",            # contextlib.suppress vs try/except/pass
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["PLR2004", "S101"]
+"scripts/*" = ["PLR2004"]
+"notebooks/*" = ["E402", "F401"]
+# Grandfather the frozen data-prep pipeline — these modules produced the
+# committed parquets weeks ago and are verified by the integration test.
+# Changing their bodies for style would risk the bit-for-bit repro guarantee.
+"src/clinvar_cleaning.py" = ["ALL"]
+"src/gnomad_extraction.py" = ["ALL"]
+"src/dbnsfp_extraction.py" = ["ALL"]
+"src/data_merge.py" = ["ALL"]
+"src/data_validation.py" = ["ALL"]
+"src/feature_analysis.py" = ["ALL"]
+"src/models/xgboost_model.py" = ["F841", "B007"]
+"src/data_splitting.py" = ["F841"]
+"src/esm2_scorer.py" = ["C401"]
+# Matplotlib plotting scripts — style-only warnings that don't help readers.
+"scripts/make_lockdown_figures.py" = ["E702", "RUF001", "C408"]
+"scripts/evaluate_external.py" = ["SIM115"]
+
+# ──────────────────────────── black ─────────────────────────────────
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+include = '\.pyi?$'
+# Grandfathered — same as ruff per-file-ignores. These modules are frozen
+# pipeline code that generated the committed splits; reformatting risks
+# bit-for-bit repro. Black runs on everything else.
+extend-exclude = '''
+(
+  notebooks/.*
+  | src/clinvar_cleaning\.py
+  | src/gnomad_extraction\.py
+  | src/dbnsfp_extraction\.py
+  | src/data_merge\.py
+  | src/data_validation\.py
+  | src/feature_analysis\.py
+)
+'''
+
+# ──────────────────────────── mypy ──────────────────────────────────
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+no_implicit_optional = true
+show_error_codes = true
+# Strict is aspirational — we enable it per-file as we clean up.
+# strict = true
+
+[[tool.mypy.overrides]]
+module = [
+    "freesasa.*",
+    "Bio.*",
+    "transformers.*",
+    "torch.*",
+    "optuna.*",
+    "xgboost.*",
+    "shap.*",
+    "py3Dmol.*",
+    "streamlit.*",
+    "seaborn.*",
+]
+ignore_missing_imports = true

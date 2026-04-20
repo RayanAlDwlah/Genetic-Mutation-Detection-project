@@ -165,9 +165,7 @@ def tune_xgboost(
 
     def objective(trial: optuna.Trial) -> float:
         params = _suggest_params(trial, scale_pos_weight)
-        trial_seed = int(
-            np.random.default_rng(config.seed + trial.number * 997).integers(0, 2**31)
-        )
+        trial_seed = int(np.random.default_rng(config.seed + trial.number * 997).integers(0, 2**31))
         model = build_xgboost_model(
             params,
             seed=trial_seed,

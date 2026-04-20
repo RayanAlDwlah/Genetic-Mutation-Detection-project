@@ -15,8 +15,8 @@ from math import log10
 from pathlib import Path
 
 import pandas as pd
-from src.utils import require_file
 
+from src.utils import require_file
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 INTERMEDIATE_DIR = REPO_ROOT / "data" / "intermediate"
