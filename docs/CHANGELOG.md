@@ -3,6 +3,67 @@
 All notable changes to the honest-baseline pipeline. Dates are ISO-8601.
 Commits are on `origin/main`.
 
+## [Phase D v1 — External Validation Infrastructure] — 2026-04-20
+
+Built the end-to-end harness for scoring the baseline on datasets outside
+ClinVar. First source wired up: **denovo-db** (non-SSC samples). Full
+ProteinGym integration is deferred to D v2 once UniProt ↔ genome mapping
+is in place.
+
+### Added
+- `src/external_validation/__init__.py` — module surface.
+- `src/external_validation/variant_mapper.py` — canonicalize heterogeneous
+  variant IDs into the `chr:pos:ref:alt` key used in training.
+- `src/external_validation/denovo_loader.py` — parse denovo-db TSV into a
+  labeled missense-only frame. Pathogenic label = affected proband; benign
+  label = documented sibling/control. Ambiguous phenotypes are dropped.
+- `src/external_validation/featurize.py` — left-join external variants onto
+  the cached `dbnsfp_selected_features.parquet`. Unmapped rows are reported,
+  never silently dropped.
+- `src/external_validation/vep_featurize.py` — **Ensembl VEP REST fallback**
+  for variants missing from the dbNSFP cache. Pulls phyloP100, phastCons100,
+  GERP++, amino-acid identities; computes BLOSUM62, Grantham, and AA
+  physicochemistry locally using the same helper tables as
+  `src/dbnsfp_extraction.py`. Missing fields
+  (`phyloP30way_mammalian`, `phastCons30way_mammalian`, `pfam_domain`) are
+  imputed with **training-set medians**. gnomAD AF defaults match the
+  ultra-rare assumption for de-novo variants.
+- `src/external_validation/evaluate.py` — rebuilds the training
+  ColumnTransformer from `xgboost_feature_columns.csv`, scores raw +
+  isotonic-calibrated probabilities, emits bootstrap 95% CIs over full +
+  **family-holdout** slices.
+- `scripts/evaluate_external.py` — driver. Flags: `--sample`, `--use-vep`,
+  `--n-boot`, `--only`.
+- Raw data: `data/raw/external/denovo_db/denovo-db.non-ssc-samples.variants.tsv.gz`
+  (7.4 MB, 9,848 missense rows, 9,704 affected + 144 sibling controls).
+- Output artifacts under `results/metrics/`:
+  - `external_denovo_db_metrics.csv` — ROC/PR/F1/Brier + bootstrap CIs.
+  - `external_denovo_db_coverage.csv` — rows featurized vs unmapped.
+  - `external_denovo_db_predictions.parquet` — per-variant raw + calibrated.
+  - `external_denovo_db_unmapped.csv` — rows that failed featurization.
+
+### Headline result (n=644 sampled — all 144 sibling controls + 500 affected)
+
+| Slice | n | n_pos | ROC-AUC (95% CI) | PR-AUC (95% CI) |
+|---|---:|---:|---|---|
+| full | 642 | 498 | **0.468** [0.415, 0.519] | 0.761 [0.721, 0.806] |
+| family_holdout_only | 201 | 161 | 0.487 [0.383, 0.583] | 0.789 [0.712, 0.860] |
+
+Base-rate PR-AUC for this slice is `n_pos / n = 0.776`, so PR-AUC at 0.76
+is indistinguishable from the class prior. **The calibrated ClinVar-
+trained baseline performs at chance on denovo-db.** This is the single
+most important external-validation finding so far:
+
+> *A classifier that scores 0.836 PR-AUC on paralog-aware ClinVar
+> generalizes to zero signal on affected-vs-control de-novo variants.*
+
+Interpretation: the model has learned "this variant *looks* disease-
+causing" (high conservation, disruptive AA substitution), but almost every
+missense variant in denovo-db — affected or control — *also* looks that
+way at the single-variant level. Separating a causative de-novo variant
+from a bystander requires per-phenotype priors, gene-disease associations,
+or zygosity / inheritance context the tabular model never sees.
+
 ## [Phase 1 Lockdown] — 2026-04-20
 
 Quality-assurance pass to freeze Phase 1 before external validation (Phase D)
