@@ -31,6 +31,12 @@ num__is_imputed_phastCons100way_vertebrate
 num__is_imputed_GERP++_RS
 num__is_imputed_Grantham_distance
 num__is_imputed_BLOSUM62_score
+num__pLI
+num__oe_lof_upper
+num__mis_z
+num__oe_mis_upper
+num__lof_z
+num__is_imputed_gnomad_constraint
 cat__ref_aa_A
 cat__ref_aa_C
 cat__ref_aa_D

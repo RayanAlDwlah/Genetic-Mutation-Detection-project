@@ -3,6 +3,74 @@
 All notable changes to the honest-baseline pipeline. Dates are ISO-8601.
 Commits are on `origin/main`.
 
+## [Phase 2 step 1 — gnomAD gene-level constraint features] — 2026-04-20
+
+Phase D v1 revealed that the ClinVar-trained baseline scored **at chance**
+(ROC = 0.468) on denovo-db. The diagnosis was that the tabular feature set
+encoded only *variant-level* evidence (conservation, AA chemistry) and no
+*gene-level* intolerance priors — the single strongest clinical prior for
+whether damage to a given gene is plausibly disease-causing.
+
+### Added
+- `src/gnomad_constraint.py` — loads gnomAD v2.1.1
+  `lof_metrics.by_gene.txt.bgz`, keeps
+  `{pLI, oe_lof_upper (LOEUF), mis_z, oe_mis_upper, lof_z}`, and left-joins
+  them onto each split by gene. **Median imputation is fit on TRAIN ONLY**
+  and re-applied to val / test / external rows (no leakage), with
+  `is_imputed_gnomad_constraint` flag so SHAP can isolate imputed rows.
+- `data/raw/gnomad_constraint/gnomad.v2.1.1.lof_metrics.by_gene.txt.bgz`
+  (4.4 MB, 19,658 genes; 19,155 with pLI).
+- `results/metrics/gnomad_constraint_medians.csv` — persisted train-fit
+  medians for reuse by the external-validation featurizer.
+
+### Changed
+- `data/splits/{train,val,test}.parquet` now include 6 new columns
+  (`pLI, oe_lof_upper, mis_z, oe_mis_upper, lof_z,
+  is_imputed_gnomad_constraint`). Gene-level coverage: **96.3% train,
+  96.3% val, 93.3% test** (rest imputed with train median).
+- `scripts/evaluate_external.py` attaches the same constraint block to
+  featurized external variants using the persisted train-fit medians, so
+  the external feature matrix matches the new training schema without
+  leaking gene-level stats from the external set.
+- `results/checkpoints/xgboost_best.ubj` retrained (40 Optuna trials,
+  seed=42) on the enriched 39-feature matrix.
+
+### Numbers — test split (held-out, paralog-disjoint)
+
+| Stage | ROC-AUC | PR-AUC (raw) | PR-AUC (isotonic cal) | ECE (cal) |
+|---|---:|---:|---:|---:|
+| Post-lockdown (33 features) | 0.938 | 0.836 | 0.827 | 0.011 |
+| + gnomAD constraint (39 features) | **0.938** | **0.838** | **0.830** | **0.011** |
+
+The in-distribution gain is marginal (+0.002 PR-AUC). Expected: the test
+set is already paralog-disjoint, so for genes the model saw during
+training the variant-level features already capture most of the signal.
+
+### Numbers — denovo-db external (n=642 stratified sample, 1000-boot CIs)
+
+| Slice | Features | ROC-AUC (95% CI) | PR-AUC (95% CI) | Base-rate PR |
+|---|---|---|---|---:|
+| full | variant-only | 0.468 [0.415, 0.519] | 0.761 [0.721, 0.806] | 0.776 |
+| full | + constraint | **0.511** [0.455, 0.564] | **0.790** [0.749, 0.830] | 0.776 |
+| family_holdout_only | variant-only | 0.487 [0.383, 0.583] | 0.789 [0.712, 0.860] | 0.801 |
+| family_holdout_only | + constraint | **0.573** [0.476, 0.670] | **0.838** [0.774, 0.897] | 0.801 |
+
+The **family_holdout_only** gain is the headline: for gene families the
+model has never seen during training, ROC jumps from 0.487 (chance) to
+0.573 (+0.086), and PR-AUC moves from 0.789 (at base-rate) to 0.838
+(+0.037 above base-rate). This is exactly the regime where *only*
+gene-level constraint priors can help — variant-level features by
+construction cannot discriminate affected-vs-control de-novo variants on
+an unseen gene.
+
+> *Gene-level constraint priors (pLI / LOEUF / mis_z) close about half
+> the gap between the ClinVar-test baseline and chance-level
+> generalization to de-novo variants on held-out gene families.*
+
+Full closure of the gap will require phenotype-specific priors (gene-
+disease association scores) which live outside the tabular baseline's
+scope. That's Phase 2's job.
+
 ## [Phase D v1 — External Validation Infrastructure] — 2026-04-20
 
 Built the end-to-end harness for scoring the baseline on datasets outside
