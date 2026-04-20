@@ -31,7 +31,6 @@ from src.evaluation import (
 from src.training import prepare_split_features, select_feature_columns
 from src.utils import require_file, resolve_path
 
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_MODEL = "results/checkpoints/xgboost_best.ubj"
 DEFAULT_TRAIN = "data/splits/train.parquet"
@@ -199,9 +198,7 @@ def main() -> None:
         curve = reliability_curve(y, p, n_bins=15, strategy="quantile")
         curve.insert(0, "eval_set", name)
         rel_rows.append(curve)
-        ece_summary.append(
-            {"eval_set": name, "ECE": curve.attrs["ECE"], "MCE": curve.attrs["MCE"]}
-        )
+        ece_summary.append({"eval_set": name, "ECE": curve.attrs["ECE"], "MCE": curve.attrs["MCE"]})
     rel_df = pd.concat(rel_rows, ignore_index=True)
     rel_out = out_dir / "xgboost_reliability_curve.csv"
     rel_df.to_csv(rel_out, index=False)
@@ -248,7 +245,9 @@ def main() -> None:
     # ─── Calibrated probabilities for downstream use ─────────────────────────
     prob_df = pd.DataFrame(
         {
-            "variant_key": pd.concat([val_df["variant_key"], test_df["variant_key"]], ignore_index=True),
+            "variant_key": pd.concat(
+                [val_df["variant_key"], test_df["variant_key"]], ignore_index=True
+            ),
             "split": ["val"] * len(val_df) + ["test"] * len(test_df),
             "y_true": np.concatenate([y_val, y_test]),
             "p_raw": np.concatenate([p_val_raw, p_test_raw]),

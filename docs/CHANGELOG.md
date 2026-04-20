@@ -3,6 +3,90 @@
 All notable changes to the honest-baseline pipeline. Dates are ISO-8601.
 Commits are on `origin/main`.
 
+## [Portfolio Stage 0 — Production-grade foundations] — 2026-04-21
+
+Hardened the repo to production-grade standards before launching any of
+the long-compute Stage 2 experiments. The principle: **one bug in
+`src/evaluation.py` would invalidate 35 h of ESM-2 compute**, so every
+line that will be on the critical path gets a test, a type check, and a
+CI gate first.
+
+### Added
+- `tests/` — 130 pytest tests, 59.6% coverage on the actively-maintained
+  surface area (grandfathered frozen data-prep modules excluded). Files:
+  - `tests/conftest.py` — session-scoped fixtures for splits + mock
+    binary predictions.
+  - `tests/test_data_splitting.py` — regression-tests
+    `assign_gene_family()` on 30+ known paralog clusters, asserts zero
+    family overlap across committed train/val/test.
+  - `tests/test_evaluation.py` — unit-tests metric math, bootstrap CI
+    coverage, reliability curve ECE/MCE, threshold-selection
+    optimality.
+  - `tests/test_gnomad_constraint.py` — asserts the "train-only median"
+    no-leakage pattern; extended to test `load_constraint_table()`
+    dedup logic.
+  - `tests/test_utils.py`, `tests/test_variant_mapper.py`,
+    `tests/test_featurize.py`, `tests/test_denovo_loader.py` —
+    deterministic unit tests for the external-validation helpers.
+  - `tests/test_xgboost_model.py` — tiny-data integration test for the
+    Optuna tuning loop.
+  - `tests/test_verify_no_leakage.py` — wraps the 4 existing leakage
+    checks as individual pytest cases so CI failures pinpoint the exact
+    category.
+  - `tests/integration/test_reproduce_headline.py` — **the critical
+    gate**: loads the committed XGBoost checkpoint, re-scores the
+    committed test split, asserts ROC/PR/F1/Brier reproduce within
+    1e-3.
+
+- `pyproject.toml` — centralizes pytest (`--cov-fail-under=55`), ruff,
+  black, mypy, and coverage config. Per-file `ignore` for the frozen
+  data-prep modules that produced the committed splits (changing them
+  risks bit-for-bit repro).
+
+- `requirements-lock.txt` — exact `pip freeze` (287 packages) for
+  reproducible installs. `requirements.txt` keeps `>=` floors for
+  humans; CI installs from the lock.
+
+- `Dockerfile` — `python:3.11.7-slim` + liblzma-dev + DSSP +
+  OpenBLAS. Builds a < 2 GB image where `make test` + `make
+  reproduce-headline` succeed identically to the host.
+
+- `Makefile` — canonical entry points: `make test`, `make lint`, `make
+  train`, `make evaluate`, `make external`, `make
+  reproduce-headline`, plus Docker shortcuts.
+
+- `.pre-commit-config.yaml` — ruff, black, YAML/TOML validation,
+  trailing-whitespace, and a local hook that runs
+  `src.verify_no_leakage` when splits or training code change.
+
+- `.github/workflows/test.yml` — CI: install from lock, run leakage
+  gate, run pytest with coverage. Runs on every push / PR to main.
+
+- `.github/workflows/lint.yml` — ruff + black + mypy (mypy
+  non-blocking for now). Badges added to `README.md`.
+
+### Changed
+- `src/external_validation/variant_mapper.py` — fixed a silent bug: the
+  nucleotide-only filter did not reject multi-nucleotide refs/alts like
+  `AT>G`. Locked in with `test_variant_mapper.py::test_non_acgt_rejected`.
+- `README.md` — badges now reflect live CI status (`tests`, `lint`) and
+  latest PR-AUC (0.838) + ECE (0.011).
+
+### Scorecard
+| Dimension | Before | After |
+|---|---:|---:|
+| Code modularity | 4/5 | 4/5 |
+| Type hints + docstrings | 3/5 | 4/5 |
+| **Testing** | **0/5** | **4/5** (130 tests, 59.6% cov) |
+| Reproducibility | 4/5 | **5/5** (Dockerfile + lock + Makefile) |
+| Documentation | 5/5 | 5/5 |
+| Demo / interactive | 0/5 | 0/5 *(Stage 4)* |
+| **Overall** | **3.8/5** | **4.2/5** |
+
+Remaining gaps before publication-ready: baselines comparison
+(Stage 1), deep-science experiments (Stage 2), and the Streamlit demo +
+technical report (Stage 4).
+
 ## [Phase 2 step 2 — ESM-2 zero-shot proof-of-concept] — 2026-04-20
 
 Step 2 of the Phase 2 plan: add a protein-language-model signal that is

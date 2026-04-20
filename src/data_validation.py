@@ -10,15 +10,15 @@ Exit code:
 from __future__ import annotations
 
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from src.utils import require_file
 
+from src.utils import require_file
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 INPUT_PATH = REPO_ROOT / "data" / "processed" / "merged_clinvar_gnomad_dbnsfp.parquet"
@@ -121,7 +121,7 @@ def duplicate_check(df: pd.DataFrame) -> dict[str, object]:
     return {
         "duplicate_variant_keys_count": duplicate_count,
         "duplicate_variant_keys_examples": duplicate_examples,
-        "near_duplicate_positions_count": int(len(near_positions)),
+        "near_duplicate_positions_count": len(near_positions),
         "near_duplicate_positions_examples": near_examples,
     }
 
@@ -136,7 +136,7 @@ def label_integrity_check(df: pd.DataFrame) -> dict[str, object]:
 
     label_by_variant = df.groupby("variant_key", dropna=False)["label"].nunique(dropna=True)
     conflict_keys = label_by_variant[label_by_variant > 1].index
-    conflict_count = int(len(conflict_keys))
+    conflict_count = len(conflict_keys)
 
     if conflict_count > 0:
         conflict_examples = (
@@ -448,11 +448,11 @@ def main() -> None:
     df = pd.read_parquet(INPUT_PATH)
 
     report: dict[str, object] = {
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(UTC).isoformat(),
         "input_path": str(INPUT_PATH),
         "overview": {
-            "rows": int(len(df)),
-            "columns": int(len(df.columns)),
+            "rows": len(df),
+            "columns": len(df.columns),
         },
     }
 

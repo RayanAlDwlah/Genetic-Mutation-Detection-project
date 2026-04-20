@@ -6,12 +6,13 @@
 
 **King Khalid University — Computer Science Graduation Project**
 
-![Status](https://img.shields.io/badge/Status-Phase%201%20Complete-success?style=flat-square)
+[![tests](https://github.com/RayanAlDwlah/Genetic-Mutation-Detection-project/actions/workflows/test.yml/badge.svg)](https://github.com/RayanAlDwlah/Genetic-Mutation-Detection-project/actions/workflows/test.yml)
+[![lint](https://github.com/RayanAlDwlah/Genetic-Mutation-Detection-project/actions/workflows/lint.yml/badge.svg)](https://github.com/RayanAlDwlah/Genetic-Mutation-Detection-project/actions/workflows/lint.yml)
 ![Python](https://img.shields.io/badge/Python-3.11-blue?style=flat-square&logo=python&logoColor=white)
 ![XGBoost](https://img.shields.io/badge/XGBoost-2.x-orange?style=flat-square)
 ![ROC--AUC](https://img.shields.io/badge/ROC--AUC-0.938-brightgreen?style=flat-square)
-![PR--AUC](https://img.shields.io/badge/PR--AUC-0.836-green?style=flat-square)
-![ECE](https://img.shields.io/badge/ECE-0.015-blue?style=flat-square)
+![PR--AUC](https://img.shields.io/badge/PR--AUC-0.838-green?style=flat-square)
+![ECE](https://img.shields.io/badge/ECE-0.011-blue?style=flat-square)
 ![License](https://img.shields.io/badge/License-Academic-lightgrey?style=flat-square)
 
 </div>

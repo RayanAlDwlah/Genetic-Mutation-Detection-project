@@ -17,11 +17,13 @@ from __future__ import annotations
 import argparse
 import math
 import re
+from collections.abc import Callable, Iterable
 from pathlib import Path
-from typing import Any, Callable, Iterable
+from typing import Any
 
 import numpy as np
 import pandas as pd
+
 from src.utils import normalize_chromosome, resolve_path
 
 try:
@@ -222,7 +224,7 @@ class StreamingParquetSink:
         af_non_null = df["AF"].dropna()
         if not af_non_null.empty:
             self.af_sum += float(af_non_null.sum())
-            self.af_count += int(len(af_non_null))
+            self.af_count += len(af_non_null)
 
             self.common_variants_count += int((af_non_null > 0.01).sum())
             self.rare_variants_count += int((af_non_null <= 0.01).sum())

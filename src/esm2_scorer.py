@@ -83,6 +83,7 @@ AA20 = list("ACDEFGHIKLMNPQRSTVWY")
 
 # ─────────────────────────── VEP annotation ────────────────────────────
 
+
 def _variant_token(row: pd.Series) -> str:
     return f"{row['chr']} {row['pos']} . {row['ref']} {row['alt']}"
 
@@ -100,7 +101,7 @@ def _post_vep(variants: list[str]) -> list[dict]:
             if r.status_code == 200:
                 return r.json()
             if r.status_code in (429, 503):
-                time.sleep(2 ** attempt)
+                time.sleep(2**attempt)
                 continue
             r.raise_for_status()
         except requests.RequestException:
@@ -110,8 +111,11 @@ def _post_vep(variants: list[str]) -> list[dict]:
 
 def _pick_canonical_missense(tcs: list[dict]) -> dict | None:
     # Prefer canonical transcript with a missense_variant consequence.
-    canonical = [t for t in tcs if t.get("canonical") == 1
-                 and "missense_variant" in (t.get("consequence_terms") or [])]
+    canonical = [
+        t
+        for t in tcs
+        if t.get("canonical") == 1 and "missense_variant" in (t.get("consequence_terms") or [])
+    ]
     if canonical:
         return canonical[0]
     any_mis = [t for t in tcs if "missense_variant" in (t.get("consequence_terms") or [])]
@@ -145,8 +149,13 @@ def annotate_with_vep(
         for vk, rec in zip(batch_keys, recs):
             t = _pick_canonical_missense(rec.get("transcript_consequences") or [])
             if t is None:
-                cached[vk] = {"variant_key": vk, "transcript_id": None,
-                              "protein_position": None, "ref_aa": None, "alt_aa": None}
+                cached[vk] = {
+                    "variant_key": vk,
+                    "transcript_id": None,
+                    "protein_position": None,
+                    "ref_aa": None,
+                    "alt_aa": None,
+                }
                 continue
             aa = (t.get("amino_acids") or "").split("/")
             ref_aa = aa[0].strip().upper() if len(aa) == 2 else None
@@ -160,9 +169,11 @@ def annotate_with_vep(
             }
         if progress:
             done = start + len(sub)
-            print(f"    VEP batch {start // BATCH_VEP + 1}/"
-                  f"{(len(need) + BATCH_VEP - 1) // BATCH_VEP}  "
-                  f"→ {done:,}/{len(need):,}")
+            print(
+                f"    VEP batch {start // BATCH_VEP + 1}/"
+                f"{(len(need) + BATCH_VEP - 1) // BATCH_VEP}  "
+                f"→ {done:,}/{len(need):,}"
+            )
         time.sleep(SLEEP)
 
     out = pd.DataFrame([cached[k] for k in keys])
@@ -171,6 +182,7 @@ def annotate_with_vep(
 
 
 # ──────────────────────────── Sequence fetch ───────────────────────────
+
 
 def fetch_sequences(
     transcript_ids: list[str], *, cache_path: Path, progress: bool = True
@@ -188,14 +200,14 @@ def fetch_sequences(
     for i, tid in enumerate(need, 1):
         for attempt in range(MAX_RETRIES):
             try:
-                r = requests.get(SEQ_URL.format(tid=tid),
-                                 headers={"Accept": "application/json"},
-                                 timeout=30)
+                r = requests.get(
+                    SEQ_URL.format(tid=tid), headers={"Accept": "application/json"}, timeout=30
+                )
                 if r.status_code == 200:
                     cached[tid] = r.json().get("seq", "")
                     break
                 if r.status_code in (429, 503):
-                    time.sleep(2 ** attempt)
+                    time.sleep(2**attempt)
                     continue
                 # 400 often = non-protein-coding transcript; record empty string so we don't retry.
                 cached[tid] = ""
@@ -215,6 +227,7 @@ def fetch_sequences(
 
 
 # ──────────────────────────── ESM-2 scoring ────────────────────────────
+
 
 @dataclass
 class ESMRunner:
@@ -254,8 +267,10 @@ class ESMRunner:
     @staticmethod
     def _is_valid(ref: str, alt: str, seq: str, pos: int) -> bool:
         return (
-            bool(seq) and 1 <= pos <= len(seq)
-            and ref in AA20 and alt in AA20
+            bool(seq)
+            and 1 <= pos <= len(seq)
+            and ref in AA20
+            and alt in AA20
             and seq[pos - 1] == ref
         )
 
@@ -273,17 +288,27 @@ class ESMRunner:
             pos = r.protein_position
             ref = r.ref_aa
             alt = r.alt_aa
-            base = {"variant_key": vk, "transcript_id": tid,
-                    "protein_position": pos, "ref_aa": ref, "alt_aa": alt,
-                    "esm2_prob_ref": np.nan, "esm2_prob_alt": np.nan,
-                    "esm2_llr": np.nan, "skip_reason": None}
+            base = {
+                "variant_key": vk,
+                "transcript_id": tid,
+                "protein_position": pos,
+                "ref_aa": ref,
+                "alt_aa": alt,
+                "esm2_prob_ref": np.nan,
+                "esm2_prob_alt": np.nan,
+                "esm2_llr": np.nan,
+                "skip_reason": None,
+            }
             seq = seq_map.get(tid, "")
             if not pos or pd.isna(pos) or not self._is_valid(ref, alt, seq, int(pos)):
                 base["skip_reason"] = (
-                    "no_seq" if not seq
-                    else "bad_pos" if not pos or not (1 <= int(pos) <= len(seq))
-                    else "ref_mismatch" if seq[int(pos) - 1] != ref
-                    else "non_canonical_aa"
+                    "no_seq"
+                    if not seq
+                    else (
+                        "bad_pos"
+                        if not pos or not (1 <= int(pos) <= len(seq))
+                        else "ref_mismatch" if seq[int(pos) - 1] != ref else "non_canonical_aa"
+                    )
                 )
                 out_rows.append(base)
                 continue
@@ -313,6 +338,7 @@ class ESMRunner:
 
 # ─────────────────────────────── Driver ────────────────────────────────
 
+
 def score_variants(
     ext: pd.DataFrame,
     *,
@@ -336,7 +362,7 @@ def score_variants(
     ann = annotate_with_vep(ext, cache_path=ann_path, progress=progress)
 
     # 2. Unique transcripts → sequences.
-    tids = [t for t in ann["transcript_id"].dropna().unique()]
+    tids = list(ann["transcript_id"].dropna().unique())
     if progress:
         print(f"[esm2] fetching sequences for {len(tids):,} unique transcripts…")
     seqs = fetch_sequences(tids, cache_path=seq_path, progress=progress)
@@ -365,6 +391,7 @@ def score_variants(
 def _load_denovo() -> pd.DataFrame:
     """Load denovo-db via the existing loader (no framework dep here)."""
     from src.external_validation.denovo_loader import load_denovo_db
+
     path = REPO / "data/raw/external/denovo_db/denovo-db.non-ssc-samples.variants.tsv.gz"
     df = load_denovo_db(path)
     return df
@@ -372,10 +399,13 @@ def _load_denovo() -> pd.DataFrame:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--source", choices=["denovo_db", "splits"], default="denovo_db",
-                    help="Which variant set to score")
-    ap.add_argument("--sample", type=int, default=0,
-                    help="Stratified subsample size (0 = all)")
+    ap.add_argument(
+        "--source",
+        choices=["denovo_db", "splits"],
+        default="denovo_db",
+        help="Which variant set to score",
+    )
+    ap.add_argument("--sample", type=int, default=0, help="Stratified subsample size (0 = all)")
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--out", default="results/metrics/esm2_scores.parquet")
     args = ap.parse_args()
@@ -383,8 +413,12 @@ def main() -> None:
     if args.source == "denovo_db":
         ext = _load_denovo()[["variant_key", "chr", "pos", "ref", "alt", "label"]]
     else:
-        parts = [pd.read_parquet(REPO / f"data/splits/{s}.parquet") for s in ("train", "val", "test")]
-        ext = pd.concat(parts)[["variant_key", "chr", "pos", "ref", "alt", "label"]].drop_duplicates("variant_key")
+        parts = [
+            pd.read_parquet(REPO / f"data/splits/{s}.parquet") for s in ("train", "val", "test")
+        ]
+        ext = pd.concat(parts)[
+            ["variant_key", "chr", "pos", "ref", "alt", "label"]
+        ].drop_duplicates("variant_key")
 
     if args.sample:
         per = args.sample // 2
@@ -392,8 +426,12 @@ def main() -> None:
         for lbl in (0, 1):
             sub = ext[ext["label"] == lbl]
             if len(sub):
-                parts.append(sub.sample(min(per if lbl == 0 else args.sample - per, len(sub)),
-                                        random_state=args.seed))
+                parts.append(
+                    sub.sample(
+                        min(per if lbl == 0 else args.sample - per, len(sub)),
+                        random_state=args.seed,
+                    )
+                )
         ext = pd.concat(parts).reset_index(drop=True)
         print(f"[esm2] stratified sample → {len(ext):,} variants")
 
@@ -403,8 +441,10 @@ def main() -> None:
     out_path.parent.mkdir(parents=True, exist_ok=True)
     merged.to_parquet(out_path, index=False)
     n_ok = merged["esm2_llr"].notna().sum()
-    print(f"[esm2] wrote {out_path} — {n_ok:,}/{len(merged):,} variants scored "
-          f"({n_ok/len(merged):.1%})")
+    print(
+        f"[esm2] wrote {out_path} — {n_ok:,}/{len(merged):,} variants scored "
+        f"({n_ok/len(merged):.1%})"
+    )
 
 
 if __name__ == "__main__":

@@ -1,0 +1,45 @@
+# Pre-commit hooks: run `pre-commit install` once after clone.
+# Every `git commit` then gates on ruff + black + trailing-whitespace.
+# Slower checks (mypy, pytest) live in CI, not local hooks, so local
+# commits stay fast.
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: '(notebooks/.*|.*\.ipynb)$'
+      - id: end-of-file-fixer
+        exclude: '(notebooks/.*|.*\.ipynb)$'
+      - id: check-yaml
+      - id: check-toml
+      - id: check-added-large-files
+        args: [--maxkb=10000]  # allow committed parquets up to 10 MB
+      - id: check-merge-conflict
+      - id: detect-private-key
+      - id: mixed-line-ending
+        args: [--fix=lf]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.11
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+      - id: ruff-format
+
+  - repo: https://github.com/psf/black
+    rev: 26.3.1
+    hooks:
+      - id: black
+        language_version: python3.11
+
+  # Quick local leakage gate. Runs our own CLI as a hook so no commit can
+  # land that would fail `python -m src.verify_no_leakage`.
+  - repo: local
+    hooks:
+      - id: verify-no-leakage
+        name: verify no leakage
+        entry: python -m src.verify_no_leakage
+        language: system
+        pass_filenames: false
+        # Only run when data splits or training-related code changes.
+        files: '^(data/splits/.*\.parquet|src/(data_splitting|training|feature_analysis|gnomad_constraint)\.py|results/metrics/xgboost_feature_columns\.csv)$'

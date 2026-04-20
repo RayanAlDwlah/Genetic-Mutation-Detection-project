@@ -105,24 +105,21 @@ def _pick_missense_consequence(tcs: list[dict]) -> dict | None:
     return None
 
 
-def _post_batch(
-    variants: list[str], *, cfg: VEPFetchConfig
-) -> list[dict]:
+def _post_batch(variants: list[str], *, cfg: VEPFetchConfig) -> list[dict]:
     payload = {"variants": variants}
     last_err = None
     for attempt in range(cfg.max_retries):
         try:
             r = requests.post(
                 cfg.url,
-                headers={"Content-Type": "application/json",
-                         "Accept": "application/json"},
+                headers={"Content-Type": "application/json", "Accept": "application/json"},
                 data=json.dumps(payload),
                 timeout=90,
             )
             if r.status_code == 200:
                 return r.json()
             if r.status_code in (429, 503):
-                wait = 2 ** attempt
+                wait = 2**attempt
                 time.sleep(wait)
                 continue
             r.raise_for_status()
@@ -145,8 +142,7 @@ def _extract_row(variant_key: str, rec: dict) -> dict | None:
     if ref_aa not in AMINO_ACID_PROPERTIES or alt_aa not in AMINO_ACID_PROPERTIES:
         return None
 
-    row: dict[str, object] = {"variant_key": variant_key,
-                              "ref_aa": ref_aa, "alt_aa": alt_aa}
+    row: dict[str, object] = {"variant_key": variant_key, "ref_aa": ref_aa, "alt_aa": alt_aa}
     for vep_key, our_col in _VEP_KEY_MAP.items():
         v = t.get(vep_key)
         row[our_col] = np.nan if v in (None, "invalid_field") else float(v)
@@ -156,8 +152,7 @@ def _extract_row(variant_key: str, rec: dict) -> dict | None:
     row["Grantham_distance"] = GRANTHAM_TABLE[ref_aa][alt_aa]
 
     # Physicochemical ref/alt + changes.
-    for prop in ("hydrophobicity", "molecular_weight", "pI",
-                 "volume", "polarity", "charge"):
+    for prop in ("hydrophobicity", "molecular_weight", "pI", "volume", "polarity", "charge"):
         r = AMINO_ACID_PROPERTIES[ref_aa][prop]
         a = AMINO_ACID_PROPERTIES[alt_aa][prop]
         row[f"{prop}_ref"] = r
@@ -208,7 +203,7 @@ def fetch_vep_features(
         print(f"  VEP: {len(cached):,} cached, {len(need_indices):,} to fetch")
 
     for start in range(0, len(need_indices), cfg.batch_size):
-        sub = need_indices[start:start + cfg.batch_size]
+        sub = need_indices[start : start + cfg.batch_size]
         batch_tokens = [tokens[i] for i in sub]
         batch_keys = [keys[i] for i in sub]
         recs = _post_batch(batch_tokens, cfg=cfg)
@@ -218,9 +213,11 @@ def fetch_vep_features(
                 rows.append(r)
                 cached[vk] = r
         if progress:
-            print(f"    batch {start // cfg.batch_size + 1}/"
-                  f"{(len(need_indices)+cfg.batch_size-1)//cfg.batch_size}  "
-                  f"→ total fetched: {len(rows):,}")
+            print(
+                f"    batch {start // cfg.batch_size + 1}/"
+                f"{(len(need_indices)+cfg.batch_size-1)//cfg.batch_size}  "
+                f"→ total fetched: {len(rows):,}"
+            )
         time.sleep(cfg.sleep_between_batches)
 
     # Emit from cache + new fetches.
