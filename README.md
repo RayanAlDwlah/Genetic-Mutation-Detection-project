@@ -93,6 +93,62 @@ A fair comparison requires matching *what was measured*. The table below places 
 
 ---
 
+## 🌍 External Validation — denovo-db
+
+We don't believe our own held-out number until it survives a dataset we
+didn't train on. The first external source wired up is **denovo-db** (non-
+SSC samples, v1.6.1): 9,848 missense de-novo variants across 9,704 affected
+probands (autism, DD, epilepsy, CHD, …) and 144 unaffected siblings. The
+evaluation harness:
+
+1. Canonicalizes coords to `chr:pos:ref:alt`.
+2. Looks features up in the cached dbNSFP parquet first.
+3. Falls back to **Ensembl VEP REST (GRCh37)** for variants not in cache
+   — pulling phyloP, phastCons, GERP++, AA identity; computing BLOSUM62 /
+   Grantham / physicochemistry locally from the same helper tables the
+   training pipeline uses; imputing the 2–3 public-VEP gaps with training
+   medians.
+4. Rebuilds the training ColumnTransformer from the feature manifest and
+   scores the **isotonic-calibrated** probability.
+5. Reports metrics for *all* featurized rows *and* for the family-holdout
+   slice (variants whose gene family was absent from training).
+
+**Result on a 644-variant stratified sample (all 144 controls + 500 affected):**
+
+| Slice | n | ROC-AUC (95% CI) | PR-AUC (95% CI) |
+|---|---:|---|---|
+| full | 642 | **0.468** [0.415, 0.519] | 0.761 [0.721, 0.806] |
+| family-holdout only | 201 | 0.487 [0.383, 0.583] | 0.789 [0.712, 0.860] |
+
+The base-rate PR-AUC is `n_pos / n = 0.776`, so PR-AUC ≈ 0.76 is
+indistinguishable from the class prior. **The classifier performs at
+chance on denovo-db.** This is the single most important finding external
+validation could surface and the reason we ran it:
+
+> *A model that scores 0.836 PR-AUC on paralog-aware ClinVar generalizes
+> to near-zero signal on affected-vs-control de-novo missense.*
+
+Interpretation: the ClinVar-trained classifier learns "this variant
+*looks* disease-causing" (high conservation, disruptive substitution), but
+**almost every missense variant in denovo-db — affected or control — also
+looks that way.** Separating the causative de-novo from a bystander
+requires per-phenotype priors, gene-disease associations, or zygosity
+context the tabular model never sees. This is honest, publishable,
+defensible evidence of the tabular baseline's ceiling.
+
+Reproduce:
+
+```bash
+python scripts/evaluate_external.py --only denovo_db --use-vep --sample 1000 --n-boot 1000
+```
+
+Artifacts: `results/metrics/external_denovo_db_{metrics,coverage,predictions,unmapped}.*`.
+
+**Next external source:** ProteinGym DMS (held-out gene whitelist). Needs
+HGVSp ↔ genome resolution — tracked in `docs/CHANGELOG.md` as Phase D v2.
+
+---
+
 ## 🧪 Why These Fixes Matter
 
 ### 1️⃣ Missense Filter — the biggest catch
@@ -304,7 +360,9 @@ results/
 ## 🗺️ Roadmap
 
 - [x] **Phase 1 — Baseline & leakage hunt** · XGBoost, bootstrap CIs, calibration
-- [ ] **Phase D — External validation** · ProteinGym DMS + denovo-db
+- [x] **Phase 1 Lockdown** · leakage gate, stale-notebook banners, metric manifest
+- [x] **Phase D v1 — External validation (denovo-db)** · VEP-based featurizer, bootstrap CIs, family-holdout slice
+- [ ] **Phase D v2** · ProteinGym DMS (HGVSp ↔ genome resolution)
 - [ ] **Phase 2a** · 1D CNN + Attention on protein windows
 - [ ] **Phase 2b** · ESM-2 35M frozen embeddings
 - [ ] **Phase 2c** · Hybrid tabular + PLM late fusion
