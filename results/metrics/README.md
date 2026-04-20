@@ -40,6 +40,12 @@ README that disagree with these CSVs are stale.
 | `external_denovo_db_predictions.parquet` | `scripts/evaluate_external.py` | Per-variant raw + isotonic-calibrated probability, family-holdout flag. |
 | `external_denovo_db_unmapped.csv` | `scripts/evaluate_external.py` | External variants we could not featurize (reported openly, never silently dropped). |
 
+## Feature augmentation
+
+| File | Produced by | Contents |
+|---|---|---|
+| `gnomad_constraint_medians.csv` | `src/gnomad_constraint.py` | Train-fit median values for `pLI, oe_lof_upper, mis_z, oe_mis_upper, lof_z`. Reused by the external featurizer so val/test/external rows impute from the training distribution only (no leakage). |
+
 ## Ablations
 
 | File | Produced by | Contents |
