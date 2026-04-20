@@ -56,6 +56,41 @@ We started with a baseline that looked too good:
 
 📄 Full journey tracked in [`results/metrics/leakage_fix_journey.csv`](results/metrics/leakage_fix_journey.csv)
 
+<p align="center">
+  <img src="results/figures/leakage_journey.png" width="720" alt="Leakage-fix journey — PR-AUC and ROC-AUC across the five audit stages">
+</p>
+
+---
+
+## 📐 Calibration & Held-Out Performance
+
+<p align="center">
+  <img src="results/figures/reliability_calibration.png" width="720" alt="Reliability diagrams — isotonic calibration brings ECE from 0.07 to 0.015">
+</p>
+
+<p align="center">
+  <img src="results/figures/pr_roc_curves.png" width="720" alt="ROC and Precision-Recall curves on the held-out test set with 95% bootstrap CIs">
+</p>
+
+---
+
+## 🔬 Where We Stand vs. Prior Work
+
+A fair comparison requires matching *what was measured*. The table below places our honest number next to headline numbers from recent missense-classification papers, flagging known contamination sources.
+
+| Method (year) | Family | Train size | Test | Reported AUC | Leakage guards |
+|---|---|---:|---|---:|---|
+| **Ours (2026)** | XGBoost + tabular | **195K missense** | 28K (family-split) | **ROC 0.938 · PR 0.836** | ✅ missense-only · ✅ paralog-aware · ✅ no meta-predictors |
+| VARITY (2021) | Gradient boosting | ~35K (HumsaVar) | ~6K ClinVar | ROC ~0.90 | Gene-level split (no paralog guard) |
+| mvPPT (2023) | Gradient boosting | ~150K | ClinVar subset | ROC ~0.94 | 🔴 uses REVEL + CADD (ClinVar-trained) as features |
+| MAGPIE (2024) | Gradient boosting | ~250K | Multi-benchmark | ROC ~0.92 | Paralog status not documented |
+| MVP (2021) | 1D CNN | ~112K | ~12K ClinVar | ROC ~0.88 | HGMD-trained |
+| MutFormer (2023) | Transformer | ~230K | ~25K | ROC ~0.93 | HGMD-trained |
+| ESM-1b zero-shot (2023) | PLM (no fine-tune) | 250M seq pre-train | 36K ClinVar | ROC ~0.85 | ✅ never sees ClinVar |
+| AlphaMissense (2023) | PLM + primate | 250M seq + primates | 18,924 ClinVar | ROC ~0.94 | Proprietary compute (TPU v4 pods) |
+
+**Read this carefully:** headline numbers above 0.94 on ClinVar either (a) use ClinVar-trained meta-predictors as features — that's `mvPPT` — or (b) spend DeepMind-scale compute on protein language models — that's `AlphaMissense`. Our 0.836 PR-AUC is lower because it is **gauged against a harder, leak-free benchmark** of our own making. Phase 2 (ESM-2 35M + hybrid fusion) is where we attempt to match the PLM class on a modest academic budget.
+
 ---
 
 ## 🧪 Why These Fixes Matter
@@ -155,9 +190,14 @@ python -m src.evaluate_baseline
 
 # Ablation study
 python -m src.ablation_af --trials 8
+
+# Automated leakage gate (run before any result ships)
+python -m src.verify_no_leakage
 ```
 
-Outputs land in `results/checkpoints/` and `results/metrics/`.
+Outputs land in `results/checkpoints/` and `results/metrics/` — see the
+[artifact manifest](results/metrics/README.md). Every change to the pipeline
+is tracked in [`docs/CHANGELOG.md`](docs/CHANGELOG.md).
 
 <details>
 <summary><b>🔧 Full pipeline from raw sources (click to expand)</b></summary>
