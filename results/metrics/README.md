@@ -45,6 +45,8 @@ README that disagree with these CSVs are stale.
 | File | Produced by | Contents |
 |---|---|---|
 | `gnomad_constraint_medians.csv` | `src/gnomad_constraint.py` | Train-fit median values for `pLI, oe_lof_upper, mis_z, oe_mis_upper, lof_z`. Reused by the external featurizer so val/test/external rows impute from the training distribution only (no leakage). |
+| `esm2_denovo_db_scores.parquet` | `src/esm2_scorer.py` | Per-variant ESM-2 35M zero-shot scores on denovo-db (n=642 of 644 resolvable): `esm2_prob_ref`, `esm2_prob_alt`, `esm2_llr`, plus `transcript_id` and `protein_position`. |
+| `esm2_denovo_db_comparison.csv` | `scripts/analyze_esm2_denovo.py` | Point + 95% bootstrap CI for XGBoost, ESM-2 alone, and rank-fusion on the `full` and `family_holdout_only` slices of denovo-db. |
 
 ## Ablations
 

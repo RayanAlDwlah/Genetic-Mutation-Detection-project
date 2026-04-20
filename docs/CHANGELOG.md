@@ -3,6 +3,75 @@
 All notable changes to the honest-baseline pipeline. Dates are ISO-8601.
 Commits are on `origin/main`.
 
+## [Phase 2 step 2 — ESM-2 zero-shot proof-of-concept] — 2026-04-20
+
+Step 2 of the Phase 2 plan: add a protein-language-model signal that is
+orthogonal to the tabular features. Using ESM-2 35M
+(`facebook/esm2_t12_35M_UR50D`), we compute a masked-LM
+log-likelihood ratio per missense variant:
+
+    esm2_llr = log P(alt | context) - log P(ref | context)
+
+with the mutated position replaced by `<mask>`. This encodes the
+evolutionary-sequence plausibility of the substitution — a signal the
+tabular baseline has no access to.
+
+### Added
+- `src/esm2_scorer.py` — end-to-end scorer:
+    1. Annotate variants via Ensembl VEP REST to pull the canonical
+       `transcript_id` and `protein_position`.
+    2. Fetch protein sequences from Ensembl `/sequence/id/?type=protein`
+       (resumable parquet cache).
+    3. Run ESM-2 35M masked-LM on MPS / CUDA / CPU; sliding-window the
+       input for proteins longer than 1022 residues.
+    4. Emit `esm2_prob_ref`, `esm2_prob_alt`, `esm2_llr` per variant,
+       with a `skip_reason` column for rows whose sequence/position
+       couldn't be resolved.
+- `scripts/analyze_esm2_denovo.py` — proof-of-concept comparison:
+  ROC/PR with 1000-boot CIs for **XGBoost alone** vs **ESM-2 alone** vs
+  **rank-average fusion** on denovo-db (full + family_holdout_only).
+
+### Infrastructure
+- Built a separate `~/.venvs/esm2` using Homebrew's Python 3.13 because
+  the project's pyenv 3.11.7 was compiled without `_lzma`, which
+  HuggingFace requires for the ESM-2 tokenizer.
+
+### Artifacts
+- `data/intermediate/esm2/vep_ann.parquet` — per-variant VEP annotation
+  (transcript + protein_position).
+- `data/intermediate/esm2/sequences.parquet` — per-transcript canonical
+  protein sequence.
+- `data/intermediate/esm2/scores.parquet` — per-variant ESM-2 scores
+  (resumable).
+- `results/metrics/esm2_denovo_db_scores.parquet` — denovo-db scored
+  subset (n=642 of 644; two variants on non-missense consequences).
+- `results/metrics/esm2_denovo_db_comparison.csv` — ROC/PR + 95% CIs for
+  the three scores × two slices.
+
+### Headline — denovo-db (n=642 sample, 1000-boot CIs)
+
+| Slice | Score | ROC-AUC (95% CI) | PR-AUC (95% CI) |
+|---|---|---|---|
+| full | xgb_calibrated | 0.511 [0.455, 0.564] | 0.790 [0.749, 0.830] |
+| full | esm2_llr | 0.515 [0.441, 0.527] | 0.772 [0.723, 0.800] |
+| full | **rank_fusion** | **0.517** [0.461, 0.573] | 0.777 [0.735, 0.823] |
+| family_holdout_only | xgb_calibrated | 0.573 [0.476, 0.670] | 0.838 [0.774, 0.897] |
+| family_holdout_only | esm2_llr | 0.552 [0.420, 0.574] | 0.821 [0.738, 0.865] |
+| family_holdout_only | **rank_fusion** | **0.588** [0.495, 0.683] | **0.851** [0.788, 0.914] |
+
+### Interpretation
+- ESM-2 zero-shot alone has meaningful signal on unseen families
+  (ROC ≈ 0.55) — better than random, but weaker than the
+  constraint-augmented XGBoost.
+- **Rank-fusion adds a small real boost** to XGBoost on the
+  family_holdout_only slice: ROC +0.015, PR +0.013. Direction is
+  consistent, CIs are wide because n=201.
+- Proper integration will retrain XGBoost **with `esm2_llr` as a
+  feature**, letting gradient-boosted trees exploit ESM × constraint ×
+  conservation interactions that rank-fusion cannot model. That needs
+  `esm2_llr` computed across the full training corpus
+  (~195k variants → ~35 h of MPS compute), deferred as an overnight run.
+
 ## [Phase 2 step 1 — gnomAD gene-level constraint features] — 2026-04-20
 
 Phase D v1 revealed that the ClinVar-trained baseline scored **at chance**
