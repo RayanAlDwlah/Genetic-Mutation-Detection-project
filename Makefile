@@ -7,7 +7,7 @@
 
 .PHONY: help install test lint format fix typecheck \
         train evaluate external ablate-esm2 reproduce-headline \
-        verify-leakage \
+        verify-leakage report \
         docker-build docker-test docker-reproduce \
         clean-artifacts
 
@@ -68,6 +68,21 @@ ablate-esm2:
 ##                      the committed checkpoint (runs in < 30 s).
 reproduce-headline:
 	$(PYTHON) -m pytest tests/integration/test_reproduce_headline.py -v --no-cov
+
+## report:  build the LaTeX technical report (requires pdflatex + bibtex)
+report:
+	@if ! command -v pdflatex >/dev/null 2>&1; then \
+	    echo "ERROR: pdflatex not installed."; \
+	    echo "Install with: brew install --cask mactex  (or use Overleaf)"; \
+	    exit 1; \
+	fi
+	@cd report && \
+	    cp ../results/figures/{leakage_journey,calibration_triptych,shap_summary,shap_bar,baselines_forest_plot}.png figures/ 2>/dev/null || true && \
+	    pdflatex -interaction=nonstopmode main.tex && \
+	    bibtex main && \
+	    pdflatex -interaction=nonstopmode main.tex && \
+	    pdflatex -interaction=nonstopmode main.tex && \
+	    echo "Built report/main.pdf"
 
 # ───────────────────────── Docker shortcuts ─────────────────────────
 
