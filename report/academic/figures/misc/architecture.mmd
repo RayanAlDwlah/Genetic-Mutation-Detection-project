@@ -1,0 +1,55 @@
+flowchart TB
+    classDef data fill:#D5DBDB,stroke:#2C3E50,stroke-width:2px,color:#1B2631
+    classDef model fill:#AED6F1,stroke:#1F618D,stroke-width:2px,color:#1B2631
+    classDef eval fill:#A9DFBF,stroke:#196F3D,stroke-width:2px,color:#1B2631
+    classDef iface fill:#FAD7A0,stroke:#9A7D0A,stroke-width:2px,color:#1B2631
+    classDef ext fill:#F5B7B1,stroke:#922B21,stroke-width:1.5px,color:#1B2631
+    classDef ci fill:#D7BDE2,stroke:#6C3483,stroke-width:2px,color:#1B2631
+
+    subgraph L1["1. Data Layer"]
+        CV[ClinVar]:::data
+        GN[gnomAD v2/v4]:::data
+        DN[dbNSFP 5.3]:::data
+        GC[gnomAD constraint]:::data
+    end
+
+    subgraph L2["2. Feature Layer"]
+        F1[Variant canonicalization]:::data
+        F2[Missense filter]:::data
+        F3[39-feature assembly]:::data
+        F4[Paralog-family grouping]:::data
+    end
+
+    subgraph L3["3. Model Layer"]
+        M1[XGBoost + Optuna TPE]:::model
+        M2[Isotonic calibrator]:::model
+        M3[TreeSHAP explainer]:::model
+    end
+
+    subgraph L4["4. Evaluation Layer"]
+        E1[Bootstrap CIs]:::eval
+        E2[Brier decomposition]:::eval
+        E3[Baseline comparison]:::eval
+        E4[denovo-db external val]:::eval
+        E5[ESM-2 zero-shot PoC]:::eval
+    end
+
+    subgraph L5["5. Interface Layer"]
+        I1[Streamlit web app]:::iface
+        I2[CLI scripts/]:::iface
+        I3[Programmatic API]:::iface
+    end
+
+    subgraph L6["Cross-cutting — Quality gates"]
+        Q1[pytest 158 tests]:::ci
+        Q2[ruff + black + mypy]:::ci
+        Q3[GitHub Actions CI]:::ci
+        Q4[Docker reproducibility]:::ci
+        Q5[Leakage gate]:::ci
+    end
+
+    L1 --> L2 --> L3 --> L4
+    L3 --> L5
+    L6 -.-> L2
+    L6 -.-> L3
+    L6 -.-> L4

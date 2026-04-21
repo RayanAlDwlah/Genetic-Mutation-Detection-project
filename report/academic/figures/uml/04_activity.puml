@@ -1,0 +1,93 @@
+@startuml
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontName "Helvetica"
+skinparam defaultFontSize 12
+skinparam activity {
+  BackgroundColor #ECF0F1
+  BorderColor #2C3E50
+  FontColor #1B2631
+}
+skinparam activityDiamond {
+  BackgroundColor #FFF3CD
+  BorderColor #856404
+}
+skinparam arrow {
+  Color #2C3E50
+  Thickness 1.5
+}
+
+title Training and evaluation workflow — activity diagram
+
+start
+
+partition "Data preparation" {
+  :Download ClinVar variant_summary.txt.gz;
+  :Filter reviewed + star ≥ 2;
+
+  if (ref_aa AND alt_aa both non-null?) then (yes)
+  else (no)
+    #FFAAAA:drop row (non-missense);
+    detach
+  endif
+
+  :Merge gnomAD v2.1 + v4 AF;
+  :Merge dbNSFP conservation + AA chemistry;
+  :Merge gnomAD v2.1.1 gene-level constraint\n(pLI, LOEUF, mis_z, ...);
+  :Assign gene family via assign_gene_family();
+  :GroupShuffleSplit at family level\n(seed=42, 70/15/15);
+}
+
+partition "Leakage gate (CI-enforced)" {
+  fork
+    :check feature hygiene;
+  fork again
+    :check missense-only;
+  fork again
+    :check family disjoint;
+  fork again
+    :check label balance;
+  end fork
+
+  if (any check failed?) then (yes)
+    #FFAAAA:abort pipeline;
+    stop
+  else (no)
+  endif
+}
+
+partition "Model training" {
+  :Initialize Optuna TPESampler\n(multivariate=True);
+  repeat
+    :Sample hyperparameters;
+    :Fit XGBoost\n(early_stopping on val PR-AUC);
+    :Log trial score;
+  repeat while (trials < 40?)
+
+  :Select best-params model;
+  :Sweep decision threshold\non validation F1;
+}
+
+partition "Calibration" {
+  :Fit IsotonicRegression on val probs;
+  :Apply calibration to test probs;
+  :Compute Brier decomposition\n(reliability + resolution + uncertainty);
+}
+
+partition "Evaluation" {
+  fork
+    :Bootstrap 1,000 replicates\nROC/PR/F1/Brier CIs;
+  fork again
+    :TreeSHAP on 2,000 test rows;
+  fork again
+    :External validation — denovo-db\n(VEP REST fallback + constraint merge);
+  fork again
+    :Score SIFT/PolyPhen-2/AlphaMissense\non same test split;
+  end fork
+
+  :Persist CSVs + figures under results/;
+}
+
+stop
+
+@enduml

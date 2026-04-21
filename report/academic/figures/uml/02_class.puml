@@ -1,0 +1,148 @@
+@startuml
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam defaultFontName "Helvetica"
+skinparam defaultFontSize 12
+skinparam class {
+  BackgroundColor #ECF0F1
+  BorderColor #2C3E50
+  ArrowColor #2C3E50
+  FontColor #1B2631
+  HeaderBackgroundColor #D5DBDB
+}
+skinparam note {
+  BackgroundColor #FFF3CD
+  BorderColor #856404
+}
+
+package "Data Pipeline" <<Folder>> #F8F9FA {
+
+  class ClinVarLoader {
+    + raw_path : Path
+    + min_review_stars : int
+    --
+    + load() : DataFrame
+    + filter_missense(df) : DataFrame
+  }
+
+  class FeatureEngine {
+    + dbnsfp_path : Path
+    + gnomad_path : Path
+    --
+    + build_features(variants) : DataFrame
+    + impute_medians(df, medians) : DataFrame
+  }
+
+  class FamilySplitter {
+    + patterns : list[Pattern]
+    + seed : int
+    --
+    + assign_gene_family(gene) : str
+    + split(df) : tuple[train, val, test]
+  }
+
+  class LeakageGate {
+    + BANNED_FEATURES : set[str]
+    --
+    + check_feature_hygiene() : list[str]
+    + check_missense_filter() : list[str]
+    + check_split_disjoint() : list[str]
+    + check_label_balance() : list[str]
+  }
+}
+
+package "Modeling" <<Folder>> #F8F9FA {
+
+  class XGBTuningConfig {
+    + n_trials : int = 40
+    + seed : int = 42
+    + early_stopping_rounds : int
+  }
+
+  class XGBoostTuner {
+    + config : XGBTuningConfig
+    --
+    + tune(X_train, y_train, X_val, y_val) : Model
+    - _suggest_params(trial) : dict
+  }
+
+  class Calibrator <<Isotonic>> {
+    + y_min : float = 0.0
+    + y_max : float = 1.0
+    --
+    + fit(p_raw, y_true) : None
+    + transform(p_raw) : ndarray
+  }
+
+  class BrierDecomposer {
+    --
+    + {static} decompose(y, p, n_bins) : BrierDecomposition
+  }
+}
+
+package "Evaluation" <<Folder>> #F8F9FA {
+
+  class Bootstrapper {
+    + n_boot : int = 1000
+    + seed : int = 42
+    --
+    + compute(y, p) : CIs
+  }
+
+  class SHAPExplainer {
+    + model : XGBClassifier
+    --
+    + explain(X_sample) : ndarray
+    + top_features(shap_values, k) : DataFrame
+  }
+
+  class ExternalEvaluator {
+    + train_split : DataFrame
+    + model : XGBClassifier
+    --
+    + score_external(ext) : DataFrame
+    + family_holdout_mask(ext) : ndarray
+  }
+}
+
+package "Interfaces" <<Folder>> #F8F9FA {
+
+  class StreamlitApp {
+    --
+    + score_variant(vk) : dict
+    + render_shap_panel(shap_df) : None
+  }
+
+  class CLI {
+    --
+    + evaluate_external(args) : None
+    + run_baselines(args) : None
+    + compute_shap(args) : None
+  }
+}
+
+ClinVarLoader --> FeatureEngine : passes variants
+FeatureEngine --> FamilySplitter : enriched rows
+FamilySplitter --> LeakageGate : validates
+FamilySplitter --> XGBoostTuner : train/val splits
+XGBoostTuner --> Calibrator : raw predictions
+Calibrator --> Bootstrapper : calibrated probs
+Bootstrapper --> BrierDecomposer : uses
+XGBoostTuner --> SHAPExplainer : trained model
+XGBoostTuner --> ExternalEvaluator : trained model
+StreamlitApp --> XGBoostTuner : uses
+StreamlitApp --> Calibrator : uses
+StreamlitApp --> SHAPExplainer : uses
+CLI --> XGBoostTuner : uses
+CLI --> ExternalEvaluator : uses
+
+note right of LeakageGate
+  Invariants enforced by CI:
+  * no banned features in matrix
+  * 100% missense-only in train
+  * zero shared gene families
+  * label-rate delta < 0.08
+end note
+
+@enduml

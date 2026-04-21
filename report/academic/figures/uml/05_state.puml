@@ -1,0 +1,60 @@
+@startuml
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontName "Helvetica"
+skinparam defaultFontSize 12
+skinparam state {
+  BackgroundColor #ECF0F1
+  BorderColor #2C3E50
+  FontColor #1B2631
+  ArrowColor #2C3E50
+}
+
+title Variant lifecycle — state diagram
+
+[*] --> Raw
+
+Raw : entered as chr:pos:ref:alt
+Raw --> Canonicalized : parse + normalize
+
+Canonicalized : variant_key = "17:44075760:G:A"
+Canonicalized --> Featurized : cache lookup (dbNSFP)
+Canonicalized --> VEPFetched : cache miss
+
+VEPFetched : Ensembl VEP REST (GRCh38)
+VEPFetched --> Featurized : + AA chemistry computed locally
+
+Featurized : 39-column vector + imputation flags
+Featurized --> Scored : XGBoost predict_proba
+
+Scored : p_raw in [0,1]
+Scored --> Calibrated : isotonic transform
+
+Calibrated : p_calibrated + 95% CI
+Calibrated --> Explained : TreeSHAP per-feature
+
+Explained : top-15 SHAP values
+Explained --> Reported : render UI / JSON
+
+Reported --> [*]
+
+note right of Raw
+  Rejected if parse fails
+  or non-missense (len(ref) != 1
+  or len(alt) != 1)
+end note
+
+note right of VEPFetched
+  Rejected if no missense
+  consequence on canonical
+  transcript
+end note
+
+note right of Reported
+  Risk bands:
+    p ≥ 0.75 → pathogenic
+    0.25 < p < 0.75 → uncertain
+    p ≤ 0.25 → benign
+end note
+
+@enduml

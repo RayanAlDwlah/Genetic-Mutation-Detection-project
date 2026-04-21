@@ -1,0 +1,57 @@
+@startuml
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam handwritten false
+skinparam defaultFontName "Helvetica"
+skinparam defaultFontSize 13
+
+skinparam actor {
+  BackgroundColor #ECF0F1
+  BorderColor #2C3E50
+  FontColor #2C3E50
+}
+skinparam usecase {
+  BackgroundColor #D5DBDB
+  BorderColor #2C3E50
+  FontColor #1B2631
+  ArrowColor #2C3E50
+}
+skinparam rectangle {
+  BorderColor #2C3E50
+}
+
+left to right direction
+
+actor "Clinical Geneticist" as C
+actor "Research Scientist" as R
+actor "External Data Service\n(Ensembl VEP, gnomAD)" as E
+actor "CI/CD System\n(GitHub Actions)" as G
+
+rectangle "Missense Variant Pathogenicity Classification System" {
+  usecase "UC1: Submit variant\n(chr:pos:ref:alt)" as UC1
+  usecase "UC2: Featurize variant\n(cache lookup + VEP fallback)" as UC2
+  usecase "UC3: Score variant\n(XGBoost + isotonic calibrator)" as UC3
+  usecase "UC4: Explain prediction\n(TreeSHAP top features)" as UC4
+  usecase "UC5: Export report\n(JSON / CSV)" as UC5
+  usecase "UC6: Train baseline\n(paralog-aware split + Optuna)" as UC6
+  usecase "UC7: Evaluate externally\n(denovo-db + bootstrap CIs)" as UC7
+  usecase "UC8: Verify no leakage\n(CI-enforced gate)" as UC8
+}
+
+C --> UC1
+C --> UC4
+C --> UC5
+
+R --> UC1
+R --> UC6
+R --> UC7
+
+UC1 ..> UC2 : <<include>>
+UC2 ..> UC3 : <<include>>
+UC3 ..> UC4 : <<extend>>
+
+UC2 --> E : queries
+UC6 --> UC8 : <<include>>
+G --> UC8
+
+@enduml
