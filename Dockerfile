@@ -28,6 +28,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
+# Optional: uncomment the block below to include a LaTeX toolchain
+# in the image so `make report` works inside the container. Adds
+# ~800 MB — we leave it off by default so the base image stays under
+# 2 GB; local developers on macOS should use Overleaf or `brew install
+# --cask mactex` instead.
+#
+# RUN apt-get update && apt-get install -y --no-install-recommends \
+#         texlive-latex-base texlive-latex-recommended \
+#         texlive-latex-extra texlive-fonts-recommended \
+#         biber \
+#     && rm -rf /var/lib/apt/lists/*
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
