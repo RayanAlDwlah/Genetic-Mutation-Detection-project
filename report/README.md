@@ -71,6 +71,46 @@ shap_summary,shap_bar,baselines_forest_plot}.png figures/
   requires IEEE or Nature style, swap `\bibliographystyle{plainnat}`
   at the bottom of `main.tex`.
 
+## Defense presentation (`defense.tex`)
+
+A 20-slide Beamer deck structured as the oral defense of the report.
+Uses the `metropolis` theme (clean, modern, widely accepted).
+
+To compile:
+
+```bash
+cd report
+pdflatex defense.tex
+pdflatex defense.tex
+```
+
+Or upload to Overleaf alongside `figures/` for editing.
+
+Slides cover:
+
+1. Title
+2. One-sentence pitch
+3. What is a missense variant (the problem)
+4. Why it's hard (three failure modes in prior work)
+5. We audited our own baseline
+6–8. Three leakage sources, one slide each
+9. Five-stage journey (the headline figure)
+10. Post-audit numbers
+11. Baseline comparison table
+12. Forest plot
+13. Why calibration matters + Murphy decomposition
+14. Calibration results table
+15. Reliability triptych
+16. SHAP top-10 (highlighting Phase 2.1 additions)
+17. SHAP beeswarm
+18. Confident errors
+19. denovo-db external validation — the sobering result
+20. Before vs after gnomAD constraint on denovo-db
+21. Phase 2 roadmap
+22. Reproducibility
+23. Take-home messages
+24. Thank you / Q&A
+
 ## Target venues
 
 This report is structured like a methods paper suitable for
