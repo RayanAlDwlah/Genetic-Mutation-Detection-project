@@ -187,13 +187,16 @@ def annotate_with_vep(
                 "ref_aa": ref_aa,
                 "alt_aa": alt_aa,
             }
+        batch_idx = start // BATCH_VEP + 1
         if progress:
             done = start + len(sub)
             print(
-                f"    VEP batch {start // BATCH_VEP + 1}/"
+                f"    VEP batch {batch_idx}/"
                 f"{(len(need) + BATCH_VEP - 1) // BATCH_VEP}  "
                 f"→ {done:,}/{len(need):,}"
             )
+        if batch_idx % 10 == 0:
+            pd.DataFrame(list(cached.values())).to_parquet(cache_path, index=False)
         time.sleep(SLEEP)
 
     out = pd.DataFrame([cached[k] for k in keys])
