@@ -1,0 +1,102 @@
+@startuml
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontName "Helvetica"
+skinparam defaultFontSize 12
+skinparam component {
+  BackgroundColor #ECF0F1
+  BorderColor #2C3E50
+  FontColor #1B2631
+  ArrowColor #2C3E50
+}
+skinparam interface {
+  BackgroundColor #FFF3CD
+  BorderColor #856404
+}
+skinparam cloud {
+  BackgroundColor #D5F5E3
+  BorderColor #186A3B
+}
+skinparam database {
+  BackgroundColor #FADBD8
+  BorderColor #922B21
+}
+
+title System component diagram
+
+package "User Interfaces" {
+  [Streamlit Web App] as WebApp
+  [CLI scripts/] as CLI
+  [Programmatic API] as API
+}
+
+package "Core Pipeline (src/)" {
+  [ClinVar Loader] as L1
+  [gnomAD Extractor] as L2
+  [dbNSFP Extractor] as L3
+  [Feature Engine] as L4
+  [Paralog Splitter] as L5
+  [Leakage Gate] as L6
+  [XGBoost Tuner] as L7
+  [Calibrator (Isotonic)] as L8
+  [SHAP Explainer] as L9
+  [External Evaluator] as L10
+  [ESM-2 Scorer] as L11
+  [Baseline Runners\n(SIFT, PolyPhen, AM)] as L12
+}
+
+package "Persistent Artifacts" {
+  database "data/splits/\n(parquet)" as DB1
+  database "results/metrics/\n(CSV + parquet)" as DB2
+  database "results/checkpoints/\nxgboost_best.ubj" as DB3
+  database "data/intermediate/\ndbnsfp_cache.parquet" as DB4
+}
+
+package "External Services" {
+  cloud "Ensembl VEP REST\n(GRCh38)" as E1
+  cloud "gnomAD constraint\nTSV.bgz" as E2
+  cloud "AlphaMissense hg38\nGoogle Storage" as E3
+  cloud "Hugging Face Hub\n(ESM-2 weights)" as E4
+}
+
+package "CI / Quality Gates" {
+  [pytest (158 tests)] as CI1
+  [ruff + black + mypy] as CI2
+  [GitHub Actions] as CI3
+  [Docker image] as CI4
+}
+
+WebApp --> L4
+WebApp --> L7
+WebApp --> L8
+WebApp --> L9
+CLI --> L10
+CLI --> L12
+API --> L7
+
+L1 --> L4
+L2 --> L4
+L3 --> L4
+L3 --> DB4
+L4 --> L5
+L5 --> L6
+L5 --> DB1
+L6 --> CI1
+L7 --> DB3
+L7 --> L8
+L7 --> L9
+L7 --> L10
+L10 --> DB2
+L11 --> DB2
+L12 --> DB2
+
+L4 --> E1 : fallback
+L4 --> E2 : download
+L11 --> E4 : pulls weights
+L12 --> E3 : tabix lookup
+
+CI3 --> CI1
+CI3 --> CI2
+CI3 --> CI4
+
+@enduml

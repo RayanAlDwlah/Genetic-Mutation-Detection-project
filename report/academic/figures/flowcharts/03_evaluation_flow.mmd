@@ -1,0 +1,46 @@
+flowchart TB
+    classDef data fill:#D5DBDB,stroke:#2C3E50,stroke-width:2px,color:#1B2631
+    classDef compute fill:#AED6F1,stroke:#1F618D,stroke-width:2px,color:#1B2631
+    classDef eval fill:#A9DFBF,stroke:#196F3D,stroke-width:2px,color:#1B2631
+    classDef out fill:#FAD7A0,stroke:#9A7D0A,stroke-width:1.5px,color:#1B2631
+
+    TR[("Trained XGBoost<br/>xgboost_best.ubj")]:::data
+    CAL[("Isotonic Calibrator<br/>fit on val")]:::data
+    TS[("Paralog-disjoint<br/>test split (n=28,098)")]:::data
+
+    P_RAW[/"Raw probabilities p_raw"/]:::compute
+    P_CAL[/"Calibrated probabilities p_cal"/]:::compute
+
+    BOOT["Bootstrap<br/>1,000 replicates × 42 seed"]:::eval
+    BRI["Brier decomposition<br/>Reliability / Resolution / Uncertainty"]:::eval
+    SHAP["TreeSHAP<br/>2,000 stratified rows"]:::eval
+    BASE["Baseline re-scoring<br/>SIFT, PolyPhen-2, AlphaMissense"]:::eval
+    EXT["denovo-db external<br/>full + family-holdout"]:::eval
+    ESM["ESM-2 zero-shot<br/>rank-fusion with XGBoost"]:::eval
+
+    M1["ROC-AUC + PR-AUC + F1 + MCC<br/>with 95 % CIs"]:::out
+    M2["ECE / MCE + Brier /<br/>Reliability / Resolution"]:::out
+    M3["top-20 feature table<br/>+ confident errors CSV"]:::out
+    M4["Forest plot vs baselines"]:::out
+    M5["Pre/post-constraint<br/>on unseen families"]:::out
+    M6["Orthogonal-signal check<br/>rank-fusion ΔROC"]:::out
+
+    TR --> P_RAW
+    P_RAW --> CAL
+    CAL --> P_CAL
+    TS --> P_RAW
+
+    P_RAW --> BOOT
+    P_CAL --> BOOT
+    BOOT --> M1
+
+    P_RAW --> BRI
+    P_CAL --> BRI
+    BRI --> M2
+
+    TR --> SHAP
+    SHAP --> M3
+
+    BASE --> M4
+    EXT --> M5
+    ESM --> M6

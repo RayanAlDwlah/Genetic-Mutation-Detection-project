@@ -1,0 +1,29 @@
+gantt
+    title Project Schedule two-semester plan
+    dateFormat YYYY-MM-DD
+    axisFormat %b %Y
+
+    section Term 1 Design
+    Literature review               :done, lit,  2025-09-01, 2025-10-05
+    Problem scoping                 :done, obj,  2025-09-20, 2025-10-10
+    Initial architecture            :done, ar1,  2025-10-05, 2025-11-10
+    Data sources survey             :done, ds,   2025-10-15, 2025-11-05
+    Term 1 report planning          :done, r1,   2025-11-10, 2025-12-20
+
+    section Term 2 Execution
+    Data assembly cleaning          :done, da,   2026-01-15, 2026-02-10
+    First baseline leakage hunt     :done, lh,   2026-02-01, 2026-04-10
+    Stage 0 tests CI Docker         :done, s0,   2026-04-15, 2026-04-21
+    Stage 1 baselines comparison    :done, s1,   2026-04-20, 2026-04-21
+    Stage 2.4 SHAP error analysis   :done, sh,   2026-04-20, 2026-04-21
+    Stage 3 calibration deep dive   :done, cal,  2026-04-21, 2026-04-22
+    Stage 4.1 Streamlit demo        :done, demo, 2026-04-21, 2026-04-22
+    Stage 4.2 LaTeX report slides   :active, rep, 2026-04-22, 2026-04-28
+
+    section Parallel compute
+    Phase 2.1 ESM 2 full training   :active, esm, 2026-04-21, 2026-04-25
+    Phase 2.2 AlphaFold2 features   :        af,  2026-04-25, 2026-04-28
+
+    section Deliverables
+    Academic report defense         :milestone, m1, 2026-04-28, 0d
+    Final defense                   :milestone, m2, 2026-05-15, 0d
