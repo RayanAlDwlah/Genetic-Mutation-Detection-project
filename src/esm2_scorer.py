@@ -242,11 +242,12 @@ def fetch_sequences(
             cached[tid] = ""
         if progress and (i % 50 == 0 or i == len(need)):
             print(f"    seq {i:,}/{len(need):,}")
+        if i % 100 == 0 or i == len(need):
+            pd.DataFrame(
+                [{"transcript_id": k, "sequence": v} for k, v in cached.items()]
+            ).to_parquet(cache_path, index=False)
         time.sleep(0.15)  # cheap per-request throttle
 
-    pd.DataFrame([{"transcript_id": k, "sequence": v} for k, v in cached.items()]).to_parquet(
-        cache_path, index=False
-    )
     return cached
 
 
@@ -421,10 +422,16 @@ def score_variants(
         runner = ESMRunner()
         if progress:
             print(f"[esm2] loaded {runner.model_name} on {runner.device}")
-        new_scores = runner.score_rows(need, seqs)
-        for _, row in new_scores.iterrows():
-            scored_cache[row["variant_key"]] = row.to_dict()
-        pd.DataFrame(list(scored_cache.values())).to_parquet(score_path, index=False)
+        CHUNK = 500
+        for chunk_start in range(0, len(need), CHUNK):
+            chunk = need.iloc[chunk_start : chunk_start + CHUNK]
+            new_scores = runner.score_rows(chunk, seqs)
+            for _, row in new_scores.iterrows():
+                scored_cache[row["variant_key"]] = row.to_dict()
+            pd.DataFrame(list(scored_cache.values())).to_parquet(score_path, index=False)
+            if progress:
+                done = min(chunk_start + CHUNK, len(need))
+                print(f"[esm2] checkpoint: {done:,}/{len(need):,} → {score_path.name}")
 
     return pd.DataFrame([scored_cache[k] for k in ann["variant_key"]])
 
