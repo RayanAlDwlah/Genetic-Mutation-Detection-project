@@ -70,8 +70,17 @@ import requests
 REPO = Path(__file__).resolve().parents[1]
 CACHE_DIR = REPO / "data/intermediate/esm2"
 
-VEP_URL = "https://grch37.rest.ensembl.org/vep/human/region"
-SEQ_URL = "https://grch37.rest.ensembl.org/sequence/id/{tid}?type=protein"
+# Default to GRCh38 (our ClinVar-derived splits are GRCh38). For
+# external datasets that publish GRCh37 coordinates (e.g. denovo-db),
+# pass the GRCh37 URLs explicitly via the `vep_url` / `seq_url` kwargs.
+VEP_URL_DEFAULT = "https://rest.ensembl.org/vep/human/region"
+SEQ_URL_DEFAULT = "https://rest.ensembl.org/sequence/id/{tid}?type=protein"
+VEP_URL_GRCH37 = "https://grch37.rest.ensembl.org/vep/human/region"
+SEQ_URL_GRCH37 = "https://grch37.rest.ensembl.org/sequence/id/{tid}?type=protein"
+# Module-level aliases kept for backwards compatibility with older callers.
+# New code should pass `vep_url=` / `seq_url=` explicitly.
+VEP_URL = VEP_URL_DEFAULT
+SEQ_URL = SEQ_URL_DEFAULT
 ESM_MODEL = "facebook/esm2_t12_35M_UR50D"
 BATCH_VEP = 200
 SLEEP = 0.6
@@ -88,12 +97,12 @@ def _variant_token(row: pd.Series) -> str:
     return f"{row['chr']} {row['pos']} . {row['ref']} {row['alt']}"
 
 
-def _post_vep(variants: list[str]) -> list[dict]:
+def _post_vep(variants: list[str], *, vep_url: str = VEP_URL) -> list[dict]:
     payload = {"variants": variants}
     for attempt in range(MAX_RETRIES):
         try:
             r = requests.post(
-                VEP_URL,
+                vep_url,
                 headers={"Content-Type": "application/json", "Accept": "application/json"},
                 data=json.dumps(payload),
                 timeout=90,
@@ -123,12 +132,20 @@ def _pick_canonical_missense(tcs: list[dict]) -> dict | None:
 
 
 def annotate_with_vep(
-    ext: pd.DataFrame, *, cache_path: Path, progress: bool = True
+    ext: pd.DataFrame,
+    *,
+    cache_path: Path,
+    progress: bool = True,
+    vep_url: str = VEP_URL_DEFAULT,
+    seq_url: str = SEQ_URL_DEFAULT,
 ) -> pd.DataFrame:
     """Add `transcript_id, protein_position, ref_aa, alt_aa` via VEP.
 
     Resumable: rows present in the cache parquet are reused verbatim.
     Missing rows are fetched in batches of 200 and appended.
+
+    `vep_url`: default is GRCh38. For GRCh37 datasets (e.g. denovo-db)
+    pass `vep_url=VEP_URL_GRCH37`.
     """
     cache_path.parent.mkdir(parents=True, exist_ok=True)
     cached: dict[str, dict] = {}
@@ -139,13 +156,16 @@ def annotate_with_vep(
     keys = ext["variant_key"].tolist()
     need = [i for i, k in enumerate(keys) if k not in cached]
     if progress:
-        print(f"  VEP annot: {len(cached):,} cached, {len(need):,} to fetch")
+        print(
+            f"  VEP annot: {len(cached):,} cached, {len(need):,} to fetch "
+            f"[{vep_url.split('//', 1)[1].split('.', 1)[0]}]"
+        )
 
     for start in range(0, len(need), BATCH_VEP):
         sub = need[start : start + BATCH_VEP]
         batch_tokens = [tokens[i] for i in sub]
         batch_keys = [keys[i] for i in sub]
-        recs = _post_vep(batch_tokens)
+        recs = _post_vep(batch_tokens, vep_url=vep_url)
         for vk, rec in zip(batch_keys, recs):
             t = _pick_canonical_missense(rec.get("transcript_consequences") or [])
             if t is None:
@@ -185,7 +205,11 @@ def annotate_with_vep(
 
 
 def fetch_sequences(
-    transcript_ids: list[str], *, cache_path: Path, progress: bool = True
+    transcript_ids: list[str],
+    *,
+    cache_path: Path,
+    progress: bool = True,
+    seq_url: str = SEQ_URL_DEFAULT,
 ) -> dict[str, str]:
     """Fetch canonical protein sequences from Ensembl /sequence/id. Cached to parquet."""
     cache_path.parent.mkdir(parents=True, exist_ok=True)
@@ -201,7 +225,7 @@ def fetch_sequences(
         for attempt in range(MAX_RETRIES):
             try:
                 r = requests.get(
-                    SEQ_URL.format(tid=tid), headers={"Accept": "application/json"}, timeout=30
+                    seq_url.format(tid=tid), headers={"Accept": "application/json"}, timeout=30
                 )
                 if r.status_code == 200:
                     cached[tid] = r.json().get("seq", "")
@@ -344,13 +368,24 @@ def score_variants(
     *,
     cache_dir: Path = CACHE_DIR,
     progress: bool = True,
+    genome_build: str = "GRCh38",
 ) -> pd.DataFrame:
     """Top-level entry point: annotate → fetch seqs → ESM-2 score.
 
     `ext` must have `variant_key, chr, pos, ref, alt`. Returns a DataFrame
     with one row per input variant and the four ESM columns; variants that
     couldn't be resolved have `skip_reason` populated.
+
+    `genome_build`: "GRCh38" (default, for our ClinVar-derived splits) or
+    "GRCh37" (for denovo-db and other GRCh37 datasets).
     """
+    if genome_build == "GRCh38":
+        vep_url, seq_url = VEP_URL_DEFAULT, SEQ_URL_DEFAULT
+    elif genome_build == "GRCh37":
+        vep_url, seq_url = VEP_URL_GRCH37, SEQ_URL_GRCH37
+    else:
+        raise ValueError(f"genome_build must be GRCh37 or GRCh38; got {genome_build!r}")
+
     cache_dir.mkdir(parents=True, exist_ok=True)
     ann_path = cache_dir / "vep_ann.parquet"
     seq_path = cache_dir / "sequences.parquet"
@@ -358,14 +393,20 @@ def score_variants(
 
     # 1. VEP annotation.
     if progress:
-        print(f"[esm2] annotating {len(ext):,} variants via VEP REST…")
-    ann = annotate_with_vep(ext, cache_path=ann_path, progress=progress)
+        print(f"[esm2] annotating {len(ext):,} variants via VEP REST ({genome_build})…")
+    ann = annotate_with_vep(
+        ext,
+        cache_path=ann_path,
+        progress=progress,
+        vep_url=vep_url,
+        seq_url=seq_url,
+    )
 
     # 2. Unique transcripts → sequences.
     tids = list(ann["transcript_id"].dropna().unique())
     if progress:
         print(f"[esm2] fetching sequences for {len(tids):,} unique transcripts…")
-    seqs = fetch_sequences(tids, cache_path=seq_path, progress=progress)
+    seqs = fetch_sequences(tids, cache_path=seq_path, progress=progress, seq_url=seq_url)
 
     # 3. Resume-aware ESM scoring.
     scored_cache: dict[str, dict] = {}

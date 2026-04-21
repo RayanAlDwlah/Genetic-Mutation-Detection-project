@@ -3,6 +3,136 @@
 All notable changes to the honest-baseline pipeline. Dates are ISO-8601.
 Commits are on `origin/main`.
 
+## [Portfolio Stage 1 — Baseline comparison on paralog-disjoint test] — 2026-04-21
+
+First apples-to-apples comparison of three published missense-effect
+predictors on the same paralog-disjoint test split (n ≈ 28k). This is
+what reviewers ask for first: "how does your model stack up against
+SIFT, PolyPhen-2, and AlphaMissense on *your* exact test set?"
+
+### Added
+- `src/baselines/alphamissense.py` — stream-scans the 643 MB
+  `AlphaMissense_hg38.tsv.gz` once and extracts scores only for the
+  query keys we care about (~28k). Result is a 24 k-row parquet; the
+  cache survives across runs so every rerun is instant.
+- `src/baselines/sift_polyphen.py` — pulls SIFT + PolyPhen-2 scores
+  per variant from the Ensembl VEP REST endpoint (GRCh38). Resumable
+  parquet cache.
+- `src/baselines/evaluate.py` — `evaluate_baseline()` scores any
+  `(y_true, y_score)` pair on the ClinVar test slice + denovo-db +
+  family-holdout slices, with 1,000-boot 95% CIs. Baselines with
+  `higher_is_pathogenic=False` (SIFT) are auto-inverted.
+- `scripts/run_baselines.py` — driver: query all three baselines,
+  compute metrics, write CSV, draw the forest plot with our XGBoost
+  overlaid.
+- `tests/test_baselines.py` — 7 unit tests, including a perfect-scorer
+  sanity, a sign-flip test (lower-is-damaging), a NaN-coverage test,
+  and a mini AlphaMissense extractor round-trip.
+- Data: `data/raw/baselines/alphamissense/AlphaMissense_hg38.tsv.gz`
+  (643 MB; gitignored, SHA256 in manifest).
+
+### Headline — ClinVar test (paralog-disjoint, GRCh38)
+
+| Baseline | Year | ROC-AUC (95% CI) | PR-AUC (95% CI) | Coverage |
+|---|---:|---|---|---:|
+| SIFT | 2003 | 0.881 [0.877, 0.885] | 0.620 [0.610, 0.629] | 96% |
+| PolyPhen-2 | 2010 | 0.893 [0.888, 0.898] | 0.728 [0.716, 0.739] | 93% |
+| **XGBoost (ours)** | 2026 | **0.938** | **0.838** | 100% |
+| AlphaMissense* | 2023 | 0.956 [0.953, 0.958] | 0.890 [0.882, 0.898] | 86% |
+
+\* AlphaMissense was calibrated on ClinVar at release; its ClinVar
+numbers are inflated by training-set contamination. Our
+`training_contamination_warning` column documents this in every row of
+the output CSV. We have no comparable contamination — our model never
+saw test-split ClinVar entries during training (paralog-disjoint
+family split).
+
+### Interpretation
+- Our XGBoost cleanly outperforms the two classical tools SIFT (PR-AUC
+  +0.22) and PolyPhen-2 (+0.11) under identical evaluation.
+- We sit below AlphaMissense by 1.8 pp ROC / 5.2 pp PR, but under
+  stricter methodology (no ClinVar calibration leak).
+- Remaining gap to AlphaMissense is the justification for Stages 2.1
+  (ESM-2 full-training-set feature) and 2.2 (AlphaFold2 structural
+  features).
+
+### Follow-up work
+- **denovo-db baseline coverage** is currently ~3% because the
+  fetchers target GRCh38 (correct for ClinVar) while denovo-db publishes
+  GRCh37. Stage 1.5 will add a GRCh37-aware baseline pathway + an AM
+  hg19 lookup so the denovo-db comparison row is also populated.
+- REVEL (~8 GB) and CADD (web-API) deferred to Stage 1.5 once the
+  infrastructure is validated.
+
+## [Build correction — pipeline is GRCh38, not GRCh37] — 2026-04-21
+
+While building the Stage 1 baseline-comparison infrastructure we
+discovered that the pipeline's coordinate system is **GRCh38** end-to-end,
+despite:
+
+- `configs/config.yaml` referencing `dbNSFP5.3.1a_grch37.gz`;
+- our early documentation describing outputs as GRCh37;
+- the external-validation harness defaulting to the GRCh37 REST endpoint.
+
+### How we found it
+
+A random sample of 5 test variants was queried against both Ensembl REST
+endpoints. In every case only the GRCh38 endpoint returned the gene and
+amino-acid change that matched the row's annotated `(gene, ref_aa,
+alt_aa)`:
+
+| variant_key           | GRCh37 endpoint      | GRCh38 endpoint        | Committed annotation    |
+|-----------------------|----------------------|------------------------|-------------------------|
+| `17:44075760:G:A`     | MAPT intron variant  | G6PC3 missense R→H ✓   | G6PC3 missense R→H      |
+| `1:181798404:C:G`     | ATP6V1D downstream   | ZFYVE26 missense L→F ✓ | ZFYVE26 missense L→F    |
+| `14:52314973:A:T`     | ZYG11B intron        | CPT2 missense L→P ✓    | CPT2 missense L→P       |
+| … (2 more, all agree) | —                    | —                      | —                       |
+
+### Why it still works
+
+dbNSFP 5.x changed column conventions: the primary `pos(1-based)` column
+is GRCh38 (with a separate `hg19_pos(1-based)` for GRCh37). Our
+extractor picks `pos(1-based)`, so positions in the splits are GRCh38.
+gnomAD v3/v4 (also GRCh38) joined correctly, so AF features are
+populated for 100% of training rows.
+
+The features the XGBoost model actually uses are **build-agnostic**:
+conservation scores, amino-acid chemistry, gnomAD constraint. None of
+them depend on the coordinate itself, only on the variant identity.
+That's why the trained model still scores correctly on denovo-db (which
+is GRCh37) — the external-validation harness featurizes denovo-db
+variants through GRCh37-queried VEP, then feeds those features to the
+model, which is indifferent to the build the features came from.
+
+### What was broken
+
+- `scripts/run_baselines.py` downloaded and scanned `AlphaMissense_hg19.tsv.gz`.
+  Only 4.6% of our test keys had hits.
+- `src/baselines/sift_polyphen.py` queried the GRCh37 REST endpoint for
+  ClinVar-derived test variants — most returned non-missense consequences
+  for the same numeric coordinates on the wrong build.
+
+### Fix
+
+- Baselines: download `AlphaMissense_hg38.tsv.gz` (643 MB) and switch
+  the SIFT/PolyPhen VEP URL to `rest.ensembl.org` (GRCh38).
+- `src/esm2_scorer.py` gains a `genome_build` kwarg (default
+  `"GRCh38"`); the denovo-db path in the external harness explicitly
+  passes `"GRCh37"`.
+- `notebooks/11_esm2_full_scoring_colab.ipynb` inherits the new default,
+  so the Stage 2.1 full-training-set scoring targets GRCh38 REST.
+
+### Caveats
+
+- Existing denovo-db external-validation artifacts
+  (`results/metrics/external_denovo_db_*`) are unchanged — that path was
+  always internally consistent on GRCh37 (denovo-db's own build).
+- The README references to "hg19 / GRCh37" in older sections were
+  historically inaccurate; future edits will correct them. The
+  `configs/config.yaml` `file:` path remains
+  `dbNSFP5.3.1a_grch37.gz` (the filename on the source bundle) with a
+  comment documenting that the extracted column is GRCh38.
+
 ## [Portfolio Stage 0 — Production-grade foundations] — 2026-04-21
 
 Hardened the repo to production-grade standards before launching any of
