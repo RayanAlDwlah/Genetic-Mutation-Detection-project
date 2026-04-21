@@ -3,6 +3,80 @@
 All notable changes to the honest-baseline pipeline. Dates are ISO-8601.
 Commits are on `origin/main`.
 
+## [Portfolio Stage 2.4 + Stage 3 — SHAP + calibration deep dive] — 2026-04-21
+
+Two complementary analyses that ground the model in its features:
+1. **SHAP** (Stage 2.4): which features drive predictions, and which
+   variants does the model get wrong with high confidence?
+2. **Calibration deep dive** (Stage 3): is the uncertainty on probabilities
+   itself trustworthy enough for clinical use?
+
+### Stage 3 — Calibration deep dive
+
+Murphy (1973) Brier decomposition on test:
+
+| Calibrator | Brier | Reliability | Resolution | ECE | Log-loss |
+|---|---:|---:|---:|---:|---:|
+| Raw | 0.0876 | 0.00543 | 0.1055 | 0.054 | 0.286 |
+| Platt | 0.0834 | 0.00114 | 0.1055 | 0.029 | 0.278 |
+| **Isotonic** | **0.0826** | **0.00024** | 0.1053 | **0.011** | **0.273** |
+
+The decomposition shows **Resolution is constant** (discrimination
+ability unchanged — expected for a monotone post-hoc calibrator) while
+**Reliability drops 23× with isotonic**. That's the whole story:
+miscalibration was the entire Brier error source, not poor
+discrimination. Isotonic achieves ECE = 0.011, below the 0.02 target
+set in the plan.
+
+New module: `src/calibration_deep.py` with
+`decompose_brier()`, `fit_platt() / apply_platt()`,
+`fit_isotonic() / apply_isotonic()`,
+`compute_decomposition_table()`, `render_triptych()`.
+
+Tests: `tests/test_calibration_deep.py` — 11 tests, including:
+- Murphy identity exact when each bin contains identical probabilities
+  (< 1e-9 residual)
+- Murphy identity within 0.01 on realistic Beta-distributed data
+- Overconfident classifier has reliability > 0.9
+- Random (constant) classifier has resolution ≈ 0
+- Platt + Isotonic monotonicity
+- Isotonic reliability ≤ raw reliability on fit split
+
+### Stage 2.4 — SHAP + error analysis
+
+TreeSHAP on a 2 000-variant stratified test sample. Top-10 features by
+mean |SHAP|:
+
+| Rank | Feature | mean \|SHAP\| |
+|---:|---|---:|
+| 1 | `phyloP100way_vertebrate` | 0.8094 |
+| 2 | `AN` (gnomAD allele number) | 0.5315 |
+| **3** | **`lof_z` (gnomAD constraint — Stage-2.1 addition)** | **0.3424** |
+| 4 | `alt_aa_P` (Proline substitution) | 0.3039 |
+| 5 | `pfam_domain` | 0.2844 |
+| 6 | `phastCons100way_vertebrate` | 0.2453 |
+| 7 | `phastCons30way_mammalian` | 0.2044 |
+| 8 | `oe_mis_upper` (gnomAD constraint) | 0.1892 |
+| 9 | `phyloP30way_mammalian` | 0.1855 |
+| 10 | `GERP++_RS` | 0.1468 |
+
+**The new gnomAD constraint features (`lof_z`, `oe_mis_upper`) ranked
+#3 and #8** — validating the Phase-2-step-1 hypothesis that
+gene-level priors carry orthogonal signal to variant-level features.
+
+Confident errors (|p_cal − y_true| > 0.5): 326 variants out of 2 000
+(16.3%). 62 false positives, 264 false negatives. The FN > FP pattern
+is expected for a pathogenic-minority classifier and suggests the next
+modeling work should focus on recall on hard pathogenic cases.
+
+New script: `scripts/compute_shap.py`. Artifacts:
+- `results/metrics/shap_values_test.parquet` — per-variant SHAP
+- `results/figures/shap_summary.png` — beeswarm (top 20)
+- `results/figures/shap_bar.png` — mean |SHAP| bar chart
+- `results/figures/shap_dependence_top3.png` — dependence plots
+- `results/metrics/confident_errors.csv` — FN/FP list with
+  `top1/2/3_feature` columns for per-row attribution
+
 ## [Portfolio Stage 1 — Baseline comparison on paralog-disjoint test] — 2026-04-21
 
 First apples-to-apples comparison of three published missense-effect
