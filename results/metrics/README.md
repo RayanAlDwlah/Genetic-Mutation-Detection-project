@@ -40,6 +40,15 @@ README that disagree with these CSVs are stale.
 | `external_denovo_db_predictions.parquet` | `scripts/evaluate_external.py` | Per-variant raw + isotonic-calibrated probability, family-holdout flag. |
 | `external_denovo_db_unmapped.csv` | `scripts/evaluate_external.py` | External variants we could not featurize (reported openly, never silently dropped). |
 
+## Baseline comparison
+
+| File | Produced by | Contents |
+|---|---|---|
+| `baselines_comparison.csv` | `scripts/run_baselines.py` | ROC/PR + 95% CIs for **SIFT, PolyPhen-2, AlphaMissense** on ClinVar test + denovo-db slices. Each row carries a `training_contamination_warning` string documenting ClinVar leakage concerns per baseline. |
+| `baselines_coverage.csv` | `scripts/run_baselines.py` | Fraction of test / denovo-db variants each baseline could score (uncovered rows are reported, never silently filled). |
+
+Forest plot: `results/figures/baselines_forest_plot.png`.
+
 ## Feature augmentation
 
 | File | Produced by | Contents |

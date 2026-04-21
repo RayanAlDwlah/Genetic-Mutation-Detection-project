@@ -139,7 +139,12 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["PLR2004", "S101"]
+"tests/*" = ["PLR2004", "S101", "N802", "N815"]
+# Structural features module uses scientific constants in names:
+# `pLDDT_position`, `SASA_position`, `neighbors_5A` — these are
+# terms from the structural biology literature; N815 wants camelCase
+# or snake_case, but the scientific names win.
+"src/structural_features.py" = ["N815"]
 "scripts/*" = ["PLR2004"]
 "notebooks/*" = ["E402", "F401"]
 # Grandfather the frozen data-prep pipeline — these modules produced the
