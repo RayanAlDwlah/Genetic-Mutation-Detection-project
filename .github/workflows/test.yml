@@ -22,18 +22,20 @@ jobs:
         with:
           python-version: "3.11"
           cache: "pip"
-          cache-dependency-path: "requirements-lock.txt"
+          cache-dependency-path: "requirements.txt"
 
       - name: Install OS-level dependencies
-        # liblzma / dssp are required by the same code paths Docker installs.
+        # liblzma: transformers tokenizer requires lzma at runtime.
+        # dssp: secondary-structure assignment (biopython wrapper).
+        # swig: freesasa Python bindings are generated via SWIG at build time.
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends liblzma-dev dssp
+          sudo apt-get install -y --no-install-recommends liblzma-dev dssp swig
 
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements-lock.txt
+          pip install -r requirements.txt
 
       - name: Sanity — tokenizer stack loads
         run: |
