@@ -1,0 +1,80 @@
+@startuml
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontName "Helvetica"
+skinparam defaultFontSize 12
+skinparam sequenceArrowThickness 1.5
+skinparam participant {
+  BackgroundColor #ECF0F1
+  BorderColor #2C3E50
+  FontColor #1B2631
+}
+skinparam actor {
+  BackgroundColor #ECF0F1
+  BorderColor #2C3E50
+}
+skinparam sequence {
+  LifeLineBorderColor #2C3E50
+  LifeLineBackgroundColor #FDFEFE
+}
+skinparam noteBackgroundColor #FFF3CD
+skinparam noteBorderColor #856404
+
+title End-to-end variant scoring — sequence diagram
+
+actor Clinician as U
+participant "StreamlitApp" as S
+participant "FeatureEngine" as F
+database "dbNSFP Cache\n(parquet)" as DB
+participant "Ensembl VEP REST" as V
+participant "XGBClassifier" as X
+participant "Isotonic Calibrator" as C
+participant "SHAPExplainer" as SH
+
+U -> S : submit variant\nchr:pos:ref:alt
+activate S
+
+S -> F : featurize(variant_key)
+activate F
+F -> DB : lookup(variant_key)
+DB --> F : row | not-found
+
+alt cache hit
+  F --> S : 39-feature vector
+else cache miss
+  F -> V : POST /vep/human/region
+  V --> F : SIFT/PolyPhen/missense consequence
+  F -> F : compute AA + BLOSUM + Grantham
+  F -> F : impute train-fit medians
+  F --> S : 39-feature vector
+end
+
+deactivate F
+
+S -> X : predict_proba(X)
+activate X
+X --> S : p_raw
+deactivate X
+
+S -> C : transform(p_raw)
+activate C
+C --> S : p_calibrated
+deactivate C
+
+S -> SH : explain(X)
+activate SH
+SH --> S : shap_values (top-15)
+deactivate SH
+
+S -> S : build risk band + SHAP plot
+
+S --> U : calibrated probability,\nrisk band, SHAP bar chart,\nraw feature vector
+deactivate S
+
+note right of U
+  Median response time:
+    cache hit: < 100 ms
+    cache miss + VEP: ~1–2 s
+end note
+
+@enduml

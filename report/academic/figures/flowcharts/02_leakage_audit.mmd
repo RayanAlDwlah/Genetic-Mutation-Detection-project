@@ -1,0 +1,26 @@
+flowchart LR
+    classDef start fill:#D5F5E3,stroke:#196F3D,stroke-width:2px,color:#1B2631
+    classDef stage fill:#ECF0F1,stroke:#2C3E50,stroke-width:1.5px,color:#1B2631
+    classDef fixed fill:#FADBD8,stroke:#922B21,stroke-width:2px,color:#1B2631
+    classDef final fill:#AED6F1,stroke:#1F618D,stroke-width:2px,color:#1B2631
+
+    S[["Pre-audit baseline<br/>PR-AUC 0.955<br/>(suspicious ceiling)"]]:::start
+
+    L1{{"Leakage source 1:<br/>64 % of pathogenic rows<br/>had null ref_aa / alt_aa"}}:::fixed
+    L2{{"Leakage source 2:<br/>is_common = 100% benign<br/>+ chr one-hot bias"}}:::fixed
+    L3{{"Leakage source 3:<br/>paralog leakage — 52% of<br/>gene-prefix families shared"}}:::fixed
+
+    S1["Apply missense filter<br/>(drop ~88K rows)"]:::stage
+    S2["Feature hygiene<br/>(drop is_common + chr)"]:::stage
+    S3["Paralog-aware split<br/>(family-level GroupShuffle)"]:::stage
+    S4["Optuna retuning<br/>40 TPE trials"]:::stage
+
+    R1["PR-AUC 0.819"]:::stage
+    R2["PR-AUC 0.816"]:::stage
+    R3["PR-AUC 0.835"]:::stage
+    R4["Final — honest baseline<br/>PR-AUC 0.838<br/>ROC-AUC 0.938"]:::final
+
+    S --> L1 --> S1 --> R1
+    R1 --> L2 --> S2 --> R2
+    R2 --> L3 --> S3 --> R3
+    R3 --> S4 --> R4

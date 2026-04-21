@@ -1,0 +1,62 @@
+flowchart TB
+    %% Style definitions
+    classDef p1 fill:#D5DBDB,stroke:#2C3E50,stroke-width:2px,color:#1B2631
+    classDef p2 fill:#AED6F1,stroke:#1F618D,stroke-width:2px,color:#1B2631
+    classDef p3 fill:#A9DFBF,stroke:#196F3D,stroke-width:2px,color:#1B2631
+    classDef src fill:#FAD7A0,stroke:#9A7D0A,stroke-width:1.5px,color:#1B2631
+    classDef out fill:#F5CBA7,stroke:#A04000,stroke-width:1.5px,color:#1B2631
+
+    %% External data sources
+    CV[(ClinVar<br/>variant_summary.txt.gz)]:::src
+    GN[(gnomAD v2.1 + v4<br/>population AF)]:::src
+    DN[(dbNSFP 5.3.1a<br/>conservation + AA)]:::src
+    GC[(gnomAD v2.1.1<br/>gene constraint)]:::src
+
+    %% Part 1: Preprocessing
+    subgraph P1["Part 1 — Data Preprocessing"]
+        direction TB
+        A1[ClinVar ingestion<br/>review star ≥ 2]:::p1
+        A2[Missense filter<br/>ref_aa AND alt_aa NOT NULL]:::p1
+        A3[Feature engineering<br/>dbNSFP + gnomAD merge]:::p1
+        A4[gnomAD constraint merge<br/>train-fit medians only]:::p1
+        A5[Paralog-aware split<br/>GroupShuffleSplit by family]:::p1
+        A1 --> A2 --> A3 --> A4 --> A5
+    end
+
+    %% Part 2: Training + audit
+    subgraph P2["Part 2 — Model Training + Leakage Audit"]
+        direction TB
+        B1[Leakage gate<br/>4 CI-enforced checks]:::p2
+        B2[XGBoost + Optuna TPE<br/>40 trials, PR-AUC objective]:::p2
+        B3[Threshold sweep<br/>on validation F1]:::p2
+        B4[Isotonic calibration<br/>Brier decomposition]:::p2
+        B1 --> B2 --> B3 --> B4
+    end
+
+    %% Part 3: Evaluation
+    subgraph P3["Part 3 — Evaluation + Interpretability + External Val"]
+        direction TB
+        C1[Bootstrap 1,000 replicates<br/>95% CIs on ROC/PR/F1/Brier]:::p3
+        C2[TreeSHAP on 2,000 test rows<br/>top-20 features + errors]:::p3
+        C3[Baselines on same test<br/>SIFT / PolyPhen-2 / AlphaMissense]:::p3
+        C4[denovo-db external validation<br/>pre vs post constraint]:::p3
+        C5[ESM-2 zero-shot proof-of-concept<br/>rank-fusion with XGBoost]:::p3
+        C1 --> C2 --> C3 --> C4 --> C5
+    end
+
+    %% Final outputs
+    O1[Results CSVs + Figures]:::out
+    O2[Trained model<br/>+ isotonic calibrator]:::out
+    O3[Streamlit demo<br/>+ SHAP explanation]:::out
+
+    %% Connections across parts
+    CV --> A1
+    GN --> A3
+    DN --> A3
+    GC --> A4
+
+    A5 --> B1
+    B4 --> C1
+    C5 --> O1
+    B4 --> O2
+    O2 --> O3
