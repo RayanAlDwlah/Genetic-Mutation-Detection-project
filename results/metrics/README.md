@@ -40,6 +40,16 @@ README that disagree with these CSVs are stale.
 | `external_denovo_db_predictions.parquet` | `scripts/evaluate_external.py` | Per-variant raw + isotonic-calibrated probability, family-holdout flag. |
 | `external_denovo_db_unmapped.csv` | `scripts/evaluate_external.py` | External variants we could not featurize (reported openly, never silently dropped). |
 
+## Calibration + interpretability
+
+| File | Produced by | Contents |
+|---|---|---|
+| `brier_decomposition.csv` | `src/calibration_deep.py` | Murphy (1973) Brier decomposition (reliability + resolution + uncertainty) + ECE/MCE + log-loss for raw / Platt / Isotonic on val + test (6 rows). |
+| `confident_errors.csv` | `scripts/compute_shap.py` | Variants the model got wrong with \|p − y\| > 0.5. Each row carries the top-3 SHAP features so failures can be attributed to specific inputs. |
+
+Figures: `calibration_triptych.png`, `shap_summary.png`,
+`shap_bar.png`, `shap_dependence_top3.png`.
+
 ## Baseline comparison
 
 | File | Produced by | Contents |
