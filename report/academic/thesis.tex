@@ -687,148 +687,647 @@ detail, because they do not share our target task.
 \section{Literature Review}
 \label{sec:rw-literature}
 
+The following eight subsections review one or two representative
+methods from each historical wave. Every subsection follows the
+same structure -- core idea, algorithmic summary, formal
+description where useful, a schematic figure drawn in TikZ, and
+a bullet-list discussion of strengths and weaknesses relative
+to the benchmark on which we ultimately evaluate.
+
+% ───────────────────────── SIFT ─────────────────────────
 \subsection{SIFT (2003) \texorpdfstring{\citep{ng2003sift}}{(Ng and Henikoff, 2003)}}
-\textbf{Core idea.} SIFT (Sorting Intolerant From Tolerant)
-classifies amino-acid substitutions by the degree to which
-the position has been conserved across a multiple sequence
-alignment of related proteins. Substitutions at highly
-conserved positions, or to amino acids never seen at that
-position in the alignment, are flagged as deleterious.
+\label{sec:rw-sift}
 
-\textbf{Algorithmic summary.} For each query variant, SIFT
-retrieves a protein sequence alignment from a homology-based
-database, computes a position-specific amino-acid
-probability matrix, and returns a score
-$s \in [0, 1]$ where values below $0.05$ are classified as
-``intolerant.''
+\textbf{Core idea.} SIFT (\emph{Sorting Intolerant From Tolerant})
+was the first widely-deployed computational tool for
+missense pathogenicity prediction. It rests on a single
+hypothesis: an amino-acid position that has remained
+invariant across evolutionary time tolerates few
+substitutions, so a variant at such a position is more
+likely to be deleterious than a variant at a fast-
+evolving position \citep{ng2003sift}.
 
-\textbf{Advantages.} Mature, widely cited, trivially accessible
-through Ensembl \textsc{VEP} REST, low compute requirement,
-no supervised training data needed.
+\textbf{Algorithmic summary.} For a query variant,
+SIFT retrieves a multiple sequence alignment (MSA) of
+the target protein and its homologues, computes a
+position-specific amino-acid probability matrix, and
+assigns a score $s \in [0, 1]$ by normalising the
+observed frequency of the alternate amino acid against
+the most-observed amino acid at that position. The
+algorithm's full decision logic can be summarised as:
 
-\textbf{Disadvantages.} Ignores amino-acid chemistry entirely;
-depends on alignment quality, which is weaker for
-unconserved regions; a binary threshold of $0.05$ is
-imposed arbitrarily; predictions for genes with few
-annotated homologs are unreliable.
+\[
+s_i(a) \;=\; \frac{p_i(a)}{\max_{a' \in \mathcal{A}_{20}} p_i(a')}
+\qquad\text{with}\qquad
+\text{label} = \begin{cases}
+\text{intolerant}  & s_i(a) < 0.05 \\
+\text{tolerated} & s_i(a) \geq 0.05
+\end{cases}
+\]
 
+where $p_i(a)$ is the Dirichlet-smoothed frequency of
+amino acid $a$ at column $i$ of the MSA.
+Figure~\ref{fig:sift-pipeline} summarises the pipeline.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  font=\sffamily\small,
+  box/.style={draw, rounded corners=3pt, minimum width=2.4cm,
+    minimum height=0.95cm, align=center, fill=black!3, thick},
+  arrow/.style={-Latex, thick},
+]
+  \node[box] (var)     {Query variant \\ (protein, pos, alt)};
+  \node[box, right=0.8cm of var] (homo)   {Homology \\ search};
+  \node[box, right=0.8cm of homo] (msa)    {Multiple \\ seq.\ alignment};
+  \node[box, right=0.8cm of msa] (mat)    {Position-spec.\ \\ frequency $p_i(a)$};
+  \node[box, below=0.8cm of mat, fill=green!8] (score)  {Score $s \in [0,1]$};
+  \node[box, left=0.8cm of score, fill=orange!10] (thr)  {Threshold \\ $s < 0.05$};
+  \node[box, left=0.8cm of thr, fill=red!8]   (out)   {Intolerant / \\ Tolerated};
+
+  \draw[arrow] (var) -- (homo);
+  \draw[arrow] (homo) -- (msa);
+  \draw[arrow] (msa) -- (mat);
+  \draw[arrow] (mat) -- (score);
+  \draw[arrow] (score) -- (thr);
+  \draw[arrow] (thr) -- (out);
+\end{tikzpicture}
+\caption[SIFT pipeline]{\textbf{SIFT pipeline.} From a missense
+variant, a homology-search step gathers orthologues which are
+aligned into a multiple sequence alignment. A position-specific
+frequency matrix is computed and the alternate amino acid is
+scored relative to the most-observed amino acid at that
+column. A hard threshold of $0.05$ produces a binary label.}
+\label{fig:sift-pipeline}
+\end{figure}
+
+\textbf{Advantages.}
+\begin{itemize}[leftmargin=2em, itemsep=0.15em]
+  \item Mature (over two decades of clinical deployment) and
+    trivially accessible through Ensembl's Variant Effect
+    Predictor (VEP) REST API.
+  \item No supervised training data is required; the score
+    is a deterministic function of the input alignment.
+  \item Low compute requirement; scores can be produced
+    on a laptop in minutes for any human gene.
+\end{itemize}
+
+\textbf{Disadvantages.}
+\begin{itemize}[leftmargin=2em, itemsep=0.15em]
+  \item Ignores amino-acid chemistry entirely: a conservative
+    substitution (e.g.\ Leu\,$\rightarrow$\,Ile) and a
+    radical one (e.g.\ Arg\,$\rightarrow$\,Asp) receive the
+    same score if the alignment frequencies are identical.
+  \item Depends heavily on alignment quality, which is poor
+    in intrinsically disordered regions and for genes with
+    few annotated homologues.
+  \item The binary threshold of $0.05$ is arbitrary and
+    produces poor calibration for ACMG-style clinical
+    reporting.
+\end{itemize}
+
+% ───────────────────────── PolyPhen-2 ─────────────────────────
 \subsection{PolyPhen-2 (2010) \texorpdfstring{\citep{adzhubei2010polyphen}}{(Adzhubei et al., 2010)}}
-\textbf{Core idea.} PolyPhen-2 is a supervised classifier
-combining sequence conservation with protein structural
-and physicochemical features, trained on two internally
-curated datasets (\textsc{HumDiv} and \textsc{HumVar}).
+\label{sec:rw-polyphen}
 
-\textbf{Algorithmic summary.} Eleven features are extracted
-for each variant, including position-specific scores,
-Pfam domain annotations, and biophysical properties of
-the substitution. A na\"ive Bayes classifier assigns one
-of three labels: ``benign,'' ``possibly damaging,''
-``probably damaging,'' accompanied by a posterior score.
+\textbf{Core idea.} PolyPhen-2 (\emph{Polymorphism
+Phenotyping, version 2}) was the first widely-adopted
+\emph{supervised} classifier for missense pathogenicity
+\citep{adzhubei2010polyphen}. It combines conservation
+with amino-acid chemistry and limited structural
+context, trained on two internally-curated datasets
+(\textsc{HumDiv}, 23k variants, and \textsc{HumVar},
+13k variants).
 
-\textbf{Advantages.} Incorporates amino-acid chemistry and
-structural context, a distinct improvement over SIFT;
-well-documented and widely adopted in clinical workflows.
+\textbf{Algorithmic summary.} Eleven features are
+extracted per variant: three sequence-based features
+(including the PSIC conservation score), six
+structural features derived from aligned PDB entries
+(e.g.\ solvent accessibility, crystallographic
+B-factor, secondary structure), and two annotation
+features from Pfam domains. A na\"ive Bayes classifier
+returns a posterior $P(\text{damaging} \mid \mathbf{x})$
+and assigns one of three labels: \emph{benign},
+\emph{possibly damaging}, or \emph{probably damaging}.
 
-\textbf{Disadvantages.} Training labels originate from the
-\textsc{Swiss-Var} and \textsc{HumDiv} resources, which
-partially overlap \textsc{ClinVar}; benchmarks on
-\textsc{ClinVar} therefore carry a contamination risk;
-outputs are only loosely calibrated; the model does not
-report uncertainty.
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  font=\sffamily\footnotesize,
+  box/.style={draw, rounded corners=3pt, minimum width=2.7cm,
+    minimum height=0.9cm, align=center, fill=black!3, thick},
+  feat/.style={draw, rounded corners=2pt, minimum width=2.8cm,
+    minimum height=0.55cm, align=left, fill=blue!5, font=\sffamily\scriptsize},
+  arrow/.style={-Latex, thick},
+]
+  \node[box] (var)   {Variant \\ (p, ref, alt)};
+  \node[feat, right=0.7cm of var, yshift=1.1cm]  (f1)    {\textbullet\ PSIC conservation};
+  \node[feat, right=0.7cm of var, yshift=0.5cm]  (f2)    {\textbullet\ Structural context};
+  \node[feat, right=0.7cm of var, yshift=-0.1cm] (f3)    {\textbullet\ $\Delta$ hydrophobicity};
+  \node[feat, right=0.7cm of var, yshift=-0.7cm] (f4)    {\textbullet\ Pfam domain};
+  \node[feat, right=0.7cm of var, yshift=-1.3cm] (f5)    {\textbullet\ 7 more};
+  \node[box, right=1.0cm of f3, fill=orange!10] (nb)   {Na\"ive Bayes \\ classifier};
+  \node[box, right=0.8cm of nb, fill=green!8]  (out)   {Posterior \\ 3-class label};
 
+  \draw[arrow] (var) -- (f3.west);
+  \draw[arrow] (f1) -- (nb);
+  \draw[arrow] (f2) -- (nb);
+  \draw[arrow] (f3) -- (nb);
+  \draw[arrow] (f4) -- (nb);
+  \draw[arrow] (f5) -- (nb);
+  \draw[arrow] (nb) -- (out);
+\end{tikzpicture}
+\caption[PolyPhen-2 pipeline]{\textbf{PolyPhen-2.} Eleven
+hand-crafted features are extracted from conservation,
+structural, and annotation sources, and a na\"ive Bayes
+classifier trained on \textsc{HumDiv} maps the feature vector to
+a three-way label.}
+\label{fig:polyphen-pipeline}
+\end{figure}
+
+\textbf{Advantages.}
+\begin{itemize}[leftmargin=2em, itemsep=0.15em]
+  \item Incorporates amino-acid chemistry and limited
+    structural context -- a distinct methodological step
+    beyond conservation alone.
+  \item Three-way output is more clinically useful than
+    SIFT's binary label; is widely adopted in ACMG-adjacent
+    workflows.
+\end{itemize}
+
+\textbf{Disadvantages.}
+\begin{itemize}[leftmargin=2em, itemsep=0.15em]
+  \item Training labels originate from \textsc{Swiss-Var}
+    and \textsc{HumDiv}, which partially overlap
+    \textsc{ClinVar}; benchmarks evaluated on
+    \textsc{ClinVar} therefore carry a contamination risk.
+  \item Posterior probabilities are not calibrated: the
+    reported confidence intervals do not match empirical
+    frequencies.
+  \item The feature set is static; re-training the model on
+    new data is laborious because of dependence on
+    external PDB alignments.
+\end{itemize}
+
+% ───────────────────────── REVEL ─────────────────────────
 \subsection{REVEL (2016) \texorpdfstring{\citep{ioannidis2016revel}}{(Ioannidis et al., 2016)}}
-\textbf{Core idea.} REVEL is an ensemble meta-classifier
-stacking 13 preceding-generation tools (CADD, PolyPhen-2,
-SIFT, MutationTaster, LRT, and others). The meta-learner
-is a random forest.
+\label{sec:rw-revel}
 
-\textbf{Advantages.} Empirically strong on \textsc{ClinVar}
-benchmarks; simple to query through \textsc{dbNSFP}.
+\textbf{Core idea.} REVEL (\emph{Rare Exome Variant
+Ensemble Learner}) is an ensemble meta-classifier that
+\emph{stacks} thirteen preceding-generation tools --
+CADD, PolyPhen-2, SIFT, MutationTaster, MutationAssessor,
+FATHMM, LRT, GERP\texttt{++}, and others -- using a
+random forest meta-learner. By construction it exploits
+signal that no single base learner captures
+\citep{ioannidis2016revel}.
 
-\textbf{Disadvantages.} Several of the inputs (PolyPhen-2,
-CADD) were themselves trained on variants that overlap
-\textsc{ClinVar}, so using REVEL as a feature in a
-downstream classifier -- as in \textsc{mvPPT} -- compounds
-the contamination. REVEL does not ship well-calibrated
-probabilities.
+\textbf{Algorithmic summary.} For each missense variant,
+REVEL extracts a 13-dimensional feature vector
+$\mathbf{z} = (z_1, \dots, z_{13})$ where $z_k$ is the
+score of the $k$-th base tool. A random forest with
+$1{,}000$ trees, trained on a curated set of rare
+disease variants versus rare neutral variants, returns
+$\widehat{P}(\text{pathogenic} \mid \mathbf{z}) \in [0,1]$.
 
-\subsection{CADD (2019) \texorpdfstring{\citep{rentzsch2019cadd}}{(Rentzsch et al., 2019)}}
-\textbf{Core idea.} Combined Annotation Dependent Depletion
-(CADD) trains a logistic regression (v1.0) or random
-forest (v1.4+) to distinguish simulated de-novo variants
-from observed human variants, implicitly learning a
-depletion signal under purifying selection.
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  font=\sffamily\footnotesize,
+  base/.style={draw, rounded corners=2pt, minimum width=2.1cm,
+    minimum height=0.55cm, align=center, fill=blue!6, thick,
+    font=\sffamily\scriptsize},
+  rf/.style={draw, rounded corners=3pt, minimum width=2.7cm,
+    minimum height=2cm, align=center, fill=orange!10, thick},
+  outbox/.style={draw, rounded corners=3pt, minimum width=2.2cm,
+    minimum height=0.8cm, align=center, fill=green!8, thick},
+  arrow/.style={-Latex, thick},
+]
+  \node[base] (t1) {SIFT};
+  \node[base, below=0.1cm of t1] (t2) {PolyPhen-2};
+  \node[base, below=0.1cm of t2] (t3) {CADD};
+  \node[base, below=0.1cm of t3] (t4) {MutationTaster};
+  \node[base, below=0.1cm of t4] (t5) {FATHMM};
+  \node[base, below=0.1cm of t5] (t6) {GERP++};
+  \node[base, below=0.1cm of t6] (t7) {\ldots (7 more)};
 
-\textbf{Advantages.} Not trained on \textsc{ClinVar} directly;
-whole-genome scores are available via a single score per
-position-alt combination.
+  \node[rf, right=1.4cm of t4] (rf) {Random Forest \\ 1000 trees \\ meta-learner};
+  \node[outbox, right=1.2cm of rf] (out) {$\widehat{P}(\text{path}) \in [0,1]$};
 
-\textbf{Disadvantages.} The simulated null is an imperfect
-surrogate for neutrality; CADD scores are raw logits
-rather than calibrated probabilities, so clinical
-interpretation requires threshold tuning that is rarely
-documented.
+  \foreach \t in {t1,t2,t3,t4,t5,t6,t7}{
+    \draw[arrow] (\t) -- (rf.west);
+  }
+  \draw[arrow] (rf) -- (out);
+\end{tikzpicture}
+\caption[REVEL pipeline]{\textbf{REVEL stacks 13 base
+predictors.} Each base predictor produces its own score on
+the query variant; the random-forest meta-learner combines
+these into a calibrated pathogenicity probability.}
+\label{fig:revel-pipeline}
+\end{figure}
 
+\textbf{Advantages.}
+\begin{itemize}[leftmargin=2em, itemsep=0.15em]
+  \item Empirically strong on \textsc{ClinVar} benchmarks,
+    with reported ROC-AUC around $0.94$ at release.
+  \item Distributed through \textsc{dbNSFP}, so querying a
+    variant costs a single table lookup.
+\end{itemize}
+
+\textbf{Disadvantages.}
+\begin{itemize}[leftmargin=2em, itemsep=0.15em]
+  \item Several base predictors (PolyPhen-2, CADD) were
+    themselves trained on variants that overlap
+    \textsc{ClinVar}, producing \emph{compound
+    contamination} when REVEL is evaluated on
+    \textsc{ClinVar}. The paper's reported numbers are
+    therefore upper-bound estimates.
+  \item Does not ship well-calibrated probabilities;
+    threshold selection for ACMG interpretation is left
+    to the user.
+  \item The 13 base tools must all be re-run for any variant
+    not already in \textsc{dbNSFP}, limiting deployment
+    flexibility.
+\end{itemize}
+
+% ───────────────────────── CADD ─────────────────────────
+\subsection{CADD (2014--2019) \texorpdfstring{\citep{rentzsch2019cadd}}{(Rentzsch et al., 2019)}}
+\label{sec:rw-cadd}
+
+\textbf{Core idea.} Combined Annotation-Dependent
+Depletion (CADD) side-steps the training-label scarcity
+problem by framing pathogenicity prediction as a
+\emph{supervised selection task}. Training examples are
+generated from two sources: observed human variants (as
+the ``derived'' class, presumed to be under relaxed
+selection) and simulated de-novo variants from a neutral
+mutation model (as the ``simulated'' class). A
+classifier trained to discriminate the two implicitly
+learns signatures of purifying selection
+\citep{rentzsch2019cadd}.
+
+\textbf{Algorithmic summary.} For each position in the
+human genome, CADD extracts a large feature vector
+(initially $63$ features; the v1.6 release uses more
+than $1{,}400$ features spanning conservation,
+regulatory annotations, transcript structure, and
+protein-level features). A logistic regression (v1.0)
+or random forest (v1.4\texttt{+}) is trained to assign
+higher scores to simulated variants than to observed
+ones. The output is a raw classification score that
+is converted to a phred-like scaled score,
+\[
+\text{CADD}_{\text{phred}} = -10 \log_{10}\!
+\Bigl( \text{rank}(v)\,/\,N_{\text{total}} \Bigr),
+\]
+where $v$ is the variant and $N_{\text{total}}$ is the
+total number of variants scored genome-wide.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  font=\sffamily\footnotesize,
+  box/.style={draw, rounded corners=3pt, minimum width=2.6cm,
+    minimum height=0.9cm, align=center, fill=black!3, thick},
+  arrow/.style={-Latex, thick},
+]
+  \node[box, fill=blue!8] (obs)  {Observed\\human variants};
+  \node[box, fill=red!8, below=0.6cm of obs] (sim) {Simulated\\de-novo variants};
+  \node[box, right=1.1cm of obs, yshift=-0.7cm, minimum height=1.8cm,
+    minimum width=3.2cm, fill=orange!10] (rf) {Random Forest\\or logistic regression\\$\sim$1{,}400 features};
+  \node[box, right=1.1cm of rf, fill=green!8] (out) {Raw score $\rightarrow$\\phred-scaled};
+
+  \draw[arrow] (obs.east) -- (rf.west |- obs.east);
+  \draw[arrow] (sim.east) -- (rf.west |- sim.east);
+  \draw[arrow] (rf) -- (out);
+\end{tikzpicture}
+\caption[CADD pipeline]{\textbf{CADD training.} A classifier
+is trained to distinguish observed human variants from
+simulated de-novo variants across the whole genome. The
+trained discriminator implicitly ranks novel positions by
+the strength of purifying selection; the raw output is
+phred-transformed for reporting.}
+\label{fig:cadd-pipeline}
+\end{figure}
+
+\textbf{Advantages.}
+\begin{itemize}[leftmargin=2em, itemsep=0.15em]
+  \item Does not require clinical pathogenicity labels,
+    so \textsc{ClinVar} contamination is not an issue.
+  \item Whole-genome coverage -- a single score per
+    base pair -- supports non-coding analyses.
+\end{itemize}
+
+\textbf{Disadvantages.}
+\begin{itemize}[leftmargin=2em, itemsep=0.15em]
+  \item The simulated null is an imperfect proxy for
+    neutrality; sites under weak selection are scored
+    similarly to sites under strong selection.
+  \item Raw logits and phred-transformed scores are not
+    calibrated probabilities, so clinical thresholding
+    is subjective.
+  \item Performance on missense variants is below that
+    of supervised missense-specific tools (ROC-AUC
+    $\sim 0.82$ on \textsc{ClinVar} missense subsets).
+\end{itemize}
+
+% ───────────────────────── VARITY ─────────────────────────
 \subsection{VARITY (2021) \texorpdfstring{\citep{wu2021varity}}{(Wu et al., 2021)}}
-\textbf{Core idea.} VARITY is an XGBoost-based ensemble that
-reweights training labels by an estimated noise model,
-attempting to place more weight on high-confidence
-examples. It is trained on a mixture of \textsc{HumsaVar}
-and curated multiplex-assay data.
+\label{sec:rw-varity}
 
-\textbf{Advantages.} Published confidence estimates; clean
-model card.
+\textbf{Core idea.} VARITY addresses an often-overlooked
+weakness of supervised missense tools: the training
+labels are themselves noisy. A label of \emph{likely
+benign} in \textsc{ClinVar} may reflect limited
+evidence rather than confirmed benignity. VARITY
+introduces a \emph{sample-reweighting} scheme in which
+training examples are weighted by an estimated label-
+confidence score, so that high-confidence examples
+dominate the XGBoost loss
+\citep{wu2021varity}.
 
-\textbf{Disadvantages.} Gene-level splits (not paralog-level);
-limited paralog guard.
+\textbf{Algorithmic summary.} The training set is
+\textsc{HumsaVar} plus a curated set of multiplex-assay
+measurements (typically variant-effect deep mutational
+scans). Each example $(x_i, y_i)$ receives a weight
+$w_i$ that increases with assay replication and decreases
+with label discordance among secondary sources. XGBoost
+minimises the weighted logistic loss
+$\mathcal{L} = -\sum_i w_i\, [\, y_i \log \hat{y}_i +
+(1 - y_i)\log(1 - \hat{y}_i)\,]$ with standard
+boosting hyperparameters.
 
+\textbf{Advantages.}
+\begin{itemize}[leftmargin=2em, itemsep=0.15em]
+  \item Principled handling of label noise -- a legitimate
+    methodological contribution.
+  \item Published model card with feature-importance plots
+    and reported confidence intervals.
+\end{itemize}
+
+\textbf{Disadvantages.}
+\begin{itemize}[leftmargin=2em, itemsep=0.15em]
+  \item Gene-level (not paralog-level) splits, so
+    \textsc{VARITY}'s own benchmark is still at risk from
+    paralog leakage of the type we address in
+    Chapter~\ref{ch:implementation}.
+  \item No external validation on de-novo cohorts is
+    reported in the original paper.
+\end{itemize}
+
+% ───────────────────────── EVE ─────────────────────────
 \subsection{EVE (2021) \texorpdfstring{\citep{frazer2021eve}}{(Frazer et al., 2021)}}
-\textbf{Core idea.} EVE is a variational auto-encoder
-trained on a protein's own multiple sequence alignment.
-At inference time, the ELBO of a variant relative to the
-wild-type is used as a pathogenicity score.
+\label{sec:rw-eve}
 
-\textbf{Advantages.} Fully unsupervised -- never touches
-\textsc{ClinVar}; per-gene specialisation gives strong
-performance on the subset of genes where a good alignment
-exists.
+\textbf{Core idea.} EVE (\emph{Evolutionary model of
+Variant Effect}) takes a purely unsupervised route:
+for each protein of interest, a variational auto-encoder
+(VAE) is fit to the protein's own multiple sequence
+alignment, effectively modelling the probability density
+over natural variants seen across evolution
+\citep{frazer2021eve}. At inference time, the evidence
+lower bound (ELBO) of a candidate variant relative to
+the wild-type supplies a pathogenicity score:
+\[
+s_{\text{EVE}}(v) \;=\; \mathrm{ELBO}(v) - \mathrm{ELBO}(v_{\text{wt}}).
+\]
 
-\textbf{Disadvantages.} Coverage limited to approximately
-$3{,}000$ genes at release time; model training is
-compute-intensive per gene; no proteome-wide deployment
-is currently feasible.
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  font=\sffamily\footnotesize,
+  box/.style={draw, rounded corners=3pt, minimum width=2.6cm,
+    minimum height=0.85cm, align=center, fill=black!3, thick},
+  arrow/.style={-Latex, thick},
+]
+  \node[box] (msa)    {Protein MSA \\ (homologues)};
+  \node[box, right=0.9cm of msa, fill=orange!10] (enc)   {VAE encoder};
+  \node[box, right=0.9cm of enc, fill=purple!8]  (z)   {latent $z$};
+  \node[box, right=0.9cm of z, fill=orange!10]   (dec)   {VAE decoder};
+  \node[box, below=0.8cm of dec, fill=green!8]  (elbo)    {$\mathrm{ELBO}(v)$};
+  \node[box, left=0.9cm of elbo, fill=red!8]     (score)  {$s = \mathrm{ELBO}(v) - \mathrm{ELBO}(v_\text{wt})$};
 
-\subsection{ESM-1b / ESM-2 zero-shot (2023) \texorpdfstring{\citep{brandes2023esm1b, lin2023esm2}}{(Brandes et al., 2023; Lin et al., 2023)}}
-\textbf{Core idea.} A protein language model trained with
-masked-amino-acid reconstruction on UniRef50 provides,
-for any missense variant, a log-likelihood ratio
-$\mathrm{LLR} = \log p(\text{alt} \mid \text{context}) -
-\log p(\text{ref} \mid \text{context})$. This score
-requires no fine-tuning and no \textsc{ClinVar} exposure.
+  \draw[arrow] (msa) -- (enc);
+  \draw[arrow] (enc) -- (z);
+  \draw[arrow] (z)   -- (dec);
+  \draw[arrow] (dec) -- (elbo);
+  \draw[arrow] (elbo) -- (score);
+\end{tikzpicture}
+\caption[EVE pipeline]{\textbf{EVE.} A per-gene VAE is trained
+on the protein's multiple-sequence alignment; the ELBO of a
+test variant relative to the wild-type acts as a pathogenicity
+score. No ClinVar supervision is used.}
+\label{fig:eve-pipeline}
+\end{figure}
 
-\textbf{Advantages.} Fully general-purpose, covers the whole
-proteome, and is provably uncontaminated by
-\textsc{ClinVar}. The 35M-parameter \texttt{esm2\_t12\_35M\_UR50D}
-model fits on a consumer GPU.
+\textbf{Advantages.}
+\begin{itemize}[leftmargin=2em, itemsep=0.15em]
+  \item Fully unsupervised: never touches \textsc{ClinVar}
+    at any training or calibration step, so is
+    contamination-proof by construction.
+  \item Per-gene specialisation gives strong performance
+    on the subset of genes where the alignment is deep.
+\end{itemize}
 
-\textbf{Disadvantages.} Moderate discrimination on its own
-(ROC-AUC approximately $0.85$); no calibration; requires
-a per-variant forward pass.
+\textbf{Disadvantages.}
+\begin{itemize}[leftmargin=2em, itemsep=0.15em]
+  \item Coverage limited to approximately $3{,}000$ genes
+    at the original release; building an alignment is
+    labour-intensive for many clinically-relevant genes.
+  \item Per-gene training cost is high; scaling to the
+    whole proteome is impractical for a student team.
+  \item The ELBO is not a calibrated probability; users
+    must map it through a threshold that the paper does
+    not fully specify.
+\end{itemize}
 
+% ───────────────────────── ESM-1b / ESM-2 ─────────────────────────
+\subsection{ESM-1b / ESM-2 zero-shot (2023)
+  \texorpdfstring{\citep{brandes2023esm1b, lin2023esm2}}{(Brandes et al., 2023; Lin et al., 2023)}}
+\label{sec:rw-esm}
+
+\textbf{Core idea.} Large transformer-based protein
+language models, trained with a masked-amino-acid
+objective on UniRef50 or UniRef90, learn position-
+specific distributions over all twenty canonical amino
+acids conditioned on their sequence context. For a
+missense variant, the log-likelihood ratio (LLR)
+\[
+\mathrm{LLR}(v) \;=\;
+\log p(a_{\text{alt}} \mid \text{context}) \;-\;
+\log p(a_{\text{ref}} \mid \text{context})
+\]
+ranks substitutions by how \emph{implausible} they are
+in natural protein space
+\citep{brandes2023esm1b, meier2021language}. The model
+is never fine-tuned on \textsc{ClinVar}, so the score
+is strictly zero-shot.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  font=\sffamily\footnotesize,
+  box/.style={draw, rounded corners=3pt, minimum width=2.6cm,
+    minimum height=0.85cm, align=center, fill=black!3, thick},
+  arrow/.style={-Latex, thick},
+]
+  \node[box] (seq)      {Protein sequence \\ (mask at $i$)};
+  \node[box, right=0.9cm of seq, fill=orange!10] (esm)  {ESM-2 \\ transformer};
+  \node[box, right=0.9cm of esm, fill=purple!8]  (sm)   {softmax \\ over 20 AAs};
+  \node[box, right=0.9cm of sm, fill=green!8]    (llr)  {$\log p(a_\text{alt}) - $\\$\log p(a_\text{ref})$};
+
+  \draw[arrow] (seq) -- (esm);
+  \draw[arrow] (esm) -- (sm);
+  \draw[arrow] (sm)  -- (llr);
+\end{tikzpicture}
+\caption[ESM-2 zero-shot LLR]{\textbf{ESM-2 zero-shot scoring.}
+The variant position is masked, a single transformer
+forward pass produces the softmax over the 20 canonical
+amino acids, and the log-likelihood ratio of the alternate
+vs reference residue is reported.}
+\label{fig:esm2-pipeline}
+\end{figure}
+
+\textbf{Advantages.}
+\begin{itemize}[leftmargin=2em, itemsep=0.15em]
+  \item Fully general: covers the whole human proteome
+    (all $\sim$20{,}000 proteins) with a single model.
+  \item Provably uncontaminated by \textsc{ClinVar} --
+    the training objective is masked reconstruction on
+    UniRef, not pathogenicity classification.
+  \item The 35M-parameter \texttt{esm2\_t12\_35M\_UR50D}
+    model fits on a single consumer GPU, enabling
+    academic reproduction.
+\end{itemize}
+
+\textbf{Disadvantages.}
+\begin{itemize}[leftmargin=2em, itemsep=0.15em]
+  \item Moderate standalone discrimination
+    (reported ROC-AUC around $0.85$ on \textsc{ClinVar}).
+  \item Requires a per-variant forward pass; scoring a
+    quarter-million variants is GPU-hours of compute.
+  \item The raw LLR is not a calibrated probability;
+    combining it with supervised features benefits from
+    a downstream fusion step (which we evaluate in
+    Section~\ref{sec:exp-rankfusion}).
+\end{itemize}
+
+% ───────────────────────── AlphaMissense ─────────────────────────
 \subsection{AlphaMissense (2023) \texorpdfstring{\citep{cheng2023alphamissense}}{(Cheng et al., 2023)}}
-\textbf{Core idea.} AlphaMissense combines a fine-tuned
-\textsc{AlphaFold}-style structural model with a masked-
-amino-acid objective, calibrated against \textsc{ClinVar}
-at release.
+\label{sec:rw-am}
 
-\textbf{Advantages.} State-of-the-art \textsc{ClinVar}
-benchmark performance; covers the full human proteome;
-distributed as a pre-computed table.
+\textbf{Core idea.} AlphaMissense is the current
+state-of-the-art system for missense pathogenicity
+prediction on \textsc{ClinVar}-style benchmarks. It
+fine-tunes an \textsc{AlphaFold}-style structural
+representation with a masked-amino-acid objective and
+calibrates the output against \textsc{ClinVar} labels
+at release \citep{cheng2023alphamissense}. The system
+was trained using Google-scale TPU resources and is
+distributed as a pre-computed score table covering
+every possible human missense variant.
 
-\textbf{Disadvantages.} Training/calibration used
-\textsc{ClinVar}, so any ClinVar-derived benchmark
-contains a contamination risk; the training compute
-budget (TPU pods) is out of reach for academic teams.
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  font=\sffamily\footnotesize,
+  box/.style={draw, rounded corners=3pt, minimum width=2.6cm,
+    minimum height=0.85cm, align=center, fill=black!3, thick},
+  arrow/.style={-Latex, thick},
+]
+  \node[box] (seq)      {Protein sequence};
+  \node[box, below=0.7cm of seq]  (struct)  {AlphaFold \\ structure};
+  \node[box, right=0.9cm of seq, yshift=-0.45cm, fill=orange!10, minimum height=1.6cm] (fm) {AlphaFold-style\\transformer\\(fine-tuned)};
+  \node[box, right=0.9cm of fm, fill=purple!8]    (maa)   {Masked AA \\ objective};
+  \node[box, right=0.9cm of maa, fill=green!8]    (cal)   {ClinVar \\ calibration};
+  \node[box, below=0.7cm of cal, fill=red!8]     (out)   {Pathogenicity \\ score};
+
+  \draw[arrow] (seq.east) -- (fm.west |- seq.east);
+  \draw[arrow] (struct.east) -- (fm.west |- struct.east);
+  \draw[arrow] (fm) -- (maa);
+  \draw[arrow] (maa) -- (cal);
+  \draw[arrow] (cal) -- (out);
+\end{tikzpicture}
+\caption[AlphaMissense pipeline]{\textbf{AlphaMissense.}
+Sequence and AlphaFold structural features are fed to a
+fine-tuned transformer trained with a masked-amino-acid
+objective. The raw output is calibrated against
+\textsc{ClinVar} before release.}
+\label{fig:am-pipeline}
+\end{figure}
+
+\textbf{Advantages.}
+\begin{itemize}[leftmargin=2em, itemsep=0.15em]
+  \item State-of-the-art \textsc{ClinVar} benchmark
+    performance (reported PR-AUC around $0.94$).
+  \item Covers the full human proteome as a pre-computed
+    table; a variant lookup is $O(1)$.
+\end{itemize}
+
+\textbf{Disadvantages.}
+\begin{itemize}[leftmargin=2em, itemsep=0.15em]
+  \item Training and calibration both use
+    \textsc{ClinVar}, so evaluation on any
+    \textsc{ClinVar}-derived benchmark contains an
+    irreducible contamination risk: the reported gap
+    between AlphaMissense and its competitors is a
+    mix of methodological improvement and benchmark
+    overlap.
+  \item Reproduction is out of reach for academic teams
+    (TPU-pod scale training budget).
+  \item Distributed as a score table without the underlying
+    model weights, limiting methodological inspection
+    and external validation.
+\end{itemize}
+
+% ───────────────────────── Consolidated comparison ─────────────────────────
+\subsection{Consolidated Comparison}
+\label{sec:rw-consolidated}
+
+Table~\ref{tab:rw-consolidated} synthesises the eight
+reviewed methods along six axes relevant to a
+methodologically honest evaluation: supervision,
+\textsc{ClinVar} contamination risk, split strategy
+used at publication, calibration, paralog guard, and
+reported external-cohort validation.
+
+\begin{table}[htbp]
+\centering
+\caption[Related-work consolidated comparison]{
+Consolidated comparison of the eight reviewed missense
+pathogenicity predictors. \emph{Supervision} indicates
+whether the model consumes clinical pathogenicity labels
+during training. \emph{Clinvar risk} summarises whether
+the published benchmark is at risk of training-set
+contamination. \emph{Paralog guard} indicates whether
+the publication reports an evaluation free of paralog
+leakage. \emph{External?} indicates whether the paper
+validates on a cohort not derived from \textsc{ClinVar}
+(e.g.\ \textsc{denovo-db}, ProteinGym).}
+\label{tab:rw-consolidated}
+\small
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{@{} l c c c c c c @{}}
+\toprule
+\textbf{Method} & \textbf{Year} & \textbf{Supervision}
+ & \textbf{ClinVar risk} & \textbf{Calibration}
+ & \textbf{Paralog guard} & \textbf{External?} \\
+\midrule
+SIFT           & 2003 & unsup.\  & none    & --          & --   & --   \\
+PolyPhen-2     & 2010 & sup.\    & partial & soft        & --   & --   \\
+CADD           & 2014+ & self-sup.\ & none    & phred      & --   & --   \\
+REVEL          & 2016 & sup.\    & compound& --          & --   & --   \\
+VARITY         & 2021 & sup.\    & partial & reported    & gene & --   \\
+EVE            & 2021 & unsup.\  & none    & ELBO only   & gene & partial \\
+ESM-1b/ESM-2   & 2023 & zero-shot& none    & --          & --   & partial \\
+AlphaMissense  & 2023 & sup.\    & high    & calibrated  & gene & --   \\
+\midrule
+\textbf{This work} & \textbf{2026} & \textbf{sup.+zs fusion}
+ & \textbf{audited} & \textbf{isotonic} & \textbf{paralog family}
+ & \textbf{denovo-db} \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \section{Research Gap}
 \label{sec:rw-gap}
