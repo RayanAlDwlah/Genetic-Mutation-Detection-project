@@ -69,11 +69,7 @@
 }
 
 % ─────────────── Title ───────────────
-\title{
-    \textbf{Genetic Mutation Detection Using Machine Learning: \\[0.15em]
-    An Honest Baseline with Paralog-Aware Evaluation \\[0.15em]
-    and Gene-Level Constraint Features}
-}
+\title{\textbf{Genetic Mutation Detection Using Machine Learning}}
 \author{
     Rayan Saleh AlShahrani \\
     Zahran Ali AlZahrani \\
@@ -95,17 +91,17 @@
 % Cover page
 \begin{titlepage}
 \centering
-\vspace*{0.5cm}
-{\Large \textbf{KING KHALID UNIVERSITY}}\\[0.4cm]
-{\large COLLEGE OF COMPUTER SCIENCE}\\[0.3cm]
-{\large DEPARTMENT OF COMPUTER SCIENCE}\\[2.2cm]
+\vspace*{0.8cm}
 
-{\Huge\bfseries Genetic Mutation Detection \\[0.3em]
-Using Machine Learning}\\[0.8cm]
-{\LARGE An Honest Baseline with \\[0.2em] Paralog-Aware Evaluation \\[0.2em] and Gene-Level Constraint Features}\\[2cm]
+% King Khalid University logo
+\includegraphics[width=0.32\linewidth]{figures/misc/kku-logo.png}\\[0.8cm]
 
-{\large\textit{A Graduation Project submitted in partial fulfilment of the \\[0.2em]
-requirements for the degree of Bachelor of Science in \\[0.2em] Computer Science}}\\[1.4cm]
+{\Large \textbf{KING KHALID UNIVERSITY}}\\[0.35cm]
+{\large COLLEGE OF COMPUTER SCIENCE}\\[0.25cm]
+{\large DEPARTMENT OF COMPUTER SCIENCE}\\[2.4cm]
+
+{\Huge\bfseries Genetic Mutation Detection \\[0.35em]
+Using Machine Learning}\\[2.6cm]
 
 \begin{tabular}{l l}
 \textbf{Name} & \textbf{Academic Number} \\[0.25em]
@@ -116,64 +112,21 @@ Saad Saleh Saad & 444803388 \\
 Eyad Hassan AlSheri & 443801535 \\
 Khalid Hamdan Zuhair & 444801544 \\
 Abdullah Saeed Ali Asiri & 443817224 \\
-\end{tabular}\\[1.4cm]
+\end{tabular}\\[1.6cm]
 
 {\large Supervised by:}\\[0.25em]
 {\Large\textbf{Dr.~Maaki Abubakr}}\\[2cm]
 
-{\large Academic Year 2025/1447 (Semester 2)}\\[0.5cm]
+{\large Academic Year 2025/2026 (Semester 2)}
 \end{titlepage}
-\clearpage
-
-% Declaration
-\chapter*{Declaration}
-\addcontentsline{toc}{chapter}{Declaration}
-We, the undersigned, declare that this graduation project report, entitled
-\emph{``Genetic Mutation Detection Using Machine Learning: An Honest Baseline
-with Paralog-Aware Evaluation and Gene-Level Constraint Features,''} is the
-result of our own investigation and effort, except where acknowledged through
-explicit citation. To the best of our knowledge, the work presented here has
-not been submitted for any other academic qualification, and the ideas,
-implementations, and empirical findings reported originate from the authors'
-own work carried out over two academic semesters at King Khalid University's
-College of Computer Science.
-
-\vspace{2em}
-\noindent\begin{tabular}{@{}p{0.45\linewidth} p{0.45\linewidth}@{}}
-Signature: \hrulefill & Signature: \hrulefill \\
-\textit{Rayan Saleh AlShahrani} & \textit{Zahran Ali AlZahrani} \\[1.2em]
-Signature: \hrulefill & Signature: \hrulefill \\
-\textit{Saad Saleh Saad} & \textit{Eyad Hassan AlSheri} \\[1.2em]
-Signature: \hrulefill & Signature: \hrulefill \\
-\textit{Khalid Hamdan Zuhair} & \textit{Abdullah Saeed Ali Asiri} \\
-\end{tabular}
-\clearpage
-
-% Supervisor's certificate
-\chapter*{Supervisor's Certificate}
-\addcontentsline{toc}{chapter}{Supervisor's Certificate}
-This is to certify that the graduation project entitled \emph{``Genetic
-Mutation Detection Using Machine Learning: An Honest Baseline with
-Paralog-Aware Evaluation and Gene-Level Constraint Features''} has been
-carried out by the students named on the preceding cover page under my
-direct supervision. In my capacity as their supervisor, I confirm that the
-methodology adopted, the experimental protocols followed, and the analyses
-reported are in line with academic standards and that the work reflects a
-genuine intellectual contribution by the authors.
-
-\vspace{3em}
-\noindent Signature: \hrulefill \\[0.3em]
-Dr.~Maaki Abubakr \\
-\textit{Supervisor, Department of Computer Science} \\
-\textit{King Khalid University}
 \clearpage
 
 % Acknowledgements
 \chapter*{Acknowledgements}
 \addcontentsline{toc}{chapter}{Acknowledgements}
 We wish to thank our supervisor, Dr.~Maaki Abubakr, for his consistent
-guidance, honest criticism, and willingness to push us toward academically
-rigorous work rather than superficially impressive numbers. Many of the
+guidance, rigorous critique, and willingness to push us toward academically
+defensible work rather than superficially impressive numbers. Many of the
 methodological commitments reflected in this report -- the paralog-aware
 split, the explicit leakage audit, the reporting of confidence intervals,
 and the external validation on \textsc{denovo-db} -- took their final shape
@@ -197,7 +150,7 @@ learning tools routinely report receiver-operating-characteristic area-
 under-curve (ROC-AUC) values above $0.94$ on \textsc{ClinVar}-derived
 benchmarks, yet the numbers are often inflated by subtle forms of data
 contamination that do not survive external validation. This project
-develops and publishes an honest, auditable baseline for the missense
+develops and publishes a rigorous, auditable baseline for the missense
 classification task.
 
 We assemble a corpus of $195{,}098$ missense variants from \textsc{ClinVar},
@@ -357,7 +310,7 @@ management. Third, the American College of Medical Genetics and
 Genomics (ACMG) standard \citep{richards2015acmg} includes
 computational \emph{in silico} evidence among the criteria a
 clinical geneticist weighs when classifying a variant, which
-means that any tool published in this space must be honest about
+means that any tool published in this space must be transparent about
 its operating characteristics -- false-positive and
 false-negative rates, calibration, and generalisation behaviour.
 
@@ -375,7 +328,7 @@ open code base that a reviewer can re-run end-to-end.
 \label{sec:intro-problem}
 
 The scientific problem is straightforward to state and
-difficult to address honestly:
+difficult to address rigorously:
 
 \begin{quote}\itshape
 Given a human missense single-nucleotide variant, predict
@@ -421,7 +374,7 @@ that we will return to at the end of the report:
 \item \textbf{RQ1.} How much of the apparent high performance
 of a \textsc{ClinVar}-trained classifier is attributable to
 specific, removable leakage sources, and how far does the
-honest number fall once they are eliminated?
+post-audit number fall once they are eliminated?
 \item \textbf{RQ2.} Under identical evaluation on a
 paralog-disjoint test split, how does a carefully-audited
 gradient-boosted baseline compare to classical tools
@@ -757,7 +710,7 @@ integration on every push), and we evaluate on
 value of gene-level gnomAD constraint features on the
 de-novo generalisation task, reporting pre- and
 post-constraint numbers separately, and we publish the
-first end-to-end honest comparison of our baseline
+first end-to-end like-for-like comparison of our baseline
 against SIFT, PolyPhen-2, and AlphaMissense under a
 single identical evaluation.
 
@@ -1539,7 +1492,7 @@ each remedial action as a rectangle.
 \includegraphics[width=\linewidth]{figures/flowcharts/02_leakage_audit.png}
 \caption[Leakage-audit workflow]{Leakage-audit workflow:
 three distinct sources, three remedial actions, and the
-final honest baseline on the right.}
+final audited baseline on the right.}
 \label{fig:leakflow}
 \end{figure}
 
@@ -1698,7 +1651,7 @@ generalisation gap.
 \centering
 \caption[denovo-db before vs after constraint]{External
 validation on \textsc{denovo-db}. The family-holdout
-slice is the honest headline because it cannot be
+slice is the defensible headline because it cannot be
 inflated by paralog leakage.}
 \label{tab:denovo}
 \small
@@ -1733,7 +1686,7 @@ feature on the full corpus.
 Against the related-work table in
 Chapter~\ref{ch:related}, our key distinguishing
 features are: a paralog-aware test split, explicit
-bootstrap CIs on every metric, a honest like-for-like
+bootstrap CIs on every metric, a transparent like-for-like
 re-scoring of published baselines, a pre/post
 attribution of gene-level priors on external
 generalisation, and full reproducibility enforced by
@@ -1820,7 +1773,7 @@ audit, the calibrated and interpreted XGBoost
 baseline, the like-for-like baseline comparison, and
 the external validation on \textsc{denovo-db}. The
 headline number -- PR-AUC of $0.838$ with a 95\%
-bootstrap CI of $[0.830, 0.846]$ -- is honest,
+bootstrap CI of $[0.830, 0.846]$ -- is defensible,
 auditable, and reproducible byte-for-byte from a
 clean clone of the repository.
 
@@ -1834,7 +1787,7 @@ clean clone of the repository.
 \section{Conclusion}
 \label{sec:conc-main}
 
-This project contributes an honest, reproducible
+This project contributes a rigorous, reproducible
 baseline for missense variant classification. Its
 scientific value rests not on any individual metric
 but on the transparency of the pipeline that produced
