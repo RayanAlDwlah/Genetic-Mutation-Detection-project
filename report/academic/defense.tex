@@ -8,17 +8,61 @@
 \usepackage{graphicx}
 \usepackage{array}
 \usepackage{hyperref}
+\usepackage{tikz}
 
 \usetheme{metropolis}
+
+% ── King Khalid University colour palette ─────────────────────────
+%   kkuGreen     #045531  — deep institutional green (from the logo)
+%   kkuGreenDark #023922  — shading for accents / backgrounds
+%   kkuGold      #C9A959  — KKU gold for highlights and rules
+%   kkuGoldLight #EDDBA6  — soft gold for block fills
+%   kkuInk       #1a1a1a  — body text
+%   kkuSubtle    #6b7280  — secondary / caption text
+\definecolor{kkuGreen}{HTML}{045531}
+\definecolor{kkuGreenDark}{HTML}{023922}
+\definecolor{kkuGold}{HTML}{C9A959}
+\definecolor{kkuGoldLight}{HTML}{EDDBA6}
+\definecolor{kkuInk}{HTML}{1A1A1A}
+\definecolor{kkuSubtle}{HTML}{6B7280}
+
+% Apply palette to the metropolis theme
+\setbeamercolor{normal text}{fg=kkuInk, bg=white}
+\setbeamercolor{alerted text}{fg=kkuGold}
+\setbeamercolor{example text}{fg=kkuGreen}
+\setbeamercolor{structure}{fg=kkuGreen}
+\setbeamercolor{frametitle}{fg=white, bg=kkuGreen}
+\setbeamercolor{progress bar}{fg=kkuGold, bg=kkuGoldLight}
+\setbeamercolor{title separator}{fg=kkuGold}
+\setbeamercolor{progress bar in head/foot}{fg=kkuGreen, bg=kkuGoldLight}
+\setbeamercolor{progress bar in section page}{fg=kkuGold, bg=kkuGoldLight}
+\setbeamercolor{section title}{fg=kkuGreen}
+\setbeamercolor{block title}{fg=white, bg=kkuGreen}
+\setbeamercolor{block body}{fg=kkuInk, bg=kkuGoldLight!35}
+\setbeamercolor{block title alerted}{fg=white, bg=kkuGold}
+\setbeamercolor{block body alerted}{fg=kkuInk, bg=kkuGoldLight}
+\setbeamercolor{block title example}{fg=white, bg=kkuGreenDark}
+\setbeamercolor{block body example}{fg=kkuInk, bg=kkuGoldLight!20}
+\setbeamercolor{itemize item}{fg=kkuGreen}
+\setbeamercolor{itemize subitem}{fg=kkuGold}
+\setbeamercolor{enumerate item}{fg=kkuGreen}
+
 \metroset{block=fill, progressbar=frametitle, numbering=fraction, sectionpage=progressbar}
 
+% Legacy colour aliases kept for existing \textcolor{...} calls.
 \definecolor{ok}{HTML}{2ecc71}
 \definecolor{alert}{HTML}{e74c3c}
 \definecolor{subtle}{HTML}{7f8c8d}
-\definecolor{kku}{HTML}{1F618D}
+\definecolor{kku}{HTML}{045531}
+
+% Small logo in the footer of every non-title slide.
+\setbeamertemplate{frame footer}{%
+  \includegraphics[height=3.2mm]{figures/misc/kku-logo.png}%
+  \hspace{0.4em}\small King Khalid University \textbar{} College of Computer Science
+}
 
 \title{Genetic Mutation Detection Using Machine Learning}
-\subtitle{An Honest Baseline with Paralog-Aware Evaluation \\ and Gene-Level Constraint Features}
+\subtitle{A Rigorous Baseline with Paralog-Aware Evaluation \\ and Gene-Level Constraint Features}
 \author[Team KKU-CS]{
   Rayan Saleh AlShahrani \and Zahran Ali AlZahrani \and Saad Saleh Saad \\[0.2em]
   Eyad Hassan AlSheri \and Khalid Hamdan Zuhair \and Abdullah Saeed Ali Asiri
@@ -26,6 +70,30 @@
 \institute[KKU]{College of Computer Science \\ King Khalid University \\[0.3em]
 \small Supervised by Dr.~Maaki Abubakr}
 \date{Academic Year 2025/2026 (Semester~2)}
+
+% ───────────────── KKU-branded title page ─────────────────
+\setbeamertemplate{title page}{%
+  \begin{tikzpicture}[remember picture, overlay]
+    % top coloured band
+    \fill[kkuGreen] (current page.north west) rectangle ([yshift=-2.2cm]current page.north east);
+    \node[anchor=center] at ([yshift=-1.1cm]current page.north)
+      {\includegraphics[height=1.6cm]{figures/misc/kku-logo.png}};
+    % bottom gold accent
+    \fill[kkuGold] ([yshift=1.2cm]current page.south west) rectangle (current page.south east);
+  \end{tikzpicture}%
+  \vspace*{2.4cm}
+  \begin{center}
+    {\LARGE\bfseries\color{kkuGreen}\inserttitle\par}
+    \vspace{0.4cm}
+    {\large\color{kkuInk}\insertsubtitle\par}
+    \vspace{1.2cm}
+    {\small\color{kkuInk}\insertauthor\par}
+    \vspace{0.7cm}
+    {\small\color{kkuSubtle}\insertinstitute\par}
+    \vspace{0.6cm}
+    {\footnotesize\color{kkuSubtle}\insertdate\par}
+  \end{center}
+}
 
 \begin{document}
 
@@ -571,7 +639,7 @@ def merge_constraint(variants, *, constraint, impute_medians=None):
 % ───────────── SLIDE 33 ─────────────
 \begin{frame}{Take-home messages}
   \begin{enumerate}
-    \item \textbf{Honest numbers beat inflated ones.} \\
+    \item \textbf{Audited numbers beat inflated ones.} \\
           Our 0.838 PR-AUC has no known contamination; the pre-audit
           0.955 had three.
     \item \textbf{Like-for-like baselines change the conversation.} \\
