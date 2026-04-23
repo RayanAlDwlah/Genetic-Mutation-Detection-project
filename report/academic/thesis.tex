@@ -29,6 +29,8 @@
 \usepackage{float}
 \usepackage{tabularx}
 \usepackage{placeins}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
 \usepackage{tikz}
 \usetikzlibrary{positioning, arrows.meta, shapes.geometric, shapes.symbols,
                 shapes.multipart, fit, calc, shadows.blur, backgrounds,
@@ -1319,8 +1321,9 @@ leakage. \emph{External?} indicates whether the paper
 validates on a cohort not derived from \textsc{ClinVar}
 (e.g.\ \textsc{denovo-db}, ProteinGym).}
 \label{tab:rw-consolidated}
-\small
+\footnotesize
 \renewcommand{\arraystretch}{1.2}
+\resizebox{\linewidth}{!}{%
 \begin{tabular}{@{} l c c c c c c @{}}
 \toprule
 \textbf{Method} & \textbf{Year} & \textbf{Supervision}
@@ -1340,7 +1343,8 @@ AlphaMissense  & 2023 & sup.\    & high    & calibrated  & gene & --   \\
  & \textbf{audited} & \textbf{isotonic} & \textbf{paralog family}
  & \textbf{denovo-db} \\
 \bottomrule
-\end{tabular}
+\end{tabular}%
+}
 \end{table}
 
 \section{Research Gap}
@@ -1429,6 +1433,7 @@ chapter's logical flow.
 
 \begin{figure}[htbp]
 \centering
+\resizebox{\linewidth}{!}{%
 \begin{tikzpicture}[
   font=\sffamily\small,
   node distance=0.5cm and 0.6cm,
@@ -1452,7 +1457,7 @@ chapter's logical flow.
   \node[abox, below=0.5cm of f3] (a3) {\S\ref{sec:fw-framework}--\S\ref{sec:fw-quality}};
 
   \foreach \x/\y in {q1/f1, q2/f2, q3/f3, f1/a1, f2/a2, f3/a3} \draw[arrow] (\x) -- (\y);
-\end{tikzpicture}
+\end{tikzpicture}}
 \caption[Chapter 3 roadmap]{\textbf{Chapter 3 roadmap.} The
 chapter answers three gating questions, each answered by a
 corresponding analytical artifact, delivered in a specific
@@ -1558,6 +1563,7 @@ other layers.}
 
 \begin{figure}[htbp]
 \centering
+\resizebox{\linewidth}{!}{%
 \begin{tikzpicture}[
   font=\sffamily\footnotesize,
   layer/.style={draw, rounded corners=3pt, minimum width=12cm,
@@ -1572,7 +1578,7 @@ other layers.}
   \node[layer, fill=black!6,   below=0.25cm of lang] (data) {\textbf{Data layer} \ -- \ ClinVar \ \textbullet\ gnomAD \ \textbullet\ dbNSFP \ \textbullet\ denovo-db \ \textbullet\ UniProt};
   \node[qc, right=0.35cm of ui.east, anchor=north west, yshift=-0.0cm,
         minimum height=4.75cm]                       (qc)   {\textbf{Quality} \\ \ \\ CI \\ Docker \\ \texttt{pytest} \\ \texttt{mypy} \\ leakage gate \\ lock file};
-\end{tikzpicture}
+\end{tikzpicture}}
 \caption[Technology-stack diagram]{\textbf{Technology-stack
 diagram.} Four horizontal layers plus a vertical quality
 band. The quality band is not a layer but a cross-cutting
@@ -1710,57 +1716,80 @@ marked explicitly for every gating deadline.
 
 \begin{figure}[htbp]
 \centering
+\resizebox{\linewidth}{!}{%
 \begin{tikzpicture}[
-  font=\sffamily\footnotesize,
-  bar/.style={draw, rounded corners=1.5pt, minimum height=0.38cm, inner sep=0.5pt},
-  s1/.style={bar, fill=blue!25},
-  s2/.style={bar, fill=orange!35},
-  mile/.style={diamond, draw, fill=red!50, minimum size=0.28cm, inner sep=0pt},
-  lab/.style={font=\sffamily\scriptsize, anchor=east},
+  font=\sffamily\scriptsize,
+  scale=1.0,
   month/.style={font=\sffamily\scriptsize, anchor=south},
-  x=0.7cm, y=0.45cm,
+  lab/.style={font=\sffamily\scriptsize, anchor=east},
+  mile/.style={diamond, draw, fill=red!60, minimum size=4pt, inner sep=0pt},
 ]
-  % X-axis (months)
-  \foreach \x/\m in {0/Sep, 1/Oct, 2/Nov, 3/Dec, 4/Jan, 5/Feb, 6/Mar, 7/Apr, 8/May} {
-    \draw[gray!40] (\x, 0) -- (\x, -10);
-    \node[month] at (\x+0.5, 0.05) {\m};
+  % Grid: 9 month columns (x=0..9), rows for 10 tasks
+  % 1 horizontal unit = 1 month = 1.1 cm
+  \def\xu{1.1}
+
+  % Vertical grid lines + month labels
+  \foreach \x/\m in {0/Sep, 1/Oct, 2/Nov, 3/Dec, 4/Jan, 5/Feb, 6/Mar, 7/Apr, 8/May, 9/{}} {
+    \draw[gray!30] (\x*\xu, 0.25) -- (\x*\xu, -5.5);
+    \ifx\m\empty\else\node[month] at (\x*\xu+0.55*\xu, 0.28) {\m};\fi
   }
-  \draw[gray!70, thick] (0,0) -- (9,0);
 
-  % Term separators
-  \draw[red!60, thick, dashed] (4, 0.5) -- (4, -10.5) node[below, font=\sffamily\scriptsize, red!70] {Term 1 $\to$ Term 2};
+  % Term 1 / Term 2 separator
+  \draw[red!55, dashed, thick] (4*\xu, 0.4) -- (4*\xu, -5.8);
+  \node[red!60, font=\sffamily\scriptsize, anchor=north] at (4*\xu, -5.8) {Term 1 $\to$ Term 2};
 
-  % Tasks (row, start, duration, style)
-  \node[lab] at (0, -1) {Literature review};           \node[s1, minimum width=2.8*0.7cm*1cm, anchor=west] at (0.05, -1) {};
-  \node[lab] at (0, -2) {Data ingestion};              \node[s1, minimum width=2.2*0.7cm*1cm, anchor=west] at (0.8, -2) {};
-  \node[lab] at (0, -3) {XGBoost baseline};            \node[s1, minimum width=2.0*0.7cm*1cm, anchor=west] at (1.8, -3) {};
-  \node[lab] at (0, -4) {Leakage audit + paralog fix}; \node[s2, minimum width=1.4*0.7cm*1cm, anchor=west] at (4.0, -4) {};
-  \node[lab] at (0, -5) {Optuna HPO + calibration};    \node[s2, minimum width=1.0*0.7cm*1cm, anchor=west] at (4.6, -5) {};
-  \node[lab] at (0, -6) {SHAP + baselines};            \node[s2, minimum width=0.9*0.7cm*1cm, anchor=west] at (5.2, -6) {};
-  \node[lab] at (0, -7) {denovo-db external validation};\node[s2, minimum width=0.8*0.7cm*1cm, anchor=west] at (5.8, -7) {};
-  \node[lab] at (0, -8) {ESM-2 zero-shot (Colab)};     \node[s2, minimum width=1.0*0.7cm*1cm, anchor=west] at (6.1, -8) {};
-  \node[lab] at (0, -9) {LaTeX thesis + defense};      \node[s2, minimum width=1.5*0.7cm*1cm, anchor=west] at (6.3, -9) {};
-  \node[lab] at (0, -10) {Plagiarism check + final};   \node[s2, minimum width=0.4*0.7cm*1cm, anchor=west] at (7.8, -10) {};
+  % Tasks (start month, end month, row, colour)
+  \foreach \s/\e/\r/\c in {%
+    0/2.8/1/blue!25,%
+    0.8/3.0/2/blue!25,%
+    1.8/3.8/3/blue!25,%
+    4.0/5.4/4/orange!45,%
+    4.6/5.6/5/orange!45,%
+    5.2/6.1/6/orange!45,%
+    5.8/6.6/7/orange!45,%
+    6.1/7.1/8/orange!45,%
+    6.3/7.8/9/orange!45,%
+    7.8/8.2/10/orange!45%
+  }{
+    \fill[\c, draw=black, thin, rounded corners=0.7pt]
+      (\s*\xu, -\r*0.45+0.15) rectangle (\e*\xu, -\r*0.45-0.15);
+  }
 
-  % Milestones
-  \node[mile] at (2.0, -3) {}; \node[anchor=south west, font=\sffamily\tiny, gray!60] at (2.0, -2.7) {Baseline ROC 0.955};
-  \node[mile] at (4.8, -4) {}; \node[anchor=south west, font=\sffamily\tiny, gray!60] at (4.8, -3.7) {Paralog-disjoint split};
-  \node[mile] at (6.0, -7) {}; \node[anchor=south west, font=\sffamily\tiny, gray!60] at (6.0, -6.7) {denovo-db locked};
-  \node[mile] at (7.1, -8) {}; \node[anchor=south west, font=\sffamily\tiny, gray!60] at (7.1, -7.7) {ESM-2 val+test};
-  \node[mile] at (8.2, -10) {}; \node[anchor=south east, font=\sffamily\tiny, gray!60] at (8.2, -9.7) {Final defense};
+  % Task labels (left of chart, inside margin)
+  \foreach \r/\t in {%
+    1/{Literature review},%
+    2/{Data ingestion},%
+    3/{XGBoost baseline},%
+    4/{Leakage audit},%
+    5/{Optuna HPO + calibration},%
+    6/{SHAP + baselines},%
+    7/{denovo-db external},%
+    8/{ESM-2 zero-shot (Colab)},%
+    9/{LaTeX thesis + defense},%
+    10/{Plagiarism check + final}%
+  }{
+    \node[lab] at (-0.15, -\r*0.45) {\t};
+  }
 
-  % Legend
-  \node[s1, minimum width=0.35cm] at (4.6, -11.3) {}; \node[anchor=west, font=\sffamily\scriptsize] at (4.85, -11.3) {Term 1};
-  \node[s2, minimum width=0.35cm] at (6.1, -11.3) {}; \node[anchor=west, font=\sffamily\scriptsize] at (6.35, -11.3) {Term 2};
-  \node[mile] at (7.6, -11.3) {};                     \node[anchor=west, font=\sffamily\scriptsize] at (7.85, -11.3) {Milestone};
-\end{tikzpicture}
+  % Milestones (red diamonds)
+  \foreach \x/\r in {2.0/3, 4.8/4, 6.0/7, 7.1/8, 8.2/10}
+    \node[mile] at (\x*\xu, -\r*0.45) {};
+
+  % Legend below
+  \node[font=\sffamily\scriptsize, anchor=west] at (0, -6.3)
+    {\tikz{\fill[blue!25, draw=black, thin] (0,0) rectangle (0.35,0.22);} \ Term 1
+     \hspace{0.6em}
+     \tikz{\fill[orange!45, draw=black, thin] (0,0) rectangle (0.35,0.22);} \ Term 2
+     \hspace{0.6em}
+     \tikz[baseline=-0.5ex]{\node[mile]{};} \ Milestone};
+\end{tikzpicture}}
 \caption[Two-semester Gantt chart]{\textbf{Two-semester Gantt
-chart.} Term 1 covered literature review, data ingestion,
-and a first XGBoost baseline. Term 2 covered the leakage
-audit, hyperparameter search, calibration, SHAP analysis,
-external validation, ESM-2 scoring, and the academic write-
-up. The five red diamonds mark unambiguous quantitative
-milestones tracked in \texttt{docs/CHANGELOG.md}.}
+chart.} Term 1 (blue) covered literature review, data
+ingestion, and the first XGBoost baseline. Term 2 (orange)
+covered the leakage audit, hyperparameter search,
+calibration, SHAP, external validation, ESM-2 scoring, and
+the academic write-up. Red diamonds mark unambiguous
+quantitative milestones.}
 \label{fig:gantt}
 \end{figure}
 
@@ -1863,6 +1892,7 @@ required a documented mitigation before work could proceed.}
 
 \begin{figure}[htbp]
 \centering
+\resizebox{\linewidth}{!}{%
 \begin{tikzpicture}[
   font=\sffamily\footnotesize,
   cell/.style={draw=gray!60, minimum width=1.45cm, minimum height=0.95cm, inner sep=0pt},
@@ -1908,7 +1938,7 @@ required a documented mitigation before work could proceed.}
   \node[risk] at (4*1.5+0.35, 3*1+0.35) {R6};
   \node[risk] at (5*1.5, 4*1)   {R7};
   \node[risk] at (4*1.5, 4*1)   {R8};
-\end{tikzpicture}
+\end{tikzpicture}}
 \caption[Risk matrix]{\textbf{Risk matrix.} Cells shaded by
 $L\times I$ score: green $<5$, yellow $5$--$11$, orange
 $12$--$19$, red $\geq 20$. Every red-cell risk (R1, R2, R7)
@@ -1930,6 +1960,7 @@ to a specific section of this thesis.
 
 \begin{figure}[htbp]
 \centering
+\resizebox{\linewidth}{!}{%
 \begin{tikzpicture}[
   font=\sffamily\footnotesize,
   quad/.style={draw, rounded corners=3pt, minimum width=7.3cm,
@@ -1973,7 +2004,7 @@ to a specific section of this thesis.
      \textbf{T4.} PLM compute cost grows with model size; a 650M jump is infeasible on free tier.
      \end{minipage}};
   \node[title] at (T.north west) {Threats};
-\end{tikzpicture}
+\end{tikzpicture}}
 \caption[SWOT matrix]{\textbf{SWOT matrix} relative to the
 prior work reviewed in Chapter~\ref{ch:related}. Strengths
 and weaknesses are internal; opportunities and threats are
@@ -1993,6 +2024,7 @@ three parts and the arrows carry the artifact names.
 
 \begin{figure}[htbp]
 \centering
+\resizebox{\linewidth}{!}{%
 \begin{tikzpicture}[
   font=\sffamily\footnotesize,
   node distance=0.4cm and 0.55cm,
@@ -2040,7 +2072,7 @@ three parts and the arrows carry the artifact names.
   % Between-parts artifact flow
   \draw[arrow, dashed, red!60] (art1.south) -- ++(0,-0.25) -| (gate.north);
   \draw[arrow, dashed, red!60] (art2.south) -- ++(0,-0.25) -| (boot.north);
-\end{tikzpicture}
+\end{tikzpicture}}
 \caption[Three-part pipeline]{\textbf{Three-part pipeline.}
 Each row is a \emph{part} with its own responsibility and
 output artifact. Solid arrows carry intermediate data
@@ -2056,6 +2088,53 @@ between stages; dashed red arrows are cross-part contracts
 Part~1 is a pure-function pipeline that takes four
 external data sources and produces three paralog-disjoint
 parquet splits with $39$ aligned features per variant.
+The final feature vector decomposes into five semantically
+meaningful groups that together cover sequence
+conservation, biochemistry, population genetics, and
+gene-level constraint (Figure~\ref{fig:feature-groups}).
+This grouping structure is the natural unit of analysis
+for the SHAP interpretation of Section~\ref{sec:res-shap}.
+
+\begin{figure}[htbp]
+\centering
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[
+  font=\sffamily\footnotesize,
+  grp/.style={draw, rounded corners=3pt, minimum height=2.0cm,
+    thick, align=center, text width=2.4cm, inner sep=0.15cm},
+  cons/.style={grp, fill=blue!10},
+  phys/.style={grp, fill=green!10},
+  aa/.style={grp, fill=orange!12},
+  af/.style={grp, fill=red!10},
+  struct/.style={grp, fill=purple!10},
+  gene/.style={grp, fill=yellow!20},
+]
+  \node[cons]   (c) at (0, 0)    {\textbf{Conservation}\\(6)\\[2pt]\scriptsize phyloP, phastCons, GERP++, SiPhy};
+  \node[phys, right=0.25cm of c] (p) {\textbf{Physico-\\chemical}\\(5)\\[2pt]\scriptsize Grantham, BLOSUM62, $\Delta$hydro.\, $\Delta$pI, $\Delta$vol.};
+  \node[aa, right=0.25cm of p]   (a) {\textbf{AA identity}\\(12 one-hot)\\[2pt]\scriptsize ref\_aa, alt\_aa, is\_CpG};
+  \node[af, right=0.25cm of a]   (f) {\textbf{Allele freq.}\\(4)\\[2pt]\scriptsize AF, AC, AN, AF\_popmax};
+  \node[gene, right=0.25cm of f] (g) {\textbf{Gene constraint}\\(5)\\[2pt]\scriptsize pLI, LOEUF, mis\_z, oe\_mis, lof\_z};
+  \node[struct, right=0.25cm of g] (s) {\textbf{Imputation}\\flag (1)\\[2pt]\scriptsize is\_imputed\_\\gnomad\_constraint};
+
+  % Input / output
+  \node[font=\sffamily\small\bfseries, above=0.5cm of a] (in)
+    {variant $v = $ (chr, pos, ref, alt)};
+  \node[font=\sffamily\small\bfseries, below=0.4cm of a] (out)
+    {$\mathbf{x}(v) \in \mathbb{R}^{33}$ \ \ (after one-hot encoding: $39$ columns)};
+
+  \draw[-Latex, thick] (in) -- (a.north);
+\end{tikzpicture}}
+\caption[Feature groups]{\textbf{Feature groups.} The 39
+feature columns of the training matrix cluster into
+six semantic groups: sequence conservation, physicochemical
+distance between \texttt{ref\_aa} and \texttt{alt\_aa},
+amino-acid identity (one-hot), gnomAD allele frequency,
+gene-level constraint, and an imputation flag. The groups
+are the natural unit of SHAP aggregation
+(Section~\ref{sec:res-shap}).}
+\label{fig:feature-groups}
+\end{figure}
+
 The steps, in order, are:
 
 \begin{enumerate}
@@ -2107,11 +2186,14 @@ run both as a CLI tool and as CI-enforced pytest cases:
 (iii)~zero shared gene families between any pair of
 splits, (iv)~pathogenic-rate gap of less than $8$
 percentage points across splits.
+Algorithm~\ref{alg:leakage-gate} states the gate
+formally.
 \item \textbf{Optuna hyperparameter search.} We use a
 Tree-structured Parzen Estimator sampler
 \citep{bergstra2011tpe} with $40$ trials, Median Pruner
 early-stopping on PR-AUC, and \texttt{scale\_pos\_weight}
-set from the class balance.
+set from the class balance. The search loop is
+summarised in Algorithm~\ref{alg:tpe}.
 \item \textbf{Threshold sweep.} We search thresholds in
 $[0.20, 0.80]$ on validation F1, then freeze the best
 threshold for test scoring.
@@ -2122,6 +2204,54 @@ probabilities. The Murphy decomposition
 \citep{murphy1973brier} is used to partition Brier
 error into reliability, resolution, and uncertainty.
 \end{enumerate}
+
+\begin{algorithm}[htbp]
+\caption{Four-invariant leakage gate}
+\label{alg:leakage-gate}
+\begin{algorithmic}[1]
+\Require train/val/test feature matrices $X_{\text{tr}}, X_{\text{val}}, X_{\text{te}}$; banned feature set $\mathcal{B}$; gene families per row $g_i$
+\State $E \gets \emptyset$ \Comment{error list}
+\If{$\text{cols}(X_{\text{tr}}) \cap \mathcal{B} \neq \emptyset$}
+  \State $E \gets E \cup \{\text{``banned features present''}\}$
+\EndIf
+\If{$\exists i \in X_{\text{tr}} : \text{ref\_aa}(i) \text{ is null}$}
+  \State $E \gets E \cup \{\text{``non-missense row in train''}\}$
+\EndIf
+\For{each pair $(S_1, S_2) \in \{\text{tr/val, tr/te, val/te}\}$}
+  \If{$\{g_i : i \in S_1\} \cap \{g_j : j \in S_2\} \neq \emptyset$}
+    \State $E \gets E \cup \{\text{``paralog family overlap in } S_1/S_2\text{''}\}$
+  \EndIf
+\EndFor
+\For{each split $S \in \{\text{tr, val, te}\}$}
+  \State $\pi_S \gets \text{pathogenic rate on } S$
+\EndFor
+\If{$\max_S \pi_S - \min_S \pi_S > 0.08$}
+  \State $E \gets E \cup \{\text{``class-balance drift across splits''}\}$
+\EndIf
+\State \Return $E$ \Comment{empty $\Rightarrow$ pass; else $\Rightarrow$ halt build}
+\end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[htbp]
+\caption{Optuna TPE hyperparameter search}
+\label{alg:tpe}
+\begin{algorithmic}[1]
+\Require search space $\Theta$; train $X_{\text{tr}}, y_{\text{tr}}$; val $X_{\text{val}}, y_{\text{val}}$; $n_{\text{trials}}=40$; seed $s=42$
+\State $\rho \gets \tfrac{|\{i : y_i = 0\}|}{|\{i : y_i = 1\}|}$ \Comment{scale\_pos\_weight from class balance}
+\State sampler $\gets \textsc{TPESampler}(\text{multivariate}=\text{true}, \text{group}=\text{true}, \text{seed}=s)$
+\State pruner $\gets \textsc{MedianPruner}(n_{\text{warmup}}=5, n_{\text{startup}}=10)$
+\State create study $\mathcal{S}$ with direction $=$ maximise, sampler, pruner
+\For{$t = 1 \ldots n_{\text{trials}}$}
+  \State $\theta_t \gets \text{sampler.suggest}(\Theta, \text{history}=\mathcal{S})$
+  \State fit booster with $\theta_t$ and $\rho$ on $X_{\text{tr}}, y_{\text{tr}}$
+  \State $p_{\text{val}} \gets \text{booster.predict\_proba}(X_{\text{val}})$
+  \State $\text{PR-AUC}_t \gets \text{prauc}(y_{\text{val}}, p_{\text{val}})$
+  \State \textbf{if} pruner says ``prune'' after intermediate step \textbf{then} abort trial
+  \State $\mathcal{S}.\text{record}(\theta_t, \text{PR-AUC}_t)$
+\EndFor
+\State \Return $\arg\max_{\theta_t} \text{PR-AUC}_t$
+\end{algorithmic}
+\end{algorithm}
 
 \subsection{Part 3 -- Evaluation, Interpretability, and External Validation}
 \label{sec:fw-part3}
@@ -2145,7 +2275,7 @@ identical test split.
 with pre- and post-gnomAD-constraint numbers, and
 family-holdout-only slicing.
 \item \textbf{ESM-2 zero-shot proof-of-concept.} The
-log-likelihood ratio from \texttt{facebook/esm2\_t12\_35M\_UR50D}
+log-likelihood ratio from \texttt{esm2\_t12\_35M\_UR50D}
 is computed on \textsc{denovo-db} and fused with the
 XGBoost probability at the rank level to test
 orthogonality.
@@ -2153,6 +2283,7 @@ orthogonality.
 
 \begin{figure}[htbp]
 \centering
+\resizebox{\linewidth}{!}{%
 \begin{tikzpicture}[
   font=\sffamily\footnotesize,
   node distance=0.55cm and 0.5cm,
@@ -2182,7 +2313,7 @@ orthogonality.
   \foreach \a/\b in {m/t1, m/t2, m/t3, m/t4, m/t5,
                      t1/a1, t2/a2, t3/a3, t4/a4, t5/a5}
     \draw[arrow] (\a) -- (\b);
-\end{tikzpicture}
+\end{tikzpicture}}
 \caption[Evaluation workflow]{\textbf{Evaluation workflow.} A
 single audited checkpoint feeds five independent evaluation
 tracks that run in parallel. Each track writes its own
@@ -2211,6 +2342,7 @@ simultaneously.
 
 \begin{figure}[htbp]
 \centering
+\resizebox{\linewidth}{!}{%
 \begin{tikzpicture}[
   font=\sffamily\footnotesize,
   layer/.style={draw, rounded corners=3pt, minimum width=12.2cm,
@@ -2231,7 +2363,7 @@ simultaneously.
         {\textbf{Quality gates}\\\ \\\texttt{ruff}\\\texttt{mypy}\\\texttt{pytest}\\leakage gate\\CI on PR};
   \node[cross, fill=teal!12, right=0.45cm of l4]
         {\textbf{Reproducibility}\\\ \\Docker image\\\texttt{uv.lock}\\fixed seed\\immutable\\data snapshots};
-\end{tikzpicture}
+\end{tikzpicture}}
 \caption[System architecture]{\textbf{System architecture.}
 Six horizontal layers (L1 data $\to$ L6 presentation) with
 two vertical cross-cutting concerns. Each layer has a
@@ -2396,10 +2528,11 @@ probabilities and top-SHAP features.
 reproduce the published \textsc{denovo-db} metrics
 from a clean clone.
 
-\item[FR8 -- Report regeneration.] The figures and tables
-in this report shall regenerate byte-for-byte from
-\texttt{results/metrics/*.csv} and
-\texttt{results/figures/*.png} via \texttt{make reproduce-headline}.
+\item[FR8 -- Report regeneration.] Figures and tables
+shall regenerate byte-for-byte from
+\texttt{results/\allowbreak metrics/*.csv} and
+\texttt{results/\allowbreak figures/*.png} via
+\texttt{make reproduce-\allowbreak headline}.
 \end{description}
 
 \section{Non-Functional Requirements}
@@ -2486,6 +2619,7 @@ indicate optional extensions.
 
 \begin{figure}[htbp]
 \centering
+\resizebox{\linewidth}{!}{%
 \begin{tikzpicture}[
   font=\sffamily\footnotesize,
   actor/.style={font=\sffamily\scriptsize, align=center},
@@ -2535,7 +2669,7 @@ indicate optional extensions.
        {\textit{\textlangle include\textrangle}};
   \draw[inc] (u7) -- (u8) node[midway, above, font=\sffamily\tiny, gray!70]
        {\textit{\textlangle include\textrangle}};
-\end{tikzpicture}
+\end{tikzpicture}}
 \caption[Use case diagram]{\textbf{Use-case diagram.}
 Actors on the outside of the system boundary; eight use
 cases on the inside. Solid lines are associations; dashed
@@ -2562,6 +2696,7 @@ the gate does not exist meaningfully without them.
 
 \begin{figure}[htbp]
 \centering
+\resizebox{\linewidth}{!}{%
 \begin{tikzpicture}[
   font=\sffamily\tiny,
   cls/.style={draw, rectangle split, rectangle split parts=3,
@@ -2651,7 +2786,7 @@ the gate does not exist meaningfully without them.
   \node[font=\sffamily\scriptsize\bfseries, green!50!black, above=0.05cm of xgb] {\texttt{src/models/}};
   \node[font=\sffamily\scriptsize\bfseries, orange!70!black, above=0.05cm of boot] {\texttt{src/eval/}};
   \node[font=\sffamily\scriptsize\bfseries, red!60!black, above=0.05cm of app] {\texttt{src/interfaces/}};
-\end{tikzpicture}
+\end{tikzpicture}}
 \caption[Class diagram]{\textbf{Class diagram.} Four
 packages align one-to-one with \texttt{src/}
 sub-directories. A filled diamond denotes composition:
@@ -2676,6 +2811,7 @@ which is a pure in-memory transform.
 
 \begin{figure}[htbp]
 \centering
+\resizebox{\linewidth}{!}{%
 \begin{tikzpicture}[
   font=\sffamily\footnotesize,
   participant/.style={draw, rounded corners=2pt, fill=blue!10,
@@ -2729,7 +2865,7 @@ which is a pure in-memory transform.
   \draw[ret] (e.south)+(0,-6.5) -- ++(-9, 0) node[midway, above, font=\sffamily\tiny]{shap\_vals};
 
   \draw[ret] (s.south)+(0,-7.0) -- ++(-3, 0) node[midway, above, font=\sffamily\tiny]{\{p\_cal, band, shap\}};
-\end{tikzpicture}
+\end{tikzpicture}}
 \caption[Sequence diagram]{\textbf{Sequence diagram for a
 single scoring request.} Orange bars are activation
 frames; red frame is an \texttt{opt} fragment for the
@@ -2751,6 +2887,7 @@ independent scoring tracks concurrently (fork-2 / join-2).
 
 \begin{figure}[htbp]
 \centering
+\resizebox{\linewidth}{!}{%
 \begin{tikzpicture}[
   font=\sffamily\footnotesize,
   start/.style={circle, fill=black, minimum size=0.35cm, inner sep=0pt},
@@ -2816,7 +2953,7 @@ independent scoring tracks concurrently (fork-2 / join-2).
   \foreach \x in {t1, t2, t3, t4, t5} \draw[arrow] (\x) -- (j2);
   \draw[arrow] (j2) -- (rep);
   \draw[arrow] (rep) -- (e);
-\end{tikzpicture}
+\end{tikzpicture}}
 \caption[Activity diagram]{\textbf{Activity diagram} for the
 training + evaluation workflow. The two thick black bars
 are fork/join pseudo-nodes: Fork-1 runs the four leakage
@@ -2842,6 +2979,7 @@ type validator.
 
 \begin{figure}[htbp]
 \centering
+\resizebox{\linewidth}{!}{%
 \begin{tikzpicture}[
   font=\sffamily\footnotesize,
   node distance=0.7cm and 1.6cm,
@@ -2870,7 +3008,7 @@ type validator.
   \draw[arrow] (cls) -- node[above, font=\sffamily\tiny]{emit} (e);
   \draw[arrow, dashed, red!60] (ann) -- node[right, font=\sffamily\tiny, red!80]{VEP err} (fail);
   \draw[arrow, dashed, red!60] (sc)  -- node[right, font=\sffamily\tiny, red!80]{NaN} (fail);
-\end{tikzpicture}
+\end{tikzpicture}}
 \caption[State diagram]{\textbf{State diagram for a
 variant's life-cycle.} Every successful variant follows
 the five-state green path. Dashed red transitions lead to
@@ -2892,6 +3030,7 @@ concrete Python import or to an HTTP/FTP call.
 
 \begin{figure}[htbp]
 \centering
+\resizebox{\linewidth}{!}{%
 \begin{tikzpicture}[
   font=\sffamily\footnotesize,
   node distance=0.85cm and 1.1cm,
@@ -2937,7 +3076,7 @@ concrete Python import or to an HTTP/FTP call.
   \draw[dep] (data) -- node[above, font=\sffamily\scriptsize]{HTTP} (vep);
   \draw[dep] (cal) -- node[above, font=\sffamily\scriptsize]{HTTPS} (hf);
   \draw[dep] (cache) -- node[above, font=\sffamily\scriptsize]{FTP} (gnom);
-\end{tikzpicture}
+\end{tikzpicture}}
 \caption[Component diagram]{\textbf{Component diagram.}
 Components with the UML component icon (rounded rectangle)
 are internal Python modules; cloud icons are external
@@ -2979,9 +3118,10 @@ are harmonised across scripts.
 \subsection{Programmatic API}
 The \texttt{src/} package itself constitutes a stable
 Python API. Key entry points include
-\texttt{score\_variants()} in \texttt{src/esm2\_scorer.py}
-and \texttt{evaluate\_baseline()} in
-\texttt{src/baselines/evaluate.py}.
+\texttt{score\_variants()} in
+\texttt{src/\allowbreak esm2\_scorer.py} and
+\texttt{evaluate\_baseline()} in
+\texttt{src/\allowbreak baselines/\allowbreak evaluate.py}.
 
 \section{Summary}
 \label{sec:an-summary}
@@ -3075,6 +3215,7 @@ boosting and the tree-ensemble aggregation.
 
 \begin{figure}[htbp]
 \centering
+\resizebox{\linewidth}{!}{%
 \begin{tikzpicture}[
   font=\sffamily\footnotesize,
   feat/.style={draw, rounded corners=2pt, minimum width=1.8cm,
@@ -3137,7 +3278,7 @@ boosting and the tree-ensemble aggregation.
   \draw[decorate, decoration={brace, amplitude=6pt, mirror}, gray!80]
     (2.0, -2.7) -- (4.0, -2.7)
     node[midway, below=7pt, font=\sffamily\scriptsize]{$K$ boosted trees};
-\end{tikzpicture}
+\end{tikzpicture}}
 \caption[XGBoost architecture]{\textbf{XGBoost
 architecture.} The 39-dimensional feature vector
 $\mathbf{x}$ is fed independently into $K$ regression
@@ -3154,7 +3295,7 @@ four structural hyperparameters.}
 ESM-2 \citep{lin2023esm2} is a masked-language-model
 transformer \citep{vaswani2017attention} pretrained on
 65~million unique UniRef sequences. The variant we use,
-\texttt{facebook/esm2\_t12\_35M\_UR50D}, has
+\texttt{esm2\_t12\_35M\_UR50D}, has
 $12$ transformer blocks, an embedding dimension of $480$, a
 hidden dimension of $1{,}920$, $20$ attention heads, and
 approximately $35$~million parameters. We apply the model
@@ -3183,6 +3324,7 @@ renders the inference path.
 
 \begin{figure}[htbp]
 \centering
+\resizebox{\linewidth}{!}{%
 \begin{tikzpicture}[
   font=\sffamily\footnotesize,
   tok/.style={draw, rounded corners=2pt, minimum width=0.75cm,
@@ -3229,7 +3371,7 @@ renders the inference path.
   \draw[arrow] (b12) -- (lm);
   \draw[arrow] (lm) -- (prob);
   \draw[arrow] (prob) -- (llr);
-\end{tikzpicture}
+\end{tikzpicture}}
 \caption[ESM-2 zero-shot scoring]{\textbf{ESM-2 zero-shot
 scoring.} A windowed protein sequence with the variant
 position masked is pushed through the 12 transformer
@@ -3267,6 +3409,7 @@ Figure~\ref{fig:rank-fusion} illustrates the pipeline.
 
 \begin{figure}[htbp]
 \centering
+\resizebox{\linewidth}{!}{%
 \begin{tikzpicture}[
   font=\sffamily\footnotesize,
   box/.style={draw, rounded corners=3pt, minimum width=2.6cm,
@@ -3297,7 +3440,7 @@ Figure~\ref{fig:rank-fusion} illustrates the pipeline.
   \draw[arrow] (r1) to[out=0, in=45] (f);
   \draw[arrow] (r2) to[out=0, in=-45] (f);
   \draw[arrow] (f) -- (fuse);
-\end{tikzpicture}
+\end{tikzpicture}}
 \caption[Rank-fusion pipeline]{\textbf{Rank-fusion
 pipeline.} Each variant is scored independently by
 XGBoost and by ESM-2; the scores are converted to ranks,
@@ -3320,7 +3463,7 @@ set scoring.
 \texttt{ubuntu-22.04} for continuous integration;
 deterministic identical results to the local
 environment were verified through the
-\texttt{test\_reproduce\_headline} integration test.
+\texttt{test\_\allowbreak reproduce\_\allowbreak headline} integration test.
 \end{itemize}
 
 \section{Software Stack}
@@ -3858,6 +4001,7 @@ wall-clock budget at each level.
 
 \begin{figure}[htbp]
 \centering
+\resizebox{\linewidth}{!}{%
 \begin{tikzpicture}[
   font=\sffamily\footnotesize,
   tier/.style={draw, thick, align=center, trapezium,
@@ -3881,7 +4025,7 @@ wall-clock budget at each level.
   \node[info, right=0.4cm of l3.east] {module-to-module flows, dataset I/O};
   \node[info, right=0.4cm of l4.east] {reproduce-headline, baselines, external};
   \node[info, right=0.4cm of l5.east] {blocks merge on red};
-\end{tikzpicture}
+\end{tikzpicture}}
 \caption[Test pyramid]{\textbf{Testing pyramid.} Bottom-
 heavy by design: cheap unit tests catch most regressions;
 the narrow top layer is expensive but indispensable for
@@ -3895,25 +4039,27 @@ protective guarantee it provides.
 
 \begin{table}[htbp]
 \centering
-\footnotesize
-\begin{tabularx}{\linewidth}{@{}l l X X@{}}
+\scriptsize
+\setlength{\tabcolsep}{4pt}
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{1.6cm}>{\raggedright\arraybackslash}p{3.4cm}>{\raggedright\arraybackslash}p{3.5cm}X@{}}
 \toprule
 \textbf{Level} & \textbf{File} & \textbf{Example test} & \textbf{Guarantee} \\
 \midrule
-Unit & \texttt{tests/unit/test\_metrics.py} & \texttt{test\_bootstrap\_ci\_variance\_shrinks\_with\_n} & Metric math correctness under random seeds. \\
-Unit & \texttt{tests/unit/test\_paralog.py} & \texttt{test\_keratin\_family\_regex} & Family grouper is total and deterministic. \\
-Property & \texttt{tests/property/test\_calibration.py} & \texttt{test\_isotonic\_is\_monotone} & Calibrator respects order for any fitted mapping. \\
-Integration & \texttt{tests/integration/test\_leakage\_gate.py} & \texttt{test\_no\_banned\_features} & All four invariants of Section~\ref{sec:fw-part2}. \\
-Integration & \texttt{tests/integration/test\_dbnsfp\_cache.py} & \texttt{test\_cache\_miss\_falls\_back\_to\_vep} & Fallback path functions end-to-end. \\
-Scientific & \texttt{tests/integration/test\_reproduce\_headline.py} & \texttt{test\_test\_split\_rocauc\_matches} & Headline number matches to six decimals. \\
-Scientific & \texttt{scripts/evaluate\_external.py} & driver script & denovo-db numbers reproduce from clone. \\
-CI gate & \texttt{.github/workflows/test.yml} & GH Actions & All levels must pass before merge. \\
+Unit & \texttt{unit/test\_metrics.py} & bootstrap CI variance $\downarrow$ with $n$ & Metric math correctness. \\
+Unit & \texttt{unit/test\_paralog.py} & keratin family regex & Grouper total and deterministic. \\
+Property & \texttt{property/test\_calib.py} & isotonic is monotone & Order preserved for any fit. \\
+Integration & \texttt{int/test\_leakage\_gate.py} & no banned features & Four invariants of \S\ref{sec:fw-part2}. \\
+Integration & \texttt{int/test\_dbnsfp\_cache.py} & cache miss $\to$ VEP & End-to-end fallback path. \\
+Scientific & \texttt{int/test\_reproduce\_headline.py} & split AUROC matches & Headline to six decimals. \\
+Scientific & \texttt{scripts/evaluate\_external.py} & driver script & denovo-db reproduces. \\
+CI gate & \texttt{.github/workflows/test.yml} & GH Actions & All levels pre-merge. \\
 \bottomrule
 \end{tabularx}
 \caption[Testing strategy]{\textbf{Testing strategy.} Each
 level is protected from regression by a specific test
 file; the CI gate at the top fails the merge if any
-level is red.}
+level is red. Paths are relative to the \texttt{tests/}
+directory unless otherwise noted.}
 \label{tab:test-strategy}
 \end{table}
 
@@ -4081,6 +4227,7 @@ blocking semantics.
 
 \begin{figure}[htbp]
 \centering
+\resizebox{\linewidth}{!}{%
 \begin{tikzpicture}[
   font=\sffamily\footnotesize,
   gate/.style={draw, rounded corners=3pt, minimum width=2.2cm,
@@ -4107,7 +4254,7 @@ blocking semantics.
     ([yshift=-0.2cm]\g.south) -- (blk);
   \node[font=\sffamily\tiny, red!70, anchor=west] at (blk.east)
     {any red $\Rightarrow$ merge blocked};
-\end{tikzpicture}
+\end{tikzpicture}}
 \caption[CI gate]{\textbf{CI gate.} Six sequential stages
 run on every push. Any red dashed arrow from any stage
 blocks the merge; green arrows indicate the main pass-through
@@ -4568,7 +4715,8 @@ both raw and calibrated probabilities.
 validation and test splits, raw and isotonic-
 calibrated, $1{,}000$ replicates with \texttt{seed=42}.}
 \label{tab:full-boot}
-\small
+\footnotesize
+\resizebox{\linewidth}{!}{%
 \begin{tabular}{@{} l r l l @{}}
 \toprule
 \textbf{Split/Calibration} & \textbf{Metric} & \textbf{Mean} & \textbf{95\% CI} \\
@@ -4582,14 +4730,14 @@ test/raw       & PR-AUC  & 0.8355 & $[0.8265, 0.8434]$ \\
 test/calibrated & ROC-AUC & 0.9376 & $[0.9346, 0.9404]$ \\
 test/calibrated & PR-AUC  & 0.8273 & $[0.8185, 0.8352]$ \\
 \bottomrule
-\end{tabular}
+\end{tabular}%
+}
 \end{table}
 
 \chapter{Selected Code Listings}
 \label{app:code}
 
-Full source is available at
-\url{https://github.com/RayanAlDwlah/Genetic-Mutation-Detection-project}.
+Full source is available at \href{https://github.com/RayanAlDwlah/Genetic-Mutation-Detection-project}{\texttt{github.com/Ray\allowbreak anAlDwlah/\allowbreak Genetic-Mutation-\allowbreak Detection-project}}.
 We reproduce below the entry points for the leakage
 gate (the single most important safety artefact in
 the project) and the top-level driver for the external
