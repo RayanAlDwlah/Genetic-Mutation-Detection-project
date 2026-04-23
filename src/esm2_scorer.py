@@ -59,6 +59,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import random
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -84,7 +85,8 @@ SEQ_URL = SEQ_URL_DEFAULT
 ESM_MODEL = "facebook/esm2_t12_35M_UR50D"
 BATCH_VEP = 200
 SLEEP = 0.6
-MAX_RETRIES = 4
+MAX_RETRIES = 8  # VEP REST is flaky under load; retry generously with exponential backoff.
+MAX_BACKOFF_SEC = 60.0  # Cap per-attempt sleep to avoid stalling forever.
 
 # Canonical 20-AA alphabet; ESM tokenizer recognizes each as a single-character token.
 AA20 = list("ACDEFGHIKLMNPQRSTVWY")
@@ -98,7 +100,17 @@ def _variant_token(row: pd.Series) -> str:
 
 
 def _post_vep(variants: list[str], *, vep_url: str = VEP_URL) -> list[dict]:
+    """POST a batch to Ensembl VEP REST with exponential-backoff retries.
+
+    Returns the parsed JSON list on success. On final failure (after
+    ``MAX_RETRIES`` attempts) returns an empty list instead of raising so
+    that the caller can skip the batch and continue — the variants stay
+    outside the cache and will be retried on the next run. This is
+    essential because Ensembl VEP returns transient 502/503/504 errors
+    during peak hours; one bad batch should not abort a multi-hour job.
+    """
     payload = {"variants": variants}
+    last_err: str | None = None
     for attempt in range(MAX_RETRIES):
         try:
             r = requests.post(
@@ -109,13 +121,25 @@ def _post_vep(variants: list[str], *, vep_url: str = VEP_URL) -> list[dict]:
             )
             if r.status_code == 200:
                 return r.json()
-            if r.status_code in (429, 503):
-                time.sleep(2**attempt)
+            if r.status_code in (429, 500, 502, 503, 504):
+                # Transient server-side error — back off and retry.
+                last_err = f"HTTP {r.status_code}"
+                wait = min(MAX_BACKOFF_SEC, (2**attempt) + random.uniform(0, 1.5))
+                time.sleep(wait)
                 continue
-            r.raise_for_status()
-        except requests.RequestException:
-            time.sleep(1.5 * (attempt + 1))
-    raise RuntimeError(f"VEP POST failed for batch of {len(variants)}")
+            # Anything else (400/401/404/…) is a client-side error; retrying won't help.
+            last_err = f"HTTP {r.status_code}"
+            break
+        except requests.RequestException as exc:
+            last_err = type(exc).__name__
+            wait = min(MAX_BACKOFF_SEC, 1.5 * (2**attempt) + random.uniform(0, 1.5))
+            time.sleep(wait)
+    print(
+        f"    ⚠ VEP batch failed after {MAX_RETRIES} attempts "
+        f"({last_err}) — skipping {len(variants)} variants this run; "
+        f"they remain in the cache-miss queue for the next retry."
+    )
+    return []
 
 
 def _pick_canonical_missense(tcs: list[dict]) -> dict | None:
@@ -161,11 +185,16 @@ def annotate_with_vep(
             f"[{vep_url.split('//', 1)[1].split('.', 1)[0]}]"
         )
 
+    failed_batches = 0
     for start in range(0, len(need), BATCH_VEP):
         sub = need[start : start + BATCH_VEP]
         batch_tokens = [tokens[i] for i in sub]
         batch_keys = [keys[i] for i in sub]
         recs = _post_vep(batch_tokens, vep_url=vep_url)
+        if not recs:
+            # Transient VEP failure already logged inside _post_vep; leave these
+            # variants out of the cache so the next run retries them.
+            failed_batches += 1
         for vk, rec in zip(batch_keys, recs):
             t = _pick_canonical_missense(rec.get("transcript_consequences") or [])
             if t is None:
@@ -195,13 +224,29 @@ def annotate_with_vep(
                 f"{(len(need) + BATCH_VEP - 1) // BATCH_VEP}  "
                 f"→ {done:,}/{len(need):,}"
             )
-        if batch_idx % 10 == 0:
-            pd.DataFrame(list(cached.values())).to_parquet(cache_path, index=False)
+        # Checkpoint often — every 5 batches — so a session crash loses
+        # at most 1,000 annotations.
+        if batch_idx % 5 == 0:
+            try:
+                pd.DataFrame(list(cached.values())).to_parquet(cache_path, index=False)
+            except Exception as exc:  # pragma: no cover - disk/IO errors
+                print(f"    ⚠ cache write failed ({exc}); continuing without checkpoint")
         time.sleep(SLEEP)
 
-    out = pd.DataFrame([cached[k] for k in keys])
-    pd.DataFrame(list(cached.values())).to_parquet(cache_path, index=False)
-    return out
+    # Final flush — always write whatever we have, even after partial failures.
+    try:
+        pd.DataFrame(list(cached.values())).to_parquet(cache_path, index=False)
+    except Exception as exc:  # pragma: no cover - disk/IO errors
+        print(f"    ⚠ final cache write failed ({exc})")
+    if failed_batches:
+        print(
+            f"  ⚠ {failed_batches} VEP batch(es) could not be retrieved this run "
+            f"(~{failed_batches * BATCH_VEP:,} variants). Re-run the script "
+            f"later and the cache-miss logic will pick them up automatically."
+        )
+    # Only return rows we actually have; callers merge back on variant_key.
+    present = [k for k in keys if k in cached]
+    return pd.DataFrame([cached[k] for k in present])
 
 
 # ──────────────────────────── Sequence fetch ───────────────────────────
