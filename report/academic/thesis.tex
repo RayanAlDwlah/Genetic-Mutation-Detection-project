@@ -29,6 +29,8 @@
 \usepackage{float}
 \usepackage{tabularx}
 \usepackage{placeins}
+\usepackage{tikz}
+\usetikzlibrary{positioning, arrows.meta, shapes.geometric, fit, calc, shadows.blur}
 \hypersetup{colorlinks=true, linkcolor=black, citecolor=teal, urlcolor=blue}
 
 % Chapter title styling
@@ -78,7 +80,7 @@
     Khalid Hamdan Zuhair \\
     Abdullah Saeed Ali Asiri
 }
-\date{Academic Year 2025/2026 (Semester 2) \\[0.5em] \small Supervised by Dr.~Maaki Abubakr}
+\date{Academic Year 2025/2026 (Semester 2) \\[0.5em] \small Supervised by Mr.~Makki Akasha Babiker Al-Bashir}
 
 \begin{document}
 
@@ -115,7 +117,7 @@ Abdullah Saeed Ali Asiri & 443817224 \\
 \end{tabular}\\[1.6cm]
 
 {\large Supervised by:}\\[0.25em]
-{\Large\textbf{Dr.~Maaki Abubakr}}\\[2cm]
+{\Large\textbf{Mr.~Makki Akasha Babiker Al-Bashir}}\\[2cm]
 
 {\large Academic Year 2025/2026 (Semester 2)}
 \end{titlepage}
@@ -124,7 +126,7 @@ Abdullah Saeed Ali Asiri & 443817224 \\
 % Acknowledgements
 \chapter*{Acknowledgements}
 \addcontentsline{toc}{chapter}{Acknowledgements}
-We wish to thank our supervisor, Dr.~Maaki Abubakr, for his consistent
+We wish to thank our supervisor, Mr.~Makki Akasha Babiker Al-Bashir, for his consistent
 guidance, rigorous critique, and willingness to push us toward academically
 defensible work rather than superficially impressive numbers. Many of the
 methodological commitments reflected in this report -- the paralog-aware
@@ -261,38 +263,184 @@ XGBoost & eXtreme Gradient Boosting \\
 \section{Background of Genetic Mutations}
 \label{sec:intro-background}
 
-A genetic mutation is a permanent change in the nucleotide sequence of an
-organism's DNA. Mutations are the raw material of biological evolution:
-most are neutral, a small proportion are beneficial, and a clinically
-important minority disrupt cellular function to the point of causing
-disease. The clinical spectrum of mutations includes single-nucleotide
-variants (SNVs), small insertions and deletions (indels), copy-number
-variations, and large-scale structural rearrangements. Among these, the
-single-nucleotide \emph{missense} variant -- a point mutation that
-changes one amino acid to another in a protein -- is the most common
-coding variant in the human population and the principal focus of this
-project.
+\subsection{From DNA to Phenotype: The Central Dogma}
+\label{sec:intro-centraldogma}
 
-The biological consequences of a missense variant depend on where it
-falls in the protein and how the new amino acid differs from the
-original. A conservative substitution in a flexible loop may have no
-measurable effect, whereas a radical substitution at a catalytic
-residue can abolish enzymatic activity. Distinguishing these two
-regimes is the central empirical problem in variant interpretation.
+The hereditary information of every living organism is encoded in
+deoxyribonucleic acid (DNA), a linear polymer of four nucleotide
+bases -- adenine (A), cytosine (C), guanine (G), and thymine (T)
+-- organised into a double-helical structure first described by
+\citet{watson1953structure}. The human nuclear genome comprises
+approximately $3.2 \times 10^{9}$ base pairs distributed across
+twenty-two autosomal pairs and two sex chromosomes, of which only
+$\sim 1.5\%$ constitutes protein-coding sequence
+\citep{lander2001initial}. The flow of information from this
+template to functional biomolecules is captured by the
+\emph{central dogma} of molecular biology
+\citep{crick1970central}: a gene is first \emph{transcribed} into
+messenger ribonucleic acid (mRNA), and the mRNA is subsequently
+\emph{translated} by the ribosome into a chain of amino acids
+that folds into a three-dimensional protein.
+Figure~\ref{fig:central-dogma} illustrates this pathway alongside
+the exact point at which a missense mutation exerts its effect.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  font=\sffamily\small,
+  box/.style={draw, rounded corners=3pt, minimum width=3.2cm,
+    minimum height=1.1cm, align=center, fill=black!3, thick},
+  arrow/.style={-Latex, thick},
+  tag/.style={font=\sffamily\footnotesize\itshape, text=black!65},
+]
+  \node[box] (dna)   {DNA \\ \texttt{...CGT\textcolor{red}{\textbf{G}}AC...}};
+  \node[box, right=1.4cm of dna]  (mrna)    {mRNA \\ \texttt{...CGU\textcolor{red}{\textbf{G}}AC...}};
+  \node[box, right=1.4cm of mrna] (protein) {Protein \\ \texttt{...\,R\,\textcolor{red}{\textbf{D}}\,...}};
+
+  \draw[arrow] (dna) -- node[tag, above] {Transcription} (mrna);
+  \draw[arrow] (mrna) -- node[tag, above] {Translation} (protein);
+
+  \node[box, fill=red!8, below=1.1cm of dna]     (dna2)     {DNA \\ \texttt{...CGT\textcolor{red}{\textbf{A}}AC...}};
+  \node[box, fill=red!8, right=1.4cm of dna2]    (mrna2)    {mRNA \\ \texttt{...CGU\textcolor{red}{\textbf{A}}AC...}};
+  \node[box, fill=red!8, right=1.4cm of mrna2]   (protein2) {Protein \\ \texttt{...\,R\,\textcolor{red}{\textbf{N}}\,...}};
+
+  \draw[arrow] (dna2) -- (mrna2);
+  \draw[arrow] (mrna2) -- (protein2);
+
+  \draw[arrow, red!70!black, dashed]
+    (dna.south) -- node[tag, right, text=red!70!black] {G\,$\rightarrow$\,A point mutation} (dna2.north);
+  \node[tag, right=0.15cm of protein2, text=red!70!black, align=left, font=\sffamily\scriptsize\itshape]
+    {Asp\,$\rightarrow$\,Asn \\ (missense)};
+\end{tikzpicture}
+\caption[The central dogma and a missense mutation]%
+{\textbf{The central dogma and the point at which a missense
+mutation acts.} The upper row shows the reference sequence: the
+codon \texttt{GAC} is transcribed into mRNA and translated to
+aspartate (\texttt{D}). The lower row introduces a single-base
+substitution (G\,$\rightarrow$\,A) in the DNA that propagates
+through transcription to the altered codon \texttt{AAC}, which
+the ribosome translates to asparagine (\texttt{N}). The protein
+sequence has changed at exactly one position. Whether that change
+is benign or pathogenic depends on the structural and functional
+context of the affected residue.}
+\label{fig:central-dogma}
+\end{figure}
+
+A genetic mutation is any permanent alteration in this DNA
+template. Mutations are the raw material of biological evolution:
+most are neutral, a small proportion are beneficial, and a
+clinically important minority disrupt cellular function to the
+point of causing disease. The clinical spectrum of mutations
+includes single-nucleotide variants (SNVs), small insertions and
+deletions (indels), copy-number variations, and large-scale
+structural rearrangements \citep{macarthur2014guidelines}. Among
+these, the single-nucleotide \emph{missense} variant -- a point
+mutation in a protein-coding region that changes one amino acid
+to another -- is the most common coding variant in the human
+population and the principal focus of this project.
+
+\subsection{Classes of Protein-Coding Variation}
+\label{sec:intro-variantclasses}
+
+Within the protein-coding portion of the genome, a single-base
+substitution can take one of four functional forms depending on
+how the change is read by the genetic code
+\citep{alberts2015molecular}:
+
+\begin{description}[style=nextline, leftmargin=2.2em, itemsep=0.25em]
+  \item[Synonymous.] The nucleotide change still codes for the
+    same amino acid; the protein sequence is unchanged (e.g.\
+    \texttt{GCU}\,$\rightarrow$\,\texttt{GCC}, both Ala). These
+    are often -- but not always -- clinically silent.
+  \item[Missense.] The nucleotide change produces a codon for a
+    \emph{different} amino acid (e.g.\
+    \texttt{GAC}\,\emph{Asp}\,$\rightarrow$\,\texttt{AAC}\,\emph{Asn}).
+    This is the class under study in the present work.
+  \item[Nonsense.] The nucleotide change creates a premature stop
+    codon (e.g.\ \texttt{UGG}\,\emph{Trp}\,$\rightarrow$\,\texttt{UGA}\,\emph{stop}),
+    typically producing a truncated non-functional protein.
+  \item[Frameshift.] An insertion or deletion that is not a
+    multiple of three shifts the reading frame, scrambling every
+    downstream codon.
+\end{description}
+
+Missense variants are of special interest because they are
+common, they are protein-altering, and their clinical effect is
+genuinely uncertain at the individual level. A nonsense variant
+in a well-characterised disease gene is almost always pathogenic;
+a synonymous variant is almost always benign. A missense variant,
+however, can produce anything from a completely wild-type protein
+to a catastrophically misfolded one, depending on where the
+substitution falls and which amino acid replaces the original.
+
+\subsection{Determinants of Missense Variant Effect}
+\label{sec:intro-determinants}
+
+Decades of biochemistry and structural biology have identified
+several orthogonal signals that a classifier can, in principle,
+learn to exploit \citep{stein2019inferring, guerois2002predicting}:
+
+\begin{enumerate}
+  \item \textbf{Evolutionary conservation.} A residue that has
+    been invariant across hundreds of millions of years of
+    orthologous evolution is almost certainly functionally
+    important; substitutions at such positions are more likely
+    to be deleterious.
+  \item \textbf{Amino-acid chemistry.} A substitution that
+    changes charge, hydrophobicity, or volume (e.g.\
+    \emph{Arg}\,$\rightarrow$\,\emph{Asp}, reversing the
+    side-chain charge) is more likely to disrupt protein
+    stability or a binding interface than a conservative
+    substitution (e.g.\ \emph{Leu}\,$\rightarrow$\,\emph{Ile}).
+  \item \textbf{Structural context.} Substitutions at buried
+    core residues, catalytic sites, or secondary-structure
+    boundaries are more likely to be pathogenic than those at
+    solvent-exposed flexible loops.
+  \item \textbf{Gene-level constraint.} Some genes are
+    intrinsically intolerant of coding variation across the
+    human population; a missense variant in such a gene carries
+    stronger prior evidence of pathogenicity than the same
+    change in a loss-of-function-tolerant gene
+    \citep{karczewski2020gnomad}.
+  \item \textbf{Protein-language plausibility.} Modern
+    transformer-based protein language models, trained on
+    billions of natural protein sequences, assign probabilities
+    to each amino acid at each position; substitutions to
+    low-probability residues correlate strongly with
+    experimental measures of function
+    \citep{meier2021language, brandes2023esm1b}.
+\end{enumerate}
+
+The five signals are not independent, but their correlation is
+imperfect, which is exactly what makes supervised machine
+learning an appropriate framework: the classifier learns how to
+weigh each signal given labelled examples from \textsc{ClinVar}
+and how to combine them non-linearly.
+
+\subsection{Public Reference Resources}
+\label{sec:intro-resources}
 
 Public reference resources have matured considerably in the past
 decade. \textsc{ClinVar} \citep{landrum2020clinvar} aggregates
-variant-disease relationships curated by clinical laboratories and
-research groups; \textsc{gnomAD} \citep{karczewski2020gnomad}
-provides population-level allele frequency and gene-level
-constraint metrics derived from more than $140{,}000$ human exomes
-and genomes; and \textsc{dbNSFP} \citep{liu2020dbnsfp} consolidates
+variant-disease relationships curated by clinical laboratories
+and research groups, using a five-tier pathogenicity scale
+(Benign, Likely Benign, Variant of Uncertain Significance,
+Likely Pathogenic, Pathogenic). The Genome Aggregation Database
+(\textsc{gnomAD}) \citep{karczewski2020gnomad} publishes
+population-level allele-frequency and gene-level constraint
+metrics derived from more than $140{,}000$ exomes and genomes
+across diverse ancestries; its \emph{observed~/~expected} ratio
+for missense variation has become the standard measure of how
+intolerant a gene is to amino-acid-altering change. The
+\textsc{dbNSFP} resource \citep{liu2020dbnsfp} consolidates
 dozens of per-variant features including cross-species
-conservation, amino-acid chemistry, and predictions from
-preceding-generation tools. The existence of these resources makes
-a supervised machine learning approach to missense classification
-feasible for a student team, provided one is disciplined about
-how the data is combined and evaluated.
+conservation (phyloP, GERP\texttt{++}), amino-acid chemistry
+descriptors, and predictions from preceding-generation tools.
+The existence of these resources makes a supervised
+machine-learning approach to missense classification feasible
+for a student team, provided one is disciplined about how the
+data is combined and evaluated -- precisely the question this
+report sets out to address.
 
 \section{Motivation and Significance}
 \label{sec:intro-motivation}
