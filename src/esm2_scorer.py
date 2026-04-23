@@ -92,6 +92,21 @@ MAX_BACKOFF_SEC = 60.0  # Cap per-attempt sleep to avoid stalling forever.
 AA20 = list("ACDEFGHIKLMNPQRSTVWY")
 
 
+def _ensure_dir(p: Path) -> None:
+    """``mkdir -p`` that tolerates ``p`` being a symlink to an existing dir.
+
+    In Colab we symlink ``data/intermediate/esm2`` → a Drive folder so the
+    cache survives session restarts. Python 3.12's
+    ``Path.mkdir(exist_ok=True)`` can still raise ``FileExistsError`` on
+    such a symlink (the FUSE-backed Drive mount confuses the resolved-
+    target check), so we short-circuit when the target is already a
+    directory.
+    """
+    if p.is_dir():
+        return
+    p.mkdir(parents=True, exist_ok=True)
+
+
 # ─────────────────────────── VEP annotation ────────────────────────────
 
 
@@ -171,7 +186,7 @@ def annotate_with_vep(
     `vep_url`: default is GRCh38. For GRCh37 datasets (e.g. denovo-db)
     pass `vep_url=VEP_URL_GRCH37`.
     """
-    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    _ensure_dir(cache_path.parent)
     cached: dict[str, dict] = {}
     if cache_path.exists():
         cdf = pd.read_parquet(cache_path)
@@ -260,7 +275,7 @@ def fetch_sequences(
     seq_url: str = SEQ_URL_DEFAULT,
 ) -> dict[str, str]:
     """Fetch canonical protein sequences from Ensembl /sequence/id. Cached to parquet."""
-    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    _ensure_dir(cache_path.parent)
     cached: dict[str, str] = {}
     if cache_path.exists():
         cdf = pd.read_parquet(cache_path)
@@ -435,7 +450,7 @@ def score_variants(
     else:
         raise ValueError(f"genome_build must be GRCh37 or GRCh38; got {genome_build!r}")
 
-    cache_dir.mkdir(parents=True, exist_ok=True)
+    _ensure_dir(cache_dir)
     ann_path = cache_dir / "vep_ann.parquet"
     seq_path = cache_dir / "sequences.parquet"
     score_path = cache_dir / "scores.parquet"
@@ -534,7 +549,7 @@ def main() -> None:
     scores = score_variants(ext)
     merged = ext.merge(scores, on="variant_key", how="left")
     out_path = REPO / args.out
-    out_path.parent.mkdir(parents=True, exist_ok=True)
+    _ensure_dir(out_path.parent)
     merged.to_parquet(out_path, index=False)
     n_ok = merged["esm2_llr"].notna().sum()
     print(
