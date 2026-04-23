@@ -271,8 +271,8 @@
     \item \textbf{External validation on \textsc{denovo-db}} with
           pre/post gnomAD-constraint decomposition.
     \item \textbf{Zero-shot ESM-2 proof-of-concept} under rank-fusion.
-    \item \textbf{Fully reproducible code base}: $141$ tests
-          ($91\%$ coverage), CI-enforced leakage gate, pinned
+    \item \textbf{Fully reproducible code base}: $157$ tests
+          ($59\%$ coverage), CI-enforced leakage gate, pinned
           deps, Docker, Streamlit demo, LaTeX report.
   \end{enumerate}
   \vspace{0.5em}
@@ -568,7 +568,7 @@
       \item XGBoost + Optuna + SHAP
       \item \texttt{transformers} + PyTorch
       \item Docker + Makefile + pre-commit
-      \item 141 pytest tests, 91\% coverage
+      \item 157 pytest tests, 59\% coverage
       \item CI: ruff + black + mypy
     \end{itemize}
   \end{columns}
@@ -598,9 +598,9 @@
         \toprule
         \textbf{Summary} & \textbf{Value} \\
         \midrule
-        Total tests   & 141 / 142 pass \\
-        Coverage      & 91\% \\
-        Critical modules & $\geq$92\% \\
+        Total tests   & 157 / 158 pass \\
+        Coverage      & 59\% (CI gate 55\%) \\
+        Top modules   & $\geq$90\% \\
         Reproducibility & six-decimal \\
         \bottomrule
       \end{tabular}
@@ -613,7 +613,7 @@
 \end{frame}
 
 % ───────────── SLIDE 29 ─────────────
-\begin{frame}{Continuous integration: 141 tests on every push}
+\begin{frame}{Continuous integration: 157 tests on every push}
   \centering
   \includegraphics[width=\linewidth,height=0.68\textheight,keepaspectratio]{figures/screenshots/01_pytest_output.png}
 \end{frame}
