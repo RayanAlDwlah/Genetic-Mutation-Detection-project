@@ -1960,51 +1960,47 @@ to a specific section of this thesis.
 
 \begin{figure}[htbp]
 \centering
-\resizebox{\linewidth}{!}{%
-\begin{tikzpicture}[
-  font=\sffamily\footnotesize,
-  quad/.style={draw, rounded corners=3pt, minimum width=7.3cm,
-    minimum height=3.8cm, align=left, inner sep=6pt, thick,
-    text width=6.9cm},
-  title/.style={font=\sffamily\bfseries, anchor=north west, yshift=0.28cm},
-]
-  \node[quad, fill=green!10] (S) at (0, 0)
-    {\begin{minipage}{6.7cm}\small
-     \textbf{S1.} Paralog-disjoint split $+$ CI-enforced leakage gate.\\
-     \textbf{S2.} Calibration reported with Murphy decomposition, not only AUROC.\\
-     \textbf{S3.} External validation on \textsc{denovo-db}.\\
-     \textbf{S4.} Reproducible: \texttt{docker run} yields identical metrics.\\
-     \textbf{S5.} Open-source, zero paid dependencies.
-     \end{minipage}};
-  \node[title] at (S.north west) {Strengths};
-
-  \node[quad, fill=orange!12, right=0.5cm of S] (W)
-    {\begin{minipage}{6.7cm}\small
-     \textbf{W1.} ClinVar-only training; no DMS benchmark coverage.\\
-     \textbf{W2.} Static snapshot; no continuous re-training pipeline.\\
-     \textbf{W3.} Single tree-based classifier; no ensemble of neural baselines in Phase~1.\\
-     \textbf{W4.} Interpretability is feature-level (SHAP); no mechanistic/structural explanation.
-     \end{minipage}};
-  \node[title] at (W.north west) {Weaknesses};
-
-  \node[quad, fill=blue!10, below=0.5cm of S] (O)
-    {\begin{minipage}{6.7cm}\small
-     \textbf{O1.} ESM-2 rank fusion is orthogonal to XGBoost; hybrid gain observed on denovo-db.\\
-     \textbf{O2.} AlphaFold-2 pipeline already wired in for structural features.\\
-     \textbf{O3.} Streamlit UI can be re-hosted as a Hugging Face Space at zero cost.\\
-     \textbf{O4.} Methodology is publishable as a short communication.
-     \end{minipage}};
-  \node[title] at (O.north west) {Opportunities};
-
-  \node[quad, fill=red!10, right=0.5cm of O] (T)
-    {\begin{minipage}{6.7cm}\small
-     \textbf{T1.} ClinVar label churn between releases.\\
-     \textbf{T2.} Regulatory overhead blocks clinical deployment (SFDA class B or higher).\\
-     \textbf{T3.} AlphaMissense/AlphaFold-3 may close the performance gap in months.\\
-     \textbf{T4.} PLM compute cost grows with model size; a 650M jump is infeasible on free tier.
-     \end{minipage}};
-  \node[title] at (T.north west) {Threats};
-\end{tikzpicture}}
+\footnotesize
+\setlength{\arrayrulewidth}{0.4pt}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{@{}|>{\columncolor{green!8}\raggedright\arraybackslash}p{0.48\linewidth}|>{\columncolor{orange!10}\raggedright\arraybackslash}p{0.48\linewidth}|@{}}
+\hline
+\rowcolor{green!25}\multicolumn{1}{|l|}{\textbf{Strengths (internal, positive)}} &
+\cellcolor{orange!25}\textbf{Weaknesses (internal, negative)} \\
+\hline
+\vspace{-0.5em}\begin{itemize}[leftmargin=1.1em, itemsep=0.15em, topsep=0.2em]
+  \item[\textbf{S1}] Paralog-disjoint split + CI-enforced leakage gate.
+  \item[\textbf{S2}] Calibration reported with Murphy decomposition, not only AUROC.
+  \item[\textbf{S3}] External validation on \textsc{denovo-db}.
+  \item[\textbf{S4}] Reproducible: \texttt{docker run} yields identical metrics.
+  \item[\textbf{S5}] Open-source, zero paid dependencies.
+\end{itemize} &
+\vspace{-0.5em}\begin{itemize}[leftmargin=1.1em, itemsep=0.15em, topsep=0.2em]
+  \item[\textbf{W1}] ClinVar-only training; no DMS benchmark coverage.
+  \item[\textbf{W2}] Static snapshot; no continuous re-training pipeline.
+  \item[\textbf{W3}] Single tree classifier; no neural ensemble in Phase~1.
+  \item[\textbf{W4}] Interpretability is feature-level (SHAP); no mechanistic/structural explanation.
+\end{itemize} \\
+\hline
+\rowcolor{blue!20}\multicolumn{1}{|l|}{\textbf{Opportunities (external, positive)}} &
+\cellcolor{red!20}\textbf{Threats (external, negative)} \\
+\hline
+\rowcolor{blue!6}
+\vspace{-0.5em}\begin{itemize}[leftmargin=1.1em, itemsep=0.15em, topsep=0.2em]
+  \item[\textbf{O1}] ESM-2 rank fusion is orthogonal to XGBoost; hybrid gain observed on denovo-db.
+  \item[\textbf{O2}] AlphaFold-2 pipeline already wired in for structural features.
+  \item[\textbf{O3}] Streamlit UI can be re-hosted on Hugging Face Spaces at zero cost.
+  \item[\textbf{O4}] Methodology publishable as a short communication.
+\end{itemize} &
+\cellcolor{red!6}
+\vspace{-0.5em}\begin{itemize}[leftmargin=1.1em, itemsep=0.15em, topsep=0.2em]
+  \item[\textbf{T1}] ClinVar label churn between releases.
+  \item[\textbf{T2}] Regulatory overhead blocks clinical deployment (SFDA class B+).
+  \item[\textbf{T3}] AlphaMissense/AlphaFold-3 may close performance gap in months.
+  \item[\textbf{T4}] PLM compute grows with model size; a 650M jump infeasible on free tier.
+\end{itemize} \\
+\hline
+\end{tabular}
 \caption[SWOT matrix]{\textbf{SWOT matrix} relative to the
 prior work reviewed in Chapter~\ref{ch:related}. Strengths
 and weaknesses are internal; opportunities and threats are
@@ -2024,55 +2020,57 @@ three parts and the arrows carry the artifact names.
 
 \begin{figure}[htbp]
 \centering
-\resizebox{\linewidth}{!}{%
 \begin{tikzpicture}[
-  font=\sffamily\footnotesize,
-  node distance=0.4cm and 0.55cm,
-  stage/.style={draw, rounded corners=3pt, minimum width=2.3cm,
-    minimum height=0.85cm, align=center, thick},
+  font=\sffamily\scriptsize,
+  node distance=0.3cm and 0.35cm,
+  stage/.style={draw, rounded corners=3pt, minimum width=1.9cm,
+    minimum height=0.8cm, align=center, thick,
+    font=\sffamily\scriptsize},
   part1/.style={stage, fill=blue!10},
   part2/.style={stage, fill=orange!12},
   part3/.style={stage, fill=green!12},
-  artf/.style={draw, rounded corners=3pt, minimum width=2.2cm,
+  artf/.style={draw, rounded corners=3pt, minimum width=1.95cm,
     minimum height=0.7cm, align=center, fill=black!6, thick,
     font=\sffamily\scriptsize\itshape},
-  arrow/.style={-Latex, thick},
-  lane/.style={font=\sffamily\bfseries\small, align=center, text width=1.6cm},
+  arrow/.style={-{Latex[length=4pt]}, thick},
+  lane/.style={font=\sffamily\bfseries\footnotesize, align=center, text width=1.3cm},
 ]
-  % Part 1
-  \node[part1] (ing)   {ClinVar +\\gnomAD ingest};
-  \node[part1, right=of ing] (miss)  {Missense\\filter};
-  \node[part1, right=of miss] (feat) {dbNSFP +\\AF merge};
-  \node[part1, right=of feat] (para) {Paralog-aware\\split};
-  \node[artf, right=of para] (art1) {\texttt{splits/*.parquet}};
-  \node[lane, left=0.3cm of ing] (ln1) {Part 1\\(data)};
+  % Lane labels (left column)
+  \node[lane] (ln1) at (0, 0)    {Part 1\\(data)};
+  \node[lane] (ln2) at (0, -1.8) {Part 2\\(training)};
+  \node[lane] (ln3) at (0, -3.6) {Part 3\\(evaluation)};
 
-  % Part 2
-  \node[part2, below=0.85cm of ing] (gate)  {Leakage\\gate};
-  \node[part2, right=of gate] (opt)  {Optuna\\HPO};
-  \node[part2, right=of opt] (thr)   {Threshold\\sweep};
-  \node[part2, right=of thr] (cal)   {Isotonic\\calibration};
-  \node[artf, right=of cal] (art2)    {\texttt{model.json}};
-  \node[lane, left=0.3cm of gate] (ln2) {Part 2\\(training)};
+  % Part 1 — row at y=0
+  \node[part1] (ing)  at (2.2, 0) {ClinVar +\\gnomAD};
+  \node[part1] (miss) at (4.4, 0) {Missense\\filter};
+  \node[part1] (feat) at (6.6, 0) {dbNSFP +\\AF merge};
+  \node[part1] (para) at (8.8, 0) {Paralog\\split};
+  \node[artf]  (art1) at (11.1, 0) {splits/\\*.parquet};
 
-  % Part 3
-  \node[part3, below=0.85cm of gate] (boot) {Bootstrap\\CIs};
-  \node[part3, right=of boot] (shap) {SHAP\\attribution};
-  \node[part3, right=of shap] (base) {Like-for-like\\baselines};
-  \node[part3, right=of base] (ext)  {denovo-db +\\ESM-2 LLR};
-  \node[artf, right=of ext]  (art3)   {\texttt{metrics/*.csv}};
-  \node[lane, left=0.3cm of boot] (ln3) {Part 3\\(evaluation)};
+  % Part 2 — row at y=-1.8
+  \node[part2] (gate) at (2.2, -1.8) {Leakage\\gate};
+  \node[part2] (opt)  at (4.4, -1.8) {Optuna\\HPO};
+  \node[part2] (thr)  at (6.6, -1.8) {Threshold\\sweep};
+  \node[part2] (cal)  at (8.8, -1.8) {Isotonic\\calibration};
+  \node[artf]  (art2) at (11.1, -1.8) {model.json};
 
-  % Arrows within part
+  % Part 3 — row at y=-3.6
+  \node[part3] (boot) at (2.2, -3.6) {Bootstrap\\CIs};
+  \node[part3] (shap) at (4.4, -3.6) {SHAP};
+  \node[part3] (base) at (6.6, -3.6) {Baselines\\re-score};
+  \node[part3] (ext)  at (8.8, -3.6) {denovo-db +\\ESM-2 LLR};
+  \node[artf]  (art3) at (11.1, -3.6) {metrics/\\*.csv};
+
+  % Within-row arrows
   \foreach \a/\b in {ing/miss, miss/feat, feat/para, para/art1,
                      gate/opt, opt/thr, thr/cal, cal/art2,
                      boot/shap, shap/base, base/ext, ext/art3}
     \draw[arrow] (\a) -- (\b);
 
-  % Between-parts artifact flow
-  \draw[arrow, dashed, red!60] (art1.south) -- ++(0,-0.25) -| (gate.north);
-  \draw[arrow, dashed, red!60] (art2.south) -- ++(0,-0.25) -| (boot.north);
-\end{tikzpicture}}
+  % Cross-row artifact flow (dashed red)
+  \draw[arrow, dashed, red!70] (art1.south) -- ++(0,-0.3) -| (gate.north);
+  \draw[arrow, dashed, red!70] (art2.south) -- ++(0,-0.3) -| (boot.north);
+\end{tikzpicture}
 \caption[Three-part pipeline]{\textbf{Three-part pipeline.}
 Each row is a \emph{part} with its own responsibility and
 output artifact. Solid arrows carry intermediate data
@@ -2283,37 +2281,41 @@ orthogonality.
 
 \begin{figure}[htbp]
 \centering
-\resizebox{\linewidth}{!}{%
 \begin{tikzpicture}[
   font=\sffamily\footnotesize,
-  node distance=0.55cm and 0.5cm,
-  ckpt/.style={draw, rounded corners=3pt, minimum width=3.0cm,
-    minimum height=0.85cm, align=center, fill=orange!20, thick},
-  track/.style={draw, rounded corners=3pt, minimum width=3.3cm,
-    minimum height=0.85cm, align=center, fill=green!10, thick},
-  art/.style={draw, rounded corners=3pt, minimum width=2.8cm,
-    minimum height=0.65cm, align=center, fill=black!6,
+  ckpt/.style={draw, rounded corners=3pt, minimum width=2.8cm,
+    minimum height=0.85cm, align=center, fill=orange!25, thick,
+    font=\sffamily\scriptsize\bfseries},
+  track/.style={draw, rounded corners=3pt, minimum width=4.2cm,
+    minimum height=0.7cm, align=center, fill=green!12, thick,
+    font=\sffamily\scriptsize},
+  art/.style={draw, rounded corners=3pt, minimum width=3.4cm,
+    minimum height=0.6cm, align=center, fill=black!6,
     font=\sffamily\scriptsize\ttfamily, thick},
-  arrow/.style={-Latex, thick},
+  arrow/.style={-{Latex[length=5pt]}, thick},
 ]
-  \node[ckpt] (m) {Trained checkpoint\\(\texttt{model.json})};
+  % Left column: trained checkpoint
+  \node[ckpt] (m) at (0, 0) {Trained\\checkpoint\\ (\texttt{model.json})};
 
-  \node[track, above right=0.35cm and 1.3cm of m] (t1) {1. Bootstrap CIs};
-  \node[track, right=of m, yshift=0.75cm] (t2) {2. TreeSHAP attribution};
-  \node[track, right=of m, yshift=-0.05cm] (t3) {3. SIFT/PolyPhen/AM baselines};
-  \node[track, right=of m, yshift=-0.85cm] (t4) {4. denovo-db external};
-  \node[track, below right=0.35cm and 1.3cm of m] (t5) {5. ESM-2 zero-shot LLR};
+  % Middle column: 5 tracks (1.0 cm apart vertically)
+  \node[track] (t1) at (4.8,  2.0) {1. Bootstrap CIs};
+  \node[track] (t2) at (4.8,  1.0) {2. TreeSHAP attribution};
+  \node[track] (t3) at (4.8,  0.0) {3. SIFT / PolyPhen / AM};
+  \node[track] (t4) at (4.8, -1.0) {4. denovo-db external};
+  \node[track] (t5) at (4.8, -2.0) {5. ESM-2 zero-shot LLR};
 
-  \node[art, right=0.55cm of t1] (a1) {bootstrap\_ci.csv};
-  \node[art, right=0.55cm of t2] (a2) {shap\_values.parquet};
-  \node[art, right=0.55cm of t3] (a3) {baselines.csv};
-  \node[art, right=0.55cm of t4] (a4) {denovo\_metrics.csv};
-  \node[art, right=0.55cm of t5] (a5) {esm2\_llr.parquet};
+  % Right column: artifacts
+  \node[art] (a1) at (10.3,  2.0) {bootstrap\_ci.csv};
+  \node[art] (a2) at (10.3,  1.0) {shap\_values.pq};
+  \node[art] (a3) at (10.3,  0.0) {baselines.csv};
+  \node[art] (a4) at (10.3, -1.0) {denovo\_metrics.csv};
+  \node[art] (a5) at (10.3, -2.0) {esm2\_llr.pq};
 
-  \foreach \a/\b in {m/t1, m/t2, m/t3, m/t4, m/t5,
-                     t1/a1, t2/a2, t3/a3, t4/a4, t5/a5}
-    \draw[arrow] (\a) -- (\b);
-\end{tikzpicture}}
+  % Checkpoint -> tracks (fan-out)
+  \foreach \t in {t1, t2, t3, t4, t5} \draw[arrow] (m.east) -- (\t.west);
+  % Tracks -> artifacts (horizontal)
+  \foreach \x in {1, 2, 3, 4, 5} \draw[arrow] (t\x.east) -- (a\x.west);
+\end{tikzpicture}
 \caption[Evaluation workflow]{\textbf{Evaluation workflow.} A
 single audited checkpoint feeds five independent evaluation
 tracks that run in parallel. Each track writes its own
@@ -2342,28 +2344,28 @@ simultaneously.
 
 \begin{figure}[htbp]
 \centering
-\resizebox{\linewidth}{!}{%
 \begin{tikzpicture}[
-  font=\sffamily\footnotesize,
-  layer/.style={draw, rounded corners=3pt, minimum width=12.2cm,
-    minimum height=1.0cm, align=center, thick},
-  cross/.style={draw, rounded corners=3pt, minimum width=2.2cm,
-    minimum height=3.2cm, align=center, thick, font=\sffamily\scriptsize},
+  font=\sffamily\scriptsize,
+  layer/.style={draw, rounded corners=3pt, minimum width=9.0cm,
+    minimum height=0.85cm, align=center, thick},
+  cross/.style={draw, rounded corners=3pt, minimum width=2.1cm,
+    minimum height=3.0cm, align=center, thick,
+    font=\sffamily\scriptsize},
 ]
-  % Top to bottom: presentation -> application -> service -> ML core -> data access -> data
-  \node[layer, fill=red!10]    (l6) {\textbf{L6~~Presentation} \ -- \ Streamlit web UI \ \textbullet\ Typer CLI \ \textbullet\ Python API};
-  \node[layer, fill=orange!12, below=0.2cm of l6] (l5) {\textbf{L5~~Application} \ -- \ input validation \ \textbullet\ annotation cache \ \textbullet\ explanation payload};
-  \node[layer, fill=yellow!20, below=0.2cm of l5] (l4) {\textbf{L4~~Service} \ -- \ \texttt{score\_variant()} \ \textbullet\ \texttt{explain()} \ \textbullet\ \texttt{batch\_score()}};
-  \node[layer, fill=green!12,  below=0.2cm of l4] (l3) {\textbf{L3~~ML core} \ -- \ XGBoost \ \textbullet\ isotonic calibrator \ \textbullet\ SHAP explainer \ \textbullet\ ESM-2 LLR};
-  \node[layer, fill=blue!10,   below=0.2cm of l3] (l2) {\textbf{L2~~Data access} \ -- \ \texttt{pyarrow} readers \ \textbullet\ paralog splitter \ \textbullet\ feature assembler};
-  \node[layer, fill=black!6,   below=0.2cm of l2] (l1) {\textbf{L1~~Data} \ -- \ ClinVar \ \textbullet\ gnomAD \ \textbullet\ dbNSFP \ \textbullet\ denovo-db \ \textbullet\ UniProt};
+  % Main 6 layers, centred
+  \node[layer, fill=red!10]                         (l6) at (0,  5)   {\textbf{L6~~Presentation} \ -- \ Streamlit \textbullet\ Typer CLI \textbullet\ Python API};
+  \node[layer, fill=orange!12]                      (l5) at (0,  4)   {\textbf{L5~~Application} \ -- \ validation \textbullet\ annotation cache \textbullet\ payload};
+  \node[layer, fill=yellow!20]                      (l4) at (0,  3)   {\textbf{L4~~Service} \ -- \ score\_variant() \textbullet\ explain() \textbullet\ batch\_score()};
+  \node[layer, fill=green!12]                       (l3) at (0,  2)   {\textbf{L3~~ML core} \ -- \ XGBoost \textbullet\ isotonic \textbullet\ SHAP \textbullet\ ESM-2 LLR};
+  \node[layer, fill=blue!10]                        (l2) at (0,  1)   {\textbf{L2~~Data access} \ -- \ \texttt{pyarrow} \textbullet\ paralog splitter \textbullet\ assembler};
+  \node[layer, fill=black!6]                        (l1) at (0,  0)   {\textbf{L1~~Data} \ -- \ ClinVar \textbullet\ gnomAD \textbullet\ dbNSFP \textbullet\ denovo-db \textbullet\ UniProt};
 
-  % Cross-cutting concerns on the sides (aligned vertically)
-  \node[cross, fill=red!6, left=0.45cm of l4]
-        {\textbf{Quality gates}\\\ \\\texttt{ruff}\\\texttt{mypy}\\\texttt{pytest}\\leakage gate\\CI on PR};
-  \node[cross, fill=teal!12, right=0.45cm of l4]
-        {\textbf{Reproducibility}\\\ \\Docker image\\\texttt{uv.lock}\\fixed seed\\immutable\\data snapshots};
-\end{tikzpicture}}
+  % Cross-cutting concerns (left and right bands aligned to layer stack)
+  \node[cross, fill=red!6]  at (-5.95,  2.5)
+        {\textbf{Quality}\\\textbf{gates}\\[3pt]\texttt{ruff}\\\texttt{mypy}\\\texttt{pytest}\\leakage gate\\CI on PR};
+  \node[cross, fill=teal!12] at ( 5.95,  2.5)
+        {\textbf{Repro-}\\\textbf{ducibility}\\[3pt]Docker\\\texttt{uv.lock}\\fixed seed\\immutable\\data snaps};
+\end{tikzpicture}
 \caption[System architecture]{\textbf{System architecture.}
 Six horizontal layers (L1 data $\to$ L6 presentation) with
 two vertical cross-cutting concerns. Each layer has a
@@ -2696,97 +2698,85 @@ the gate does not exist meaningfully without them.
 
 \begin{figure}[htbp]
 \centering
-\resizebox{\linewidth}{!}{%
 \begin{tikzpicture}[
-  font=\sffamily\tiny,
+  font=\sffamily\scriptsize,
   cls/.style={draw, rectangle split, rectangle split parts=3,
-    rectangle split draw splits=true, rectangle split horizontal=false,
-    thick, align=left, text width=3.0cm, inner sep=2pt,
+    rectangle split draw splits=true,
+    thick, align=left, text width=3.3cm, inner sep=2pt,
     rectangle split part align=left, fill=white},
   data/.style={cls, fill=blue!6},
   model/.style={cls, fill=green!8},
   eval/.style={cls, fill=orange!10},
   iface/.style={cls, fill=red!8},
-  rel/.style={-Latex, thick},
+  pkg/.style={draw, dashed, rounded corners, inner sep=0.25cm,
+    fill opacity=0.04, text opacity=1},
+  rel/.style={-{Latex[length=5pt]}, thick},
   comp/.style={-{Diamond[length=6pt, width=6pt, fill=black]}, thick},
+  node distance=0.45cm and 0.45cm,
 ]
-  % Data pipeline package
-  \node[data] (load) {\textbf{VariantLoader} \nodepart{second}
-        clinvar\_url : Path \\ gnomad\_url : Path
-        \nodepart{third}
-        +load() : DataFrame};
-  \node[data, below=0.55cm of load] (feat) {\textbf{FeatureAssembler} \nodepart{second}
-        banned : Set[str]
-        \nodepart{third}
-        +assemble(df) : DataFrame};
-  \node[data, below=0.55cm of feat] (split) {\textbf{ParalogSplitter} \nodepart{second}
-        families : Dict[str,str] \\ seed : int
-        \nodepart{third}
-        +split(df) : Tuple[3]};
+  % Row 1 — Data + Model packages
+  \node[data] (load) {\textbf{VariantLoader}
+        \nodepart{second}\scriptsize clinvar\_url: Path
+        \nodepart{third}\scriptsize +load(): DataFrame};
+  \node[data, below=of load] (feat) {\textbf{FeatureAssembler}
+        \nodepart{second}\scriptsize banned: Set[str]
+        \nodepart{third}\scriptsize +assemble(df)};
+  \node[data, below=of feat] (split) {\textbf{ParalogSplitter}
+        \nodepart{second}\scriptsize families: Dict\\ seed: int
+        \nodepart{third}\scriptsize +split(df)};
 
-  % Model package
-  \node[model, right=1.6cm of load] (xgb) {\textbf{XGBoostTrainer} \nodepart{second}
-        params : dict \\ booster : Booster
-        \nodepart{third}
-        +fit(X, y) : None \\ +predict\_proba(X) : ndarray};
-  \node[model, below=0.55cm of xgb] (cal)  {\textbf{IsotonicCalibrator} \nodepart{second}
-        mapping : Iso
-        \nodepart{third}
-        +fit(p\_val, y\_val) \\ +transform(p) : ndarray};
-  \node[model, below=0.55cm of cal] (esm)  {\textbf{ESM2Scorer} \nodepart{second}
-        hf\_name : str \\ device : str
-        \nodepart{third}
-        +score(query) : DataFrame};
+  \node[model, right=1.1cm of load] (xgb) {\textbf{XGBoostTrainer}
+        \nodepart{second}\scriptsize params: dict\\ booster: Booster
+        \nodepart{third}\scriptsize +fit(X, y)\\ +predict\_proba(X)};
+  \node[model, below=of xgb] (cal) {\textbf{IsotonicCalibrator}
+        \nodepart{second}\scriptsize mapping: Iso
+        \nodepart{third}\scriptsize +fit(p, y)\\ +transform(p)};
+  \node[model, below=of cal] (esm) {\textbf{ESM2Scorer}
+        \nodepart{second}\scriptsize hf\_name: str\\ device: str
+        \nodepart{third}\scriptsize +score(query)};
 
-  % Eval package
-  \node[eval, right=1.6cm of xgb] (boot) {\textbf{BootstrapMetrics} \nodepart{second}
-        n\_boot : int = 1000
-        \nodepart{third}
-        +compute(y, p) : DataFrame};
-  \node[eval, below=0.55cm of boot] (shap) {\textbf{SHAPExplainer} \nodepart{second}
-        sample\_size : int
-        \nodepart{third}
-        +explain(X, model) : DataFrame};
-  \node[eval, below=0.55cm of shap] (gate) {\textbf{LeakageGate} \nodepart{second}
-        checks : List[Check]
-        \nodepart{third}
-        +run\_all() : Report};
+  % Row 2 (below) — Eval + Interface packages
+  \node[eval, below=1.6cm of split] (boot) {\textbf{BootstrapMetrics}
+        \nodepart{second}\scriptsize n\_boot: int = 1000
+        \nodepart{third}\scriptsize +compute(y, p)};
+  \node[eval, right=of boot] (shap) {\textbf{SHAPExplainer}
+        \nodepart{second}\scriptsize sample\_size: int
+        \nodepart{third}\scriptsize +explain(X, model)};
+  \node[eval, right=of shap] (gate) {\textbf{LeakageGate}
+        \nodepart{second}\scriptsize checks: List[Check]
+        \nodepart{third}\scriptsize +run\_all(): Report};
 
-  % Interface package
-  \node[iface, right=1.6cm of boot] (app) {\textbf{ScoreService} \nodepart{second}
-        model : XGBoostTrainer \\ cal : IsotonicCalibrator
-        \nodepart{third}
-        +score\_variant(v) : Response};
-  \node[iface, below=0.55cm of app] (web) {\textbf{StreamlitApp} \nodepart{second}
-        service : ScoreService
-        \nodepart{third}
-        +render()};
-  \node[iface, below=0.55cm of web] (cli) {\textbf{TyperCLI} \nodepart{second}
-        service : ScoreService
-        \nodepart{third}
-        +batch\_score(path)};
+  \node[iface, below=of boot]  (app)  {\textbf{ScoreService}
+        \nodepart{second}\scriptsize model, cal, shap
+        \nodepart{third}\scriptsize +score\_variant(v)};
+  \node[iface, below=of shap]  (web)  {\textbf{StreamlitApp}
+        \nodepart{second}\scriptsize service: ScoreService
+        \nodepart{third}\scriptsize +render()};
+  \node[iface, below=of gate]  (cli)  {\textbf{TyperCLI}
+        \nodepart{second}\scriptsize service: ScoreService
+        \nodepart{third}\scriptsize +batch\_score(path)};
 
-  % Associations
-  \draw[rel] (load) -- node[above, font=\sffamily\tiny]{uses} (feat);
-  \draw[rel] (feat) -- node[above, font=\sffamily\tiny]{produces} (split);
-  \draw[rel] (split) -- (xgb);
+  % Package labels
+  \node[font=\sffamily\footnotesize\bfseries, blue!60!black, above=0.15cm of load] {\texttt{src/data/}};
+  \node[font=\sffamily\footnotesize\bfseries, green!50!black, above=0.15cm of xgb] {\texttt{src/models/}};
+  \node[font=\sffamily\footnotesize\bfseries, orange!70!black, above=0.15cm of shap] {\texttt{src/eval/}};
+  \node[font=\sffamily\footnotesize\bfseries, red!60!black, above=0.15cm of web] {\texttt{src/interfaces/}};
+
+  % Associations (solid arrows)
+  \draw[rel] (load) -- (feat);
+  \draw[rel] (feat) -- (split);
+  \draw[rel] (split.east) to[out=0, in=180] (xgb.west);
   \draw[rel] (xgb) -- (cal);
-  \draw[rel] (cal) -- (boot);
-  \draw[rel] (boot) -- (shap);
-  \draw[rel] (esm) -- (boot);
-  \draw[rel] (app) -- (xgb);
-  \draw[rel] (app) -- (cal);
+  \draw[rel] (cal) -- (esm);
+  \draw[rel] (xgb.south) to[out=-90, in=90] (boot.north);
+  \draw[rel] (esm.south) to[out=-90, in=90] (shap.north);
+  \draw[rel] (app.north east) to[out=45, in=-135] (xgb.south west);
   \draw[rel] (web) -- (app);
   \draw[rel] (cli) -- (app);
-  % Composition: LeakageGate composes four checks (shown as one arrow representative)
-  \draw[comp] (gate) -- (feat);
 
-  % Package boundary labels
-  \node[font=\sffamily\scriptsize\bfseries, blue!60!black, above=0.05cm of load] {\texttt{src/data/}};
-  \node[font=\sffamily\scriptsize\bfseries, green!50!black, above=0.05cm of xgb] {\texttt{src/models/}};
-  \node[font=\sffamily\scriptsize\bfseries, orange!70!black, above=0.05cm of boot] {\texttt{src/eval/}};
-  \node[font=\sffamily\scriptsize\bfseries, red!60!black, above=0.05cm of app] {\texttt{src/interfaces/}};
-\end{tikzpicture}}
+  % Composition diamond: LeakageGate owns invariant checks
+  \draw[comp] (gate.west) -- ++(-0.35, 0);
+\end{tikzpicture}
 \caption[Class diagram]{\textbf{Class diagram.} Four
 packages align one-to-one with \texttt{src/}
 sub-directories. A filled diamond denotes composition:
@@ -2811,65 +2801,75 @@ which is a pure in-memory transform.
 
 \begin{figure}[htbp]
 \centering
-\resizebox{\linewidth}{!}{%
 \begin{tikzpicture}[
   font=\sffamily\footnotesize,
   participant/.style={draw, rounded corners=2pt, fill=blue!10,
-    minimum width=2.3cm, minimum height=0.7cm, thick, align=center,
+    minimum width=2.0cm, minimum height=0.65cm, thick, align=center,
     font=\sffamily\scriptsize\bfseries},
-  lifeline/.style={dashed, gray!60},
-  activation/.style={fill=orange!30, draw=orange!70, thick},
-  msg/.style={-Latex, thick},
-  ret/.style={-Latex, dashed, gray!60, thick},
-  frag/.style={draw=red!60, thick, rounded corners=1pt},
+  lifeline/.style={dashed, gray!50},
+  activation/.style={fill=orange!25, draw=orange!60, thin},
+  msg/.style={-{Latex[length=5pt]}, thick},
+  ret/.style={-{Latex[length=5pt]}, dashed, gray!80, thick},
+  mlab/.style={midway, above=0pt, font=\sffamily\scriptsize, fill=white, inner sep=1pt},
+  frag/.style={draw=red!60, thick, rounded corners=1.5pt},
 ]
-  % Participants at top
-  \node[participant] (a) at (0, 0)  {StreamlitApp};
-  \node[participant] (s) at (3, 0)  {ScoreService};
-  \node[participant] (c) at (6, 0)  {FeatureCache};
-  \node[participant] (m) at (9, 0)  {XGBoostTrainer};
-  \node[participant] (e) at (12, 0) {SHAPExplainer};
+  % Participants across \linewidth: 5 columns evenly spaced over 12cm
+  \node[participant] (a) at (0,    0) {StreamlitApp};
+  \node[participant] (s) at (3.0,  0) {ScoreService};
+  \node[participant] (c) at (6.0,  0) {FeatureCache};
+  \node[participant] (m) at (9.0,  0) {XGBoostTrainer};
+  \node[participant] (e) at (12.0, 0) {SHAPExplainer};
 
-  % Lifelines
-  \foreach \p in {a, s, c, m, e} \draw[lifeline] (\p.south) -- ++(0, -7.5);
+  \foreach \p in {a, s, c, m, e} \draw[lifeline] (\p.south) -- ++(0, -8.2);
 
-  % Activations (coloured rectangles on lifelines)
-  \fill[activation] (a.south)+(-0.1, -0.05) rectangle ++(0.1, -7.3);
-  \fill[activation] (s.south)+(-0.1, -0.5) rectangle ++(0.1, -6.6);
-  \fill[activation] (c.south)+(-0.1, -1.0) rectangle ++(0.1, -0.8);
-  \fill[activation] (c.south)+(-0.1, -3.2) rectangle ++(0.1, -0.5);
-  \fill[activation] (m.south)+(-0.1, -4.5) rectangle ++(0.1, -0.5);
-  \fill[activation] (e.south)+(-0.1, -5.5) rectangle ++(0.1, -0.5);
+  % Activation bars
+  \fill[activation] ($(a.south)+(-0.07,0)$) rectangle ++(0.14, -8.0);
+  \fill[activation] ($(s.south)+(-0.07,-0.7)$) rectangle ++(0.14, -7.0);
+  \fill[activation] ($(c.south)+(-0.07,-1.4)$) rectangle ++(0.14, -1.0);
+  \fill[activation] ($(c.south)+(-0.07,-3.6)$) rectangle ++(0.14, -0.7);
+  \fill[activation] ($(m.south)+(-0.07,-5.1)$) rectangle ++(0.14, -0.7);
+  \fill[activation] ($(e.south)+(-0.07,-6.5)$) rectangle ++(0.14, -0.7);
 
-  % Messages
-  \draw[msg] (a.south)+(0,-0.5) -- ++(3, 0) node[midway, above, font=\sffamily\tiny]{score\_variant(v)};
-  \draw[msg] (s.south)+(0,-1.0) -- ++(3, 0) node[midway, above, font=\sffamily\tiny]{lookup(v)};
+  % Messages (y positions spaced 1.0cm apart for clarity)
+  \draw[msg] ($(a.south)+(0.07,-0.7)$) -- ($(s.south)+(-0.07,-0.7)$)
+       node[mlab] {\texttt{score\_variant(v)}};
+  \draw[msg] ($(s.south)+(0.07,-1.4)$) -- ($(c.south)+(-0.07,-1.4)$)
+       node[mlab] {\texttt{lookup(v)}};
 
-  % opt frame (cache miss)
-  \draw[frag] (4.4, -1.6) rectangle (10.6, -3.4);
-  \node[anchor=north west, font=\sffamily\tiny\bfseries, red!70] at (4.4, -1.6) {opt [cache miss]};
-  \draw[msg] (c.south)+(0,-2.1) -- ++(-3.9, 0) node[midway, above, font=\sffamily\tiny, text width=2.4cm, align=center]{VEP.annotate(v)};
-  \draw[msg, red!70] (c.south)+(0,-2.4) .. controls ++(-1, -0.3) and ++(1, -0.3) .. ++(-4.5, -0.1);
-  \node[font=\sffamily\tiny, red!70] at (4, -2.65) {REST call};
-  \draw[ret] (c.south)+(0,-3.1) -- ++(-3, 0) node[midway, above, font=\sffamily\tiny]{annotated};
+  % opt-fragment for cache miss
+  \draw[frag] (4.0, -2.1) rectangle (12.8, -3.8);
+  \node[anchor=north west, font=\sffamily\scriptsize\bfseries, red!70]
+       at (4.0, -2.05) {opt [cache miss]};
+  \draw[msg] ($(c.south)+(-0.07,-2.7)$) -- ($(c.south)+(-4.0,-2.7)$)
+       node[mlab] {\texttt{VEP.annotate(v)}};
+  \node[font=\sffamily\tiny, red!70, anchor=east] at (2.0, -2.95) {REST call (1--2\,s)};
+  \draw[ret] ($(c.south)+(-4.0,-3.4)$) -- ($(c.south)+(-0.07,-3.4)$)
+       node[mlab] {annotated};
 
-  \draw[msg] (c.south)+(0,-3.7) -- ++(3, 0) node[midway, above, font=\sffamily\tiny]{features};
-  \draw[msg] (s.south)+(0,-4.5) -- ++(6, 0) node[midway, above, font=\sffamily\tiny]{predict\_proba(X)};
-  \draw[ret] (m.south)+(0,-5.0) -- ++(-6, 0) node[midway, above, font=\sffamily\tiny]{p\_raw};
+  % back to normal flow
+  \draw[msg] ($(c.south)+(0.07,-4.3)$) -- ($(s.south)+(-0.07,-4.3)$)
+       node[mlab] {features};
+  \draw[msg] ($(s.south)+(0.07,-5.1)$) -- ($(m.south)+(-0.07,-5.1)$)
+       node[mlab] {\texttt{predict\_proba(X)}};
+  \draw[ret] ($(m.south)+(-0.07,-5.75)$) -- ($(s.south)+(0.07,-5.75)$)
+       node[mlab] {p\_raw};
 
   % self-loop for calibration
-  \draw[msg] (s.south)+(0,-5.2) .. controls ++(1, 0) and ++(1, -0.6) .. (s.south)+(0,-5.6)
-    node[midway, right, font=\sffamily\tiny]{calibrate(p)};
+  \draw[msg, rounded corners=2pt] ($(s.south)+(0.07,-6.0)$) -- ++(0.6,0) -- ++(0,-0.4) -- ($(s.south)+(0.07,-6.4)$);
+  \node[anchor=west, font=\sffamily\scriptsize] at ($(s.south)+(0.7,-6.2)$) {\texttt{calibrate(p)}};
 
-  \draw[msg] (s.south)+(0,-6.0) -- ++(9, 0) node[midway, above, font=\sffamily\tiny]{explain(X)};
-  \draw[ret] (e.south)+(0,-6.5) -- ++(-9, 0) node[midway, above, font=\sffamily\tiny]{shap\_vals};
+  \draw[msg] ($(s.south)+(0.07,-6.8)$) -- ($(e.south)+(-0.07,-6.8)$)
+       node[mlab] {\texttt{explain(X)}};
+  \draw[ret] ($(e.south)+(-0.07,-7.5)$) -- ($(s.south)+(0.07,-7.5)$)
+       node[mlab] {shap\_vals};
 
-  \draw[ret] (s.south)+(0,-7.0) -- ++(-3, 0) node[midway, above, font=\sffamily\tiny]{\{p\_cal, band, shap\}};
-\end{tikzpicture}}
+  \draw[ret] ($(s.south)+(-0.07,-8.0)$) -- ($(a.south)+(0.07,-8.0)$)
+       node[mlab] {\{p\_cal, band, shap\}};
+\end{tikzpicture}
 \caption[Sequence diagram]{\textbf{Sequence diagram for a
 single scoring request.} Orange bars are activation
-frames; red frame is an \texttt{opt} fragment for the
-cache-miss branch (adds $\sim$1--2~s latency). Self-loop on
+frames; the red frame is an \texttt{opt} fragment for the
+cache-miss branch (adds $\sim$1--2~s). Self-loop on
 \texttt{ScoreService} denotes isotonic calibration.}
 \label{fig:seq}
 \end{figure}
@@ -2887,73 +2887,65 @@ independent scoring tracks concurrently (fork-2 / join-2).
 
 \begin{figure}[htbp]
 \centering
-\resizebox{\linewidth}{!}{%
 \begin{tikzpicture}[
   font=\sffamily\footnotesize,
-  start/.style={circle, fill=black, minimum size=0.35cm, inner sep=0pt},
-  stop/.style={circle, draw=black, double, minimum size=0.45cm, inner sep=0pt,
+  start/.style={circle, fill=black, minimum size=0.3cm, inner sep=0pt},
+  stop/.style={circle, draw=black, double, minimum size=0.4cm, inner sep=0pt,
     fill=black!15},
-  act/.style={draw, rounded corners=8pt, minimum width=3.2cm,
-    minimum height=0.7cm, align=center, thick, fill=blue!8},
-  dec/.style={diamond, draw, minimum width=1.0cm, minimum height=0.7cm,
+  act/.style={draw, rounded corners=8pt, minimum width=2.6cm,
+    minimum height=0.6cm, align=center, thick, fill=blue!8,
+    font=\sffamily\scriptsize},
+  dec/.style={diamond, draw, minimum width=0.9cm, minimum height=0.7cm,
     inner sep=0pt, fill=orange!10, thick, font=\sffamily\scriptsize, align=center},
-  fork/.style={rectangle, draw=black, fill=black, minimum height=0.14cm,
-    minimum width=5.8cm, inner sep=0pt},
-  arrow/.style={-Latex, thick},
+  fork/.style={rectangle, draw=black, fill=black, minimum height=0.12cm,
+    minimum width=10.5cm, inner sep=0pt},
+  arrow/.style={-{Latex[length=5pt]}, thick},
 ]
+  % Top
   \node[start] (s) at (0, 0) {};
-  \node[act, below=0.4cm of s] (load) {Load paralog-disjoint splits};
+  \node[act, below=0.35cm of s] (load) {Load paralog-disjoint splits};
 
-  \node[fork, below=0.5cm of load] (f1) {};
-  \node[act, below left=0.6cm and 2.0cm of f1] (ch1) {Check banned features};
-  \node[act, below=0.6cm of f1]             (ch2) {Check 100\% missense};
-  \node[act, below right=0.6cm and 0.0cm of f1] (ch3) {Check no paralog};
-  \node[act, below right=0.6cm and 2.0cm of f1] (ch4) {Check rate gap};
-  \node[fork, below=2.3cm of f1] (j1) {};
+  % Fork 1 — leakage gate (4 parallel checks)
+  \node[fork, below=0.45cm of load] (f1) {};
+  \node[act, below=0.55cm of f1, xshift=-4.2cm] (ch1) {Check banned features};
+  \node[act, below=0.55cm of f1, xshift=-1.4cm] (ch2) {Check 100\% missense};
+  \node[act, below=0.55cm of f1, xshift=1.4cm]  (ch3) {Check no paralog};
+  \node[act, below=0.55cm of f1, xshift=4.2cm]  (ch4) {Check rate gap};
+  \node[fork, below=1.7cm of f1] (j1) {};
 
-  \node[dec, below=0.5cm of j1] (d1) {Pass?};
-  \node[act, right=0.8cm of d1, fill=red!10] (halt) {Halt + report};
+  \node[dec, below=0.45cm of j1] (d1) {Pass?};
+  \node[act, right=1.3cm of d1, fill=red!12] (halt) {Halt + report};
 
-  \node[act, below=0.5cm of d1] (opt) {Optuna HPO (40 trials)};
-  \node[act, below=0.5cm of opt] (thr) {Threshold sweep};
-  \node[act, below=0.5cm of thr] (cal) {Isotonic calibration};
+  \node[act, below=0.45cm of d1] (opt) {Optuna HPO (40 trials)};
+  \node[act, below=0.35cm of opt] (thr) {Threshold sweep};
+  \node[act, below=0.35cm of thr] (cal) {Isotonic calibration};
 
-  \node[fork, below=0.5cm of cal] (f2) {};
-  \node[act, below left=0.6cm and 3cm of f2]  (t1) {Bootstrap CIs};
-  \node[act, below left=0.6cm and 0.5cm of f2]  (t2) {SHAP};
-  \node[act, below=0.6cm of f2]                 (t3) {Baselines};
-  \node[act, below right=0.6cm and 0.5cm of f2] (t4) {denovo-db};
-  \node[act, below right=0.6cm and 3cm of f2]   (t5) {ESM-2 LLR};
-  \node[fork, below=2.3cm of f2] (j2) {};
+  % Fork 2 — evaluation tracks (5 parallel)
+  \node[fork, below=0.45cm of cal] (f2) {};
+  \node[act, below=0.55cm of f2, xshift=-4.5cm] (ta) {Bootstrap CIs};
+  \node[act, below=0.55cm of f2, xshift=-2.25cm] (tb) {SHAP};
+  \node[act, below=0.55cm of f2, xshift=0cm]    (tc) {Baselines};
+  \node[act, below=0.55cm of f2, xshift=2.25cm] (td) {denovo-db};
+  \node[act, below=0.55cm of f2, xshift=4.5cm]  (te) {ESM-2 LLR};
+  \node[fork, below=1.7cm of f2] (j2) {};
 
-  \node[act, below=0.5cm of j2] (rep) {Write \texttt{results/metrics/*.csv}};
-  \node[stop, below=0.5cm of rep] (e) {};
+  \node[act, below=0.45cm of j2] (rep) {Write \texttt{results/metrics/*.csv}};
+  \node[stop, below=0.4cm of rep] (endn) {};
 
+  % Flow
   \draw[arrow] (s) -- (load);
   \draw[arrow] (load) -- (f1);
-  \draw[arrow] (f1) -- (ch1);
-  \draw[arrow] (f1) -- (ch2);
-  \draw[arrow] (f1) -- (ch3);
-  \draw[arrow] (f1) -- (ch4);
-  \draw[arrow] (ch1) -- (j1);
-  \draw[arrow] (ch2) -- (j1);
-  \draw[arrow] (ch3) -- (j1);
-  \draw[arrow] (ch4) -- (j1);
+  \foreach \c in {ch1, ch2, ch3, ch4} {\draw[arrow] (f1) -- (\c); \draw[arrow] (\c) -- (j1);}
   \draw[arrow] (j1) -- (d1);
   \draw[arrow] (d1) -- (halt) node[midway, above, font=\sffamily\scriptsize]{no};
-  \draw[arrow] (d1) -- (opt) node[midway, right, font=\sffamily\scriptsize]{yes};
+  \draw[arrow] (d1) -- (opt) node[midway, right, font=\sffamily\scriptsize, xshift=1pt]{yes};
   \draw[arrow] (opt) -- (thr);
   \draw[arrow] (thr) -- (cal);
   \draw[arrow] (cal) -- (f2);
-  \draw[arrow] (f2) -- (t1);
-  \draw[arrow] (f2) -- (t2);
-  \draw[arrow] (f2) -- (t3);
-  \draw[arrow] (f2) -- (t4);
-  \draw[arrow] (f2) -- (t5);
-  \foreach \x in {t1, t2, t3, t4, t5} \draw[arrow] (\x) -- (j2);
+  \foreach \t in {ta, tb, tc, td, te} {\draw[arrow] (f2) -- (\t); \draw[arrow] (\t) -- (j2);}
   \draw[arrow] (j2) -- (rep);
-  \draw[arrow] (rep) -- (e);
-\end{tikzpicture}}
+  \draw[arrow] (rep) -- (endn);
+\end{tikzpicture}
 \caption[Activity diagram]{\textbf{Activity diagram} for the
 training + evaluation workflow. The two thick black bars
 are fork/join pseudo-nodes: Fork-1 runs the four leakage
@@ -3030,53 +3022,51 @@ concrete Python import or to an HTTP/FTP call.
 
 \begin{figure}[htbp]
 \centering
-\resizebox{\linewidth}{!}{%
 \begin{tikzpicture}[
   font=\sffamily\footnotesize,
-  node distance=0.85cm and 1.1cm,
-  comp/.style={draw, thick, rounded corners=2pt, minimum width=2.8cm,
-    minimum height=0.9cm, align=center, fill=blue!8},
-  ext/.style={draw, thick, rounded corners=14pt, minimum width=2.8cm,
-    minimum height=0.9cm, fill=gray!12, align=center,
-    font=\sffamily\scriptsize, double copy shadow={shadow xshift=-1pt, shadow yshift=-1pt, fill=gray!20}},
-  prov/.style={circle, draw=black, fill=white, minimum size=0.25cm, inner sep=0pt},
-  arrow/.style={-Latex, thick},
-  dep/.style={-Latex, dashed, gray!60},
+  comp/.style={draw, thick, rounded corners=2pt, minimum width=2.4cm,
+    minimum height=0.7cm, align=center, fill=blue!8,
+    font=\sffamily\scriptsize},
+  ext/.style={draw, thick, rounded corners=10pt, minimum width=2.4cm,
+    minimum height=0.7cm, fill=gray!15, align=center,
+    font=\sffamily\scriptsize},
+  arrow/.style={-{Latex[length=5pt]}, thick},
+  dep/.style={-{Latex[length=5pt]}, dashed, gray!70, thick},
 ]
-  % Internal components (left)
-  \node[comp] (sl)  {Streamlit UI};
-  \node[comp, below=of sl] (cli) {Typer CLI};
-  \node[comp, right=of sl] (svc) {ScoreService};
-  \node[comp, right=of svc] (mdl) {Model (XGBoost)};
-  \node[comp, below=of mdl] (cal) {IsotonicCalibrator};
-  \node[comp, below=of svc] (shap) {SHAPExplainer};
-  \node[comp, below=of cli] (data) {FeatureAssembler};
-  \node[comp, below=of data] (cache) {Parquet cache};
+  % Grid layout: columns at x = 0, 3.5, 7.0, 10.5; rows at y = 3, 1.5, 0, -1.5
+  % Left column: UI
+  \node[comp]  (sl)   at (0,    3)   {Streamlit UI};
+  \node[comp]  (cli)  at (0,    1.5) {Typer CLI};
 
-  % External services (right side, rounded boxes emulating clouds)
-  \node[ext, right=1.5cm of mdl] (vep)  {VEP REST (Ensembl)};
-  \node[ext, right=1.5cm of cal] (hf)   {HuggingFace Hub (ESM-2)};
-  \node[ext, right=1.5cm of shap] (gnom) {gnomAD FTP};
+  % Column 2: service
+  \node[comp]  (svc)  at (3.5,  2.25) {ScoreService};
 
-  % Provided / required at interfaces (decorative)
-  \draw (svc.east) -- node[above, font=\sffamily\tiny]{\texttt{IScore}} ++(0.25, 0)
-    node[prov]{};
-  \draw (mdl.east) -- ++(0.25, 0) node[prov]{};
+  % Column 3: core modules
+  \node[comp]  (mdl)  at (7.0,  3)    {Model (XGBoost)};
+  \node[comp]  (cal)  at (7.0,  1.5)  {IsotonicCalibrator};
+  \node[comp]  (shap) at (7.0,  0.0)  {SHAPExplainer};
+  \node[comp]  (data) at (3.5,  0.0)  {FeatureAssembler};
+  \node[comp]  (cache)at (3.5, -1.5)  {Parquet cache};
 
-  % Module imports (thin solid arrows)
-  \draw[arrow] (sl)  -- (svc);
-  \draw[arrow] (cli) -- (svc);
-  \draw[arrow] (svc) -- (mdl);
-  \draw[arrow] (svc) -- (cal);
-  \draw[arrow] (svc) -- (shap);
-  \draw[arrow] (svc) -- (data);
-  \draw[arrow] (data) -- (cache);
+  % Column 4: external services
+  \node[ext]   (vep)  at (11.0,  3)   {VEP REST};
+  \node[ext]   (hf)   at (11.0,  1.5) {HuggingFace Hub};
+  \node[ext]   (gnom) at (11.0,  0.0) {gnomAD FTP};
 
-  % External HTTP / FTP dependencies
-  \draw[dep] (data) -- node[above, font=\sffamily\scriptsize]{HTTP} (vep);
-  \draw[dep] (cal) -- node[above, font=\sffamily\scriptsize]{HTTPS} (hf);
-  \draw[dep] (cache) -- node[above, font=\sffamily\scriptsize]{FTP} (gnom);
-\end{tikzpicture}}
+  % Internal module arrows
+  \draw[arrow] (sl)    -- (svc);
+  \draw[arrow] (cli)   -- (svc);
+  \draw[arrow] (svc)   -- (mdl);
+  \draw[arrow] (svc)   -- (cal);
+  \draw[arrow] (svc)   -- (shap);
+  \draw[arrow] (svc)   -- (data);
+  \draw[arrow] (data)  -- (cache);
+
+  % External network arrows (dashed)
+  \draw[dep] (mdl.east)  -- (vep.west)  node[midway, above, font=\sffamily\tiny, fill=white, inner sep=1pt]{HTTP};
+  \draw[dep] (cal.east)  -- (hf.west)   node[midway, above, font=\sffamily\tiny, fill=white, inner sep=1pt]{HTTPS};
+  \draw[dep] (shap.east) -- (gnom.west) node[midway, above, font=\sffamily\tiny, fill=white, inner sep=1pt]{FTP};
+\end{tikzpicture}
 \caption[Component diagram]{\textbf{Component diagram.}
 Components with the UML component icon (rounded rectangle)
 are internal Python modules; cloud icons are external
@@ -3850,15 +3840,51 @@ holdout (pre-constraint)         & 201 & 161 & 0.487 $[0.383, 0.583]$ & 0.789 $[
 \subsection{ESM-2 Zero-Shot Proof-of-Concept}
 \label{sec:res-esm2}
 
-On unseen gene families, the zero-shot ESM-2 LLR alone
-achieves ROC-AUC of $0.552$. Rank-fusion with the
-XGBoost calibrated probability raises the score to
-ROC-AUC $= 0.588$ -- a $+0.015$ additive gain under
-the cheapest-possible fusion scheme. This constitutes
-empirical evidence that the two signals carry
-orthogonal information, supporting the Phase-2.1
-decision to integrate ESM-2 as a training-time
-feature on the full corpus.
+The zero-shot ESM-2 LLR was evaluated in two regimes: on
+the paralog-disjoint \emph{test} split of the full
+corpus, and on the external \textsc{denovo-db} family-
+holdout slice. Table~\ref{tab:rank-fusion} reports all
+four models side-by-side; the fused model obtained by
+tuning $\alpha \in [0, 1]$ on the validation split
+(optimal $\alpha = 0.175$) is the one recommended for
+downstream use.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{@{}l r r l@{}}
+\toprule
+\textbf{Model} & \textbf{ROC-AUC} & \textbf{PR-AUC} & \textbf{$\alpha$} \\
+\midrule
+XGBoost (calibrated)           & 0.9380 & 0.8304 & --- \\
+ESM-2 LLR (zero-shot)          & 0.7345 & 0.6037 & --- \\
+Rank fusion, uniform ($\alpha=0.5$) & 0.8949 & 0.7839 & 0.50 \\
+\rowcolor{green!8}
+\textbf{Rank fusion, tuned}    & \textbf{0.9412} & \textbf{0.8516} & 0.175 \\
+\bottomrule
+\end{tabular}
+\caption[Rank-fusion results on test split]{\textbf{Rank-
+fusion results on the paralog-disjoint test split.}
+Tuning $\alpha$ on the validation split gives a
+$+0.003$ ROC-AUC and $+0.021$ PR-AUC lift over XGBoost
+alone, while zero-shot ESM-2 alone is well below
+XGBoost. The uniform fusion ($\alpha=0.5$) is
+\emph{worse} than XGBoost -- evidence that the naive
+average over-weights the weaker PLM signal.}
+\label{tab:rank-fusion}
+\end{table}
+
+On the external \textsc{denovo-db} family-holdout slice,
+the zero-shot ESM-2 LLR alone achieves ROC-AUC of
+$0.552$. Rank fusion with the XGBoost calibrated
+probability raises the score to ROC-AUC $= 0.588$ -- a
+$+0.015$ additive gain under the same rank-fusion
+scheme. Taken together, the test-set and external
+numbers constitute two independent empirical signals
+that the two models carry orthogonal information, which
+motivates the Phase-2.1 decision to integrate ESM-2
+as a training-time feature on the full corpus rather
+than only as a post-hoc fusion partner.
 
 \section{Comparison with Prior Work}
 \label{sec:res-prior}
