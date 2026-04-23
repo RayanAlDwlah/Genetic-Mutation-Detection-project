@@ -9,6 +9,7 @@
 \usepackage{array}
 \usepackage{hyperref}
 \usepackage{tikz}
+\usepackage{listings}
 \usetikzlibrary{positioning, arrows.meta, shapes.geometric, shapes.multipart,
                 fit, calc, backgrounds}
 
@@ -76,43 +77,64 @@
 }
 
 \title{Genetic Mutation Detection Using Machine Learning}
-\subtitle{A Rigorous Baseline with Paralog-Aware Evaluation \\ and Gene-Level Constraint Features}
-\author[Team KKU-CS]{
-  Rayan Saleh AlShahrani \and Zahran Ali AlZahrani \and Saad Saleh Saad \\[0.2em]
-  Eyad Hassan AlSheri \and Khalid Hamdan Zuhair \and Abdullah Saeed Ali Asiri
-}
-\institute[KKU]{College of Computer Science \\ King Khalid University \\[0.3em]
-\small Supervised by Mr.~Makki Akasha Babiker Al-Bashir}
+\subtitle{A Rigorous Baseline with Paralog-Aware Evaluation \\
+  and Gene-Level Constraint Features}
+\author{Team KKU-CS}
+\institute{King Khalid University}
 \date{Academic Year 2025/2026 (Semester~2)}
 
 % ───────────────── KKU-branded title page ─────────────────
-\setbeamertemplate{title page}{%
-  \begin{tikzpicture}[remember picture, overlay]
-    % top coloured band
-    \fill[kkuGreen] (current page.north west) rectangle ([yshift=-2.2cm]current page.north east);
-    \node[anchor=center] at ([yshift=-1.1cm]current page.north)
-      {\includegraphics[height=1.6cm]{figures/misc/kku-logo.png}};
-    % bottom gold accent
-    \fill[kkuGold] ([yshift=1.2cm]current page.south west) rectangle (current page.south east);
-  \end{tikzpicture}%
-  \vspace*{2.4cm}
-  \begin{center}
-    {\LARGE\bfseries\color{kkuGreen}\inserttitle\par}
-    \vspace{0.4cm}
-    {\large\color{kkuInk}\insertsubtitle\par}
-    \vspace{1.2cm}
-    {\small\color{kkuInk}\insertauthor\par}
-    \vspace{0.7cm}
-    {\small\color{kkuSubtle}\insertinstitute\par}
-    \vspace{0.6cm}
-    {\footnotesize\color{kkuSubtle}\insertdate\par}
-  \end{center}
-}
+% Use a dedicated title frame rather than an overridden template, so
+% we don't fight Beamer's macro machinery.
 
 \begin{document}
 
-% ───────────────────────────── SLIDE 1 ─────────────────────────────
-\maketitle
+% ───────────────────────────── SLIDE 1 (custom title) ─────────────────────────────
+\begingroup
+\setbeamertemplate{frame footer}{}
+\begin{frame}[plain,noframenumbering]
+  \vspace*{-0.9cm}
+  \begin{center}
+    \begin{tikzpicture}
+      \fill[kkuGreen, rounded corners=2pt] (-8, 0) rectangle (8, 1.9);
+      \fill[white, rounded corners=5pt] (-1.2, 0.15) rectangle (1.2, 1.75);
+      \node[anchor=center] at (0, 0.95)
+           {\includegraphics[height=1.15cm]{figures/misc/kku-logo.png}};
+      \fill[kkuGold] (-8, -0.04) rectangle (8, 0);
+    \end{tikzpicture}
+  \end{center}
+
+  \vspace{0.15cm}
+  \begin{center}
+    {\scriptsize\bfseries\color{kkuGreen}KING KHALID UNIVERSITY \textbar{} College of Computer Science\par}
+    \vspace{0.35cm}
+
+    {\Large\bfseries\color{kkuGreen}Genetic Mutation Detection Using Machine Learning\par}
+    \vspace{0.1cm}
+    {\scriptsize\color{kkuInk}%
+      A Rigorous Baseline with Paralog-Aware Evaluation and Gene-Level Constraint Features\par}
+    \vspace{0.35cm}
+
+    {\scriptsize\color{kkuInk}\textbf{Presented by}\par}
+    \vspace{0.08cm}
+    {\scriptsize\color{kkuInk}%
+      \begin{tabular}{@{}ll@{}}
+        Rayan Saleh AlShahrani & Eyad Hassan AlSheri \\
+        Zahran Ali AlZahrani   & Khalid Hamdan Zuhair \\
+        Saad Saleh Saad        & Abdullah Saeed Ali Asiri \\
+      \end{tabular}\par}
+    \vspace{0.3cm}
+
+    {\scriptsize\color{kkuInk}\textbf{Supervised by}\par}
+    \vspace{0.04cm}
+    {\small\bfseries\color{kkuGreen}%
+      Mr.~Makki Akasha Babiker Al-Bashir\par}
+    \vspace{0.25cm}
+
+    {\scriptsize\color{kkuSubtle}Academic Year 2025/2026 (Semester~2)\par}
+  \end{center}
+\end{frame}
+\endgroup
 
 % ───────────────────────────── SLIDE 2 ─────────────────────────────
 \begin{frame}{Agenda}
@@ -852,7 +874,7 @@
   \begin{columns}[T]
     \begin{column}{0.55\linewidth}
       \small
-      \begin{enumerate}[leftmargin=*]
+      \begin{enumerate}
         \item \textbf{Unit} -- 120 tests, $<$10~s\\
               \scriptsize pure functions, metric math, paralog regex
         \item \textbf{Property} -- 8 \texttt{hypothesis} properties\\
@@ -886,15 +908,43 @@
 \end{frame}
 
 % ───────────── SLIDE 29 ─────────────
-\begin{frame}{Continuous integration: 157 tests on every push}
-  \centering
-  \includegraphics[width=\linewidth,height=0.68\textheight,keepaspectratio]{figures/screenshots/01_pytest_output.png}
+\begin{frame}[fragile]{Continuous integration: 157 tests on every push}
+  \begin{exampleblock}{\texttt{\$ pytest tests/ --tb=no -q}}
+\begin{verbatim}
+.................................................... [ 40%]
+.................................................... [ 81%]
+.................................s..                 [100%]
+
+Required test coverage of 55% reached. Total coverage: 59.07%
+
+SKIPPED [1] tests/integration/test_reproduce_headline.py:83:
+  missing: results/metrics/xgboost_predictions.parquet
+
+============ 157 passed, 1 skipped in 12.28s ============
+\end{verbatim}
+  \end{exampleblock}
+  {\scriptsize 4 unit $+$ 2 integration $+$ 1 E2E modules; gate requires
+  $\geq 55\%$ coverage; single skip is GPU-only ESM-2 smoke test.\par}
 \end{frame}
 
 % ───────────── SLIDE 30 ─────────────
-\begin{frame}{Leakage gate -- CI-enforced invariants}
-  \centering
-  \includegraphics[width=0.78\linewidth,height=0.65\textheight,keepaspectratio]{figures/screenshots/02_leakage_gate.png}
+\begin{frame}[fragile]{Leakage gate -- CI-enforced invariants}
+  \begin{exampleblock}{\texttt{\$ python -m src.verify\_no\_leakage}}
+\begin{verbatim}
+============================================================
+LEAKAGE GATE  --  src/verify_no_leakage.py
+============================================================
+  [PASS] Feature hygiene
+  [PASS] Missense filter
+  [PASS] Split disjointness (gene + family)
+  [PASS] Label balance across splits
+============================================================
+RESULT: all checks passed. Baseline is leak-free.
+\end{verbatim}
+  \end{exampleblock}
+  \small
+  All 4 invariants fail-closed: any red row \textbf{blocks the merge}
+  to \texttt{main} via GitHub Actions.
 \end{frame}
 
 % ───────────── SLIDE 30a ─────────────
