@@ -625,9 +625,41 @@
 \end{frame}
 
 % ───────────── SLIDE 31 ─────────────
-\begin{frame}{Phase 2.1 -- ESM-2 on Colab (zero-shot LLR)}
+\begin{frame}{ESM-2 zero-shot + rank fusion}
   \centering
-  \includegraphics[width=0.85\linewidth,height=0.68\textheight,keepaspectratio]{figures/screenshots/05_colab_esm2.png}
+  \small
+  \textbf{Test split (28{,}098 variants, paralog-disjoint):}
+  \vspace{0.4em}
+  \begin{tabular}{@{}l r r l@{}}
+    \toprule
+    Model & ROC-AUC & PR-AUC & $\alpha$ \\
+    \midrule
+    XGBoost (calibrated)           & 0.938 & 0.830 & --- \\
+    ESM-2 LLR (zero-shot)          & 0.735 & 0.604 & --- \\
+    Rank fusion, uniform           & 0.895 & 0.784 & 0.50 \\
+    \rowcolor{kkuGoldLight}
+    \textbf{Rank fusion, tuned}    & \textbf{0.941} & \textbf{0.852} & 0.175 \\
+    \bottomrule
+  \end{tabular}
+  \vspace{0.4em}
+
+  \begin{columns}[T]
+    \begin{column}{0.48\linewidth}
+      \textbf{External (denovo-db, family-holdout):}
+      \begin{itemize}\small
+        \item XGBoost: ROC $0.573$
+        \item ESM-2 alone: ROC $0.552$
+        \item Fusion: ROC $\mathbf{0.588}$ ($+0.015$)
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.48\linewidth}
+      \begin{alertblock}{Take-away}
+        Two independent signals of
+        \textbf{orthogonality} $\Rightarrow$
+        motivates Phase 2.1 training-time integration.
+      \end{alertblock}
+    \end{column}
+  \end{columns}
 \end{frame}
 
 % ═════════════════ PART 8: COMPARISON ═════════════════
