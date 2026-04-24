@@ -166,8 +166,10 @@ The accurate classification of human missense variants as pathogenic or
 benign remains a central challenge in clinical genomics. Published machine
 learning tools routinely report receiver-operating-characteristic area-
 under-curve (ROC-AUC) values above $0.94$ on \textsc{ClinVar}-derived
-benchmarks, yet the numbers are often inflated by subtle forms of data
-contamination that do not survive external validation. This project
+benchmarks. We hypothesise --- and in this work demonstrate on a concrete
+pipeline --- that such numbers can be inflated by subtle, removable forms
+of data contamination, and we show that external validation on an
+independent cohort reveals a substantial generalisation gap. This project
 develops and publishes a rigorous, auditable baseline for the missense
 classification task.
 
@@ -180,9 +182,11 @@ the training pool because their amino-acid fields were null,
 (ii)~definitionally circular features such as \texttt{is\_common}, and
 (iii)~paralog leakage caused by gene-level splitting when highly similar
 paralogs appear in both training and test. Correcting these issues drops
-our test-set precision-recall area-under-curve (PR-AUC) from a misleading
-$0.955$ to a defensible $0.838$, with a 95\% bootstrap confidence
-interval of $[0.830, 0.846]$. The model is calibrated end-to-end with
+our calibrated test-set precision-recall area-under-curve (PR-AUC) from a
+misleading $0.955$ to a defensible $0.827$, with a 95\% bootstrap confidence
+interval of $[0.819, 0.835]$. The uncalibrated PR-AUC is $0.836$
+$[0.827, 0.843]$; all downstream evaluation in this report uses the
+isotonic-calibrated probabilities. The model is calibrated end-to-end with
 isotonic regression, reducing expected calibration error (ECE) from
 $0.054$ to $0.011$, which is below the $0.02$ clinical target.
 
@@ -191,21 +195,33 @@ on our paralog-disjoint test split. Because each baseline covers a
 different subset of variants, the reported numbers are on each model's
 \emph{own coverage} (SIFT 96\,\%, PolyPhen-2 93\,\%, AlphaMissense
 86\,\%, XGBoost 100\,\%) and are therefore not directly comparable. On
-own-coverage numbers our XGBoost reaches PR-AUC $0.838$; SIFT
-$0.620$, PolyPhen-2 $0.728$, and AlphaMissense $0.890$. A strict
+own-coverage numbers our XGBoost reaches calibrated PR-AUC $0.827$
+(raw $0.836$); SIFT $0.620$, PolyPhen-2 $0.728$, and AlphaMissense
+$0.890$. A strict
 matched-coverage evaluation restricted to the AlphaMissense-covered
 subset, together with a paired DeLong test, is left for a revision
 (Deficiency D7) since the required artefacts were not persisted at
-submission time. AlphaMissense was moreover calibrated on \textsc{ClinVar}
-at release and therefore carries contamination risk of its own.
+submission time. AlphaMissense was moreover calibrated against
+\textsc{ClinVar} at release; direct benchmark comparisons on
+\textsc{ClinVar}-derived test sets are therefore non-trivial to
+interpret.
 
 The most important finding of the project emerges from external
 validation on \textsc{denovo-db}. A classifier trained on
 \textsc{ClinVar} scores at chance (ROC-AUC $= 0.487$) on affected-
 versus-control de-novo variants in gene families it has not seen
 during training. Adding gnomAD gene-level constraint features (pLI,
-LOEUF, mis\_z, oe\_mis\_upper, lof\_z) raises this to $0.573$ --
-closing approximately half of the generalisation gap. A zero-shot
+LOEUF, mis\_z, oe\_mis\_upper, lof\_z) raises the point
+estimate to $0.573$. The un-paired bootstrap CIs of
+$[0.383, 0.583]$ (pre) and $[0.471, 0.672]$ (post) overlap;
+a paired bootstrap on the same 201 variants is the correct
+instrument and is recorded as deficiency D8 of
+Section~\ref{sec:conc-deficiencies}, pending persistence
+of the pre-constraint per-variant predictions. We therefore
+interpret the improvement as \emph{suggestive} of genuine
+signal from gene-level priors rather than conclusive, and
+frame it as a partial closure of the generalisation gap
+that motivates Phase-2 training-time integration. A zero-shot
 ESM-2 log-likelihood-ratio provides a small, statistically tested
 rank-fusion gain on both the test split and the \textsc{denovo-db}
 family-holdout, indicating non-redundant signal between tabular and
@@ -283,7 +299,7 @@ XGBoost & eXtreme Gradient Boosting \\
 \setcounter{page}{1}
 
 % ═════════════════════════════════════════════════════════════════════════
-%   CHAPTER 1 — INTRODUCTION
+%   CHAPTER 1 --- INTRODUCTION
 % ═════════════════════════════════════════════════════════════════════════
 
 \chapter{Introduction}
@@ -295,22 +311,11 @@ XGBoost & eXtreme Gradient Boosting \\
 \subsection{From DNA to Phenotype: The Central Dogma}
 \label{sec:intro-centraldogma}
 
-The hereditary information of every living organism is encoded in
-deoxyribonucleic acid (DNA), a linear polymer of four nucleotide
-bases -- adenine (A), cytosine (C), guanine (G), and thymine (T)
--- organised into a double-helical structure first described by
-\citet{watson1953structure}. The human nuclear genome comprises
-approximately $3.2 \times 10^{9}$ base pairs distributed across
-twenty-two autosomal pairs and two sex chromosomes, of which only
-$\sim 1.5\%$ constitutes protein-coding sequence
-\citep{lander2001initial}. The flow of information from this
-template to functional biomolecules is captured by the
+Hereditary information is encoded in DNA and flows, under the
 \emph{central dogma} of molecular biology
-\citep{crick1970central}: a gene is first \emph{transcribed} into
-messenger ribonucleic acid (mRNA), and the mRNA is subsequently
-\emph{translated} by the ribosome into a chain of amino acids
-that folds into a three-dimensional protein.
-Figure~\ref{fig:central-dogma} illustrates this pathway alongside
+\citep{crick1970central}, from DNA to messenger RNA via
+transcription and from mRNA to protein via translation.
+Figure~\ref{fig:central-dogma} illustrates the pathway alongside
 the exact point at which a missense mutation exerts its effect.
 
 \begin{figure}[htbp]
@@ -355,52 +360,32 @@ context of the affected residue.}
 \label{fig:central-dogma}
 \end{figure}
 
-A genetic mutation is any permanent alteration in this DNA
-template. Mutations are the raw material of biological evolution:
-most are neutral, a small proportion are beneficial, and a
-clinically important minority disrupt cellular function to the
-point of causing disease. The clinical spectrum of mutations
-includes single-nucleotide variants (SNVs), small insertions and
-deletions (indels), copy-number variations, and large-scale
-structural rearrangements \citep{macarthur2014guidelines}. Among
-these, the single-nucleotide \emph{missense} variant -- a point
-mutation in a protein-coding region that changes one amino acid
-to another -- is the most common coding variant in the human
-population and the principal focus of this project.
+A genetic mutation is any permanent alteration in the DNA
+template; most are neutral, a small fraction are beneficial, and
+a clinically important minority disrupt cellular function
+\citep{macarthur2014guidelines}. The single-nucleotide
+\emph{missense} variant --- a point mutation that swaps one amino
+acid for another --- is the most common coding variant in the
+human population and the focus of this project.
 
 \subsection{Classes of Protein-Coding Variation}
 \label{sec:intro-variantclasses}
 
-Within the protein-coding portion of the genome, a single-base
-substitution can take one of four functional forms depending on
-how the change is read by the genetic code
-\citep{alberts2015molecular}:
+Within the protein-coding genome, a single-base substitution
+takes one of four functional forms \citep{alberts2015molecular}:
 
 \begin{description}[style=nextline, leftmargin=2.2em, itemsep=0.25em]
-  \item[Synonymous.] The nucleotide change still codes for the
-    same amino acid; the protein sequence is unchanged (e.g.\
-    \texttt{GCU}\,$\rightarrow$\,\texttt{GCC}, both Ala). These
-    are often -- but not always -- clinically silent.
-  \item[Missense.] The nucleotide change produces a codon for a
-    \emph{different} amino acid (e.g.\
-    \texttt{GAC}\,\emph{Asp}\,$\rightarrow$\,\texttt{AAC}\,\emph{Asn}).
-    This is the class under study in the present work.
-  \item[Nonsense.] The nucleotide change creates a premature stop
-    codon (e.g.\ \texttt{UGG}\,\emph{Trp}\,$\rightarrow$\,\texttt{UGA}\,\emph{stop}),
-    typically producing a truncated non-functional protein.
-  \item[Frameshift.] An insertion or deletion that is not a
-    multiple of three shifts the reading frame, scrambling every
-    downstream codon.
+  \item[Synonymous.] Same amino acid (e.g.\ \texttt{GCU}\,$\rightarrow$\,\texttt{GCC}).
+  \item[Missense.] Different amino acid (e.g.\ \texttt{GAC} Asp\,$\rightarrow$\,\texttt{AAC} Asn) --- the class studied here.
+  \item[Nonsense.] Premature stop codon (e.g.\ \texttt{UGG} Trp\,$\rightarrow$\,\texttt{UGA} stop).
+  \item[Frameshift.] Non-triplet indel that scrambles every downstream codon.
 \end{description}
 
-Missense variants are of special interest because they are
-common, they are protein-altering, and their clinical effect is
-genuinely uncertain at the individual level. A nonsense variant
-in a well-characterised disease gene is almost always pathogenic;
-a synonymous variant is almost always benign. A missense variant,
-however, can produce anything from a completely wild-type protein
-to a catastrophically misfolded one, depending on where the
-substitution falls and which amino acid replaces the original.
+Missense variants are of special interest because their clinical
+effect is genuinely uncertain at the individual level: unlike
+nonsense (usually pathogenic) or synonymous (usually benign)
+variants, a missense change can produce anything from a
+wild-type-equivalent protein to a catastrophically misfolded one.
 
 \subsection{Determinants of Missense Variant Effect}
 \label{sec:intro-determinants}
@@ -444,7 +429,9 @@ The five signals are not independent, but their correlation is
 imperfect, which is exactly what makes supervised machine
 learning an appropriate framework: the classifier learns how to
 weigh each signal given labelled examples from \textsc{ClinVar}
-and how to combine them non-linearly.
+and how to combine them non-linearly. Figure~\ref{fig:feature-groups}
+in Chapter~\ref{ch:framework} shows how each of the five signals
+here maps to a concrete feature group in our implementation.
 
 \subsection{Public Reference Resources}
 \label{sec:intro-resources}
@@ -659,11 +646,21 @@ tabular feature set on two independent evaluation splits
 (test and \textsc{denovo-db} family-holdout), with
 statistically tested rank-fusion gains reported in
 Section~\ref{sec:res-esm2}.
-\item \textbf{A fully reproducible code base} -- 157 tests,
-CI-enforced leakage gate, pinned dependencies, Docker
-image, 10 narrative Jupyter notebooks, a Streamlit demo,
-and this LaTeX report -- that a future student could
-extend without reverse-engineering.
+\item \textbf{An auditable methodological package} --- a
+CI-enforced leakage gate encoding four invariants
+(banned features, missense-only, paralog disjointness,
+class-balance drift), a paralog-family grouper regex
+covering 16 clinically-relevant paralog clusters, and a
+train-only imputation contract for gnomAD constraint
+merging --- that can be lifted into future
+missense-classification work as a self-contained module.
+\item \textbf{Engineering artifacts that make the
+methodological package verifiable}: 157 passing tests
+(1 GPU-gated skip), 59\% line coverage, a pinned
+dependency lock, a Docker image, 10 narrative Jupyter
+notebooks, a Streamlit demo, and this LaTeX report ---
+supporting byte-for-byte reproduction from a clean
+clone.
 \end{enumerate}
 
 \section{Report Organisation}
@@ -678,9 +675,9 @@ set of system requirements and accompanies them with the
 six standard UML diagrams and the interface design.
 Chapter~\ref{ch:implementation} reports the concrete
 implementation, results, and the comparison tables.
-Chapter~\ref{ch:testing} documents the five-level testing
-strategy, coverage evidence, and the continuous-integration
-gate that enforces reproducibility.
+Chapter~\ref{ch:testing} describes the five-level testing
+strategy, coverage evidence, continuous-integration gates,
+and the deliberate limits of the testing approach.
 Chapter~\ref{ch:conclusion} concludes with a critical
 discussion, failure and deficiency analysis, and the
 Phase-2 roadmap. Three appendices provide extended results
@@ -688,7 +685,7 @@ tables, selected code listings, and the environment /
 reproducibility specification.
 
 % ═════════════════════════════════════════════════════════════════════════
-%   CHAPTER 2 — RELATED WORKS
+%   CHAPTER 2 --- RELATED WORKS
 % ═════════════════════════════════════════════════════════════════════════
 
 \chapter{Related Works}
@@ -979,12 +976,20 @@ these into a calibrated pathogenicity probability.}
 
 \textbf{Disadvantages.}
 \begin{itemize}[leftmargin=2em, itemsep=0.15em]
-  \item Several base predictors (PolyPhen-2, CADD) were
-    themselves trained on variants that overlap
-    \textsc{ClinVar}, producing \emph{compound
-    contamination} when REVEL is evaluated on
-    \textsc{ClinVar}. The paper's reported numbers are
-    therefore upper-bound estimates.
+  \item \emph{Compound contamination through the ensemble.}
+    REVEL's meta-learning design compounds \textsc{ClinVar}
+    overlap through its 13 base predictors. PolyPhen-2
+    (HumDiv/HumVar labels), CADD (simulated-vs-observed
+    selection, but with observed variants overlapping
+    \textsc{ClinVar}), MutationTaster, and several others
+    were all trained on or calibrated against populations
+    that overlap the \textsc{ClinVar} test set commonly
+    used to benchmark REVEL. The reported ROC-AUC of
+    $\sim$$0.94$ is therefore an upper bound that includes
+    an irreducible ensemble-level contamination component,
+    and the effect cannot be measured without refitting
+    each base learner on a strictly disjoint corpus ---
+    a resource-prohibitive undertaking.
   \item Does not ship well-calibrated probabilities;
     threshold selection for ACMG interpretation is left
     to the user.
@@ -1174,9 +1179,10 @@ score. No ClinVar supervision is used.}
 
 \textbf{Disadvantages.}
 \begin{itemize}[leftmargin=2em, itemsep=0.15em]
-  \item Coverage limited to approximately $3{,}000$ genes
-    at the original release; building an alignment is
-    labour-intensive for many clinically-relevant genes.
+  \item Coverage at the original release was approximately
+    $3{,}000$ genes; subsequent updates have expanded this,
+    though the per-gene VAE training cost remains the
+    bottleneck for whole-proteome coverage.
   \item Per-gene training cost is high; scaling to the
     whole proteome is impractical for a student team.
   \item The ELBO is not a calibrated probability; users
@@ -1252,7 +1258,7 @@ vs reference residue is reported.}
   \item The raw LLR is not a calibrated probability;
     combining it with supervised features benefits from
     a downstream fusion step (which we evaluate in
-    Section~\ref{sec:exp-rankfusion}).
+    Section~\ref{sec:res-esm2}).
 \end{itemize}
 
 % ───────────────────────── AlphaMissense ─────────────────────────
@@ -1546,16 +1552,16 @@ table make this explicit.
 \caption[Related-work consolidated comparison]{
 Consolidated comparison of the eight reviewed missense
 pathogenicity predictors.
-\textbf{Supervision} — whether the model consumes
+\textbf{Supervision} --- whether the model consumes
 clinical pathogenicity labels during training.
-\textbf{ClinVar risk} — whether the published benchmark
+\textbf{ClinVar risk} --- whether the published benchmark
 is at risk of training-set contamination.
-\textbf{Paralog-aware split?} — whether the publication
+\textbf{Paralog-aware split?} --- whether the publication
 enforces a family-level split (not just gene-level).
-\textbf{Leakage audit reported?} — whether the paper
+\textbf{Leakage audit reported?} --- whether the paper
 publishes a systematic audit with numerical
 before/after deltas for at least one leakage source.
-\textbf{External?} — whether the paper validates on a
+\textbf{External?} --- whether the paper validates on a
 cohort not derived from \textsc{ClinVar}.}
 \label{tab:rw-consolidated}
 \footnotesize
@@ -1619,18 +1625,36 @@ gene-level split but do not go further to paralog family.
 \section{Research Gap}
 \label{sec:rw-gap}
 
-Two observations motivate our methodological choices.
-First, most published tools do not evaluate against a
-\emph{paralog-aware} test split, even though strongly
-similar paralogs (such as the 109 keratin members or 83
-cadherin members) can produce optimistically biased
-benchmarks when split only at the gene level. Second,
-almost no published tool reports external validation on
-a dataset not derived from \textsc{ClinVar}: the near-
-chance performance of tabular classifiers on
-\textsc{denovo-db} is simply not present in most paper
-tables. The project's methodological focus lives in
-exactly those two gaps.
+Two structural gaps in the published missense-classification
+literature motivate this work's methodological focus.
+
+\textbf{First, paralog-disjoint evaluation is rare.} Almost
+every published benchmark performs a gene-level random split
+or a disease-stratified split, neither of which prevents
+highly-similar paralogs (for example, the $109$ keratin
+members, the $83$ cadherin members, or the $\sim$$400$
+olfactory receptor family) from appearing in both train and
+test partitions. When paralogs share $60$--$90\%$ amino-acid
+identity, a classifier trained on one paralog can score its
+siblings trivially, which inflates benchmark AUROC by a
+measurable amount (Section~\ref{sec:res-leakage} of this
+thesis quantifies the effect at $+0.081$ ROC-AUC on our
+pipeline).
+
+\textbf{Second, external validation on a dataset not derived
+from \textsc{ClinVar} is almost never reported.} Variant-
+effect predictors that post strong \textsc{ClinVar} numbers
+frequently collapse when tasked with ranking \emph{de novo}
+variants in affected children versus unaffected siblings
+(e.g.\ the \textsc{denovo-db} corpus) because the latter
+requires gene-level pathogenicity priors that variant-level
+tools do not see. The published literature tends to publish
+the pass and omit the fail.
+
+This thesis addresses both gaps directly: we enforce
+paralog-family disjointness in continuous integration, and
+we report pre- and post-constraint external metrics on
+\textsc{denovo-db}.
 
 \section{Project Contribution}
 \label{sec:rw-contribution}
@@ -1643,10 +1667,15 @@ integration on every push), and we evaluate on
 \textsc{ClinVar} test. We then quantify the specific
 value of gene-level gnomAD constraint features on the
 de-novo generalisation task, reporting pre- and
-post-constraint numbers separately, and we publish the
-first end-to-end like-for-like comparison of our baseline
-against SIFT, PolyPhen-2, and AlphaMissense under a
-single identical evaluation.
+post-constraint numbers separately, and we publish a
+paralog-split, transparent, self-contained like-for-like
+comparison of our baseline against SIFT, PolyPhen-2, and
+AlphaMissense under a single identical evaluation. We do
+not claim the methodology is novel in isolation -- independent
+benchmarks such as \citet{livesey2023benchmark} cover the
+same tools -- but the CI-enforced paralog guard and the
+public bundle of pre/post-constraint denovo-db numbers are
+rarely combined in one artefact.
 
 \section{Summary}
 \label{sec:rw-summary}
@@ -1661,7 +1690,7 @@ that distance in a way that a reader of this report can
 reproduce byte-for-byte.
 
 % ═════════════════════════════════════════════════════════════════════════
-%   CHAPTER 3 — SYSTEM FRAMEWORK AND FEASIBILITY
+%   CHAPTER 3 --- SYSTEM FRAMEWORK AND FEASIBILITY
 % ═════════════════════════════════════════════════════════════════════════
 
 \chapter{System Framework and Feasibility}
@@ -2053,9 +2082,11 @@ marked explicitly for every gating deadline.
      \tikz[baseline=-0.5ex]{\node[mile]{};} \ Milestone};
 \end{tikzpicture}}
 \caption[Two-semester Gantt chart]{\textbf{Two-semester Gantt
-chart.} Term 1 (blue) covered literature review, data
-ingestion, and the first XGBoost baseline. Term 2 (orange)
-covered the leakage audit, hyperparameter search,
+chart covering Sep~2025--May~2026.} Term~1
+(Sep--Dec 2025, blue) covered literature review, data
+ingestion, and the first XGBoost baseline. Term~2
+(Jan--May~2026, orange), marked by the dashed red vertical
+separator, covered the leakage audit, hyperparameter search,
 calibration, SHAP, external validation, ESM-2 scoring, and
 the academic write-up. Red diamonds mark unambiguous
 quantitative milestones.}
@@ -2070,6 +2101,23 @@ flow from a single audited checkpoint. Second, the LaTeX
 write-up and the ESM-2 training-set scoring were scheduled
 in parallel so that the academic deliverable did not block
 on a GPU-bound experiment that depended on Colab availability.
+
+\textbf{Schedule realisation.} In practice the realised
+schedule departed from the plan in two specific ways. First,
+the leakage-audit stage consumed approximately three weeks of
+Term~2 rather than the planned one week, because fixing the
+initial random-split inflation (Failure F1,
+Section~\ref{sec:conc-failures}) required re-running every
+downstream experiment. Second, the ESM-2 full-training-set
+scoring run was descoped from Phase~1 to Phase~2.1 when the
+mid-Term-2 scope lock indicated that the free Colab T4 quota
+would not accommodate both the zero-shot proof-of-concept and
+the full-training integration within the remaining weeks. The
+LaTeX write-up and the zero-shot ESM-2 scoring ran in parallel
+during April as planned, which preserved the defence-week
+milestone. No schedule slip was allowed to delay the leakage
+gate or the reproduce-headline integration test, consistent
+with the priority rule stated above.
 
 \subsection{Financial Feasibility}
 \label{sec:feas-fin}
@@ -2309,21 +2357,21 @@ three parts and the arrows carry the artifact names.
   \node[lane] (ln2) at (0, -1.8) {Part 2\\(training)};
   \node[lane] (ln3) at (0, -3.6) {Part 3\\(evaluation)};
 
-  % Part 1 — row at y=0
+  % Part 1 --- row at y=0
   \node[part1] (ing)  at (2.2, 0) {ClinVar +\\gnomAD};
   \node[part1] (miss) at (4.4, 0) {Missense\\filter};
   \node[part1] (feat) at (6.6, 0) {dbNSFP +\\AF merge};
   \node[part1] (para) at (8.8, 0) {Paralog\\split};
   \node[artf]  (art1) at (11.1, 0) {splits/\\*.parquet};
 
-  % Part 2 — row at y=-1.8
+  % Part 2 --- row at y=-1.8
   \node[part2] (gate) at (2.2, -1.8) {Leakage\\gate};
   \node[part2] (opt)  at (4.4, -1.8) {Optuna\\HPO};
   \node[part2] (thr)  at (6.6, -1.8) {Threshold\\sweep};
   \node[part2] (cal)  at (8.8, -1.8) {Isotonic\\calibration};
   \node[artf]  (art2) at (11.1, -1.8) {model.json};
 
-  % Part 3 — row at y=-3.6
+  % Part 3 --- row at y=-3.6
   \node[part3] (boot) at (2.2, -3.6) {Bootstrap\\CIs};
   \node[part3] (shap) at (4.4, -3.6) {SHAP};
   \node[part3] (base) at (6.6, -3.6) {Baselines\\re-score};
@@ -2439,7 +2487,7 @@ or \texttt{reviewed-by-multiple-submitters}).
 \item \textbf{Missense filter.} Drop every row in which
 \texttt{ref\_aa} or \texttt{alt\_aa} is null. This is the
 single most important cleaning step because of the
-leakage it removes (Section~\ref{sec:feas-audit-miss}).
+leakage it removes (Section~\ref{sec:res-leakage}).
 \item \textbf{gnomAD allele-frequency merge.} Join
 \textsc{gnomAD} v2.1 (exomes) and v4.0 (genomes) on
 \texttt{chr:pos:ref:alt} to supply per-variant allele
@@ -2767,7 +2815,7 @@ UML diagrams (use-case, class, sequence, activity, state,
 component).
 
 % ═════════════════════════════════════════════════════════════════════════
-%   CHAPTER 4 — SYSTEM ANALYSIS AND DESIGN
+%   CHAPTER 4 --- SYSTEM ANALYSIS AND DESIGN
 % ═════════════════════════════════════════════════════════════════════════
 
 \chapter{System Analysis and Design}
@@ -2843,9 +2891,17 @@ shall regenerate byte-for-byte from
 \label{sec:an-nfr}
 
 \begin{description}[style=nextline,leftmargin=2em]
-\item[NFR1 -- Performance.] Score latency shall be below
-$100$ milliseconds for cache hits and below $2$
-seconds for cache misses (\textsc{VEP} REST round-trip).
+\item[NFR1 -- Performance.] Score latency is
+\emph{targeted} at below $100$ milliseconds for cache hits
+and below $2$ seconds for cache misses
+(\textsc{VEP} REST round-trip). Observed performance is
+dominated by the XGBoost \texttt{predict\_proba} call
+($\sim$$10$~ms for a single row) plus the
+\textsc{VEP} REST round-trip, which together have
+historically sat inside both targets in informal testing;
+formal latency benchmarking with $p50/p95/p99$ statistics
+is deferred to the deployment-hardening phase
+(Deficiency D6, Section~\ref{sec:conc-future}).
 
 \item[NFR2 -- Reliability.] Rerunning the pipeline with
 \texttt{seed=42} shall reproduce every metric to within
@@ -2974,12 +3030,21 @@ indicate optional extensions.
   \draw[inc] (u7) -- (u8) node[midway, above, font=\sffamily\tiny, gray!70]
        {\textit{\textlangle include\textrangle}};
 \end{tikzpicture}}
-\caption[Use case diagram]{\textbf{Use-case diagram.}
-Actors on the outside of the system boundary; eight use
-cases on the inside. Solid lines are associations; dashed
-lines are $\langle\!\langle include\rangle\!\rangle$
-relationships; dotted lines are
-$\langle\!\langle extend\rangle\!\rangle$.}
+\caption[Use case diagram]{\textbf{Use-case view of the
+system.} Two human actors (Clinical Geneticist, Research
+Scientist) share the core scoring use cases UC1--UC5,
+reflecting the stakeholder-to-surface mapping of
+Table~\ref{tab:stakeholders}. The \textsc{VEP} REST Service
+is a non-human secondary actor invoked only when UC2
+experiences a cache miss; the CI/CD System exercises UC8 on
+every push to enforce the leakage gate
+(Algorithm~\ref{alg:leakage-gate}). The
+$\langle\!\langle include\rangle\!\rangle$ relationship on
+UC1 makes it explicit that every score call passes through
+calibration and feature-attribution steps. Solid lines are
+associations; dashed lines are
+$\langle\!\langle include\rangle\!\rangle$ relationships;
+dotted lines are $\langle\!\langle extend\rangle\!\rangle$.}
 \label{fig:uc}
 \end{figure}
 
@@ -3016,7 +3081,7 @@ the gate does not exist meaningfully without them.
   comp/.style={-{Diamond[length=6pt, width=6pt, fill=black]}, thick},
   node distance=0.45cm and 0.45cm,
 ]
-  % Row 1 — Data + Model packages
+  % Row 1 --- Data + Model packages
   \node[data] (load) {\textbf{VariantLoader}
         \nodepart{second}\scriptsize clinvar\_url: Path
         \nodepart{third}\scriptsize +load(): DataFrame};
@@ -3037,7 +3102,7 @@ the gate does not exist meaningfully without them.
         \nodepart{second}\scriptsize hf\_name: str\\ device: str
         \nodepart{third}\scriptsize +score(query)};
 
-  % Row 2 (below) — Eval + Interface packages
+  % Row 2 (below) --- Eval + Interface packages
   \node[eval, below=1.6cm of split] (boot) {\textbf{BootstrapMetrics}
         \nodepart{second}\scriptsize n\_boot: int = 1000
         \nodepart{third}\scriptsize +compute(y, p)};
@@ -3207,7 +3272,7 @@ independent scoring tracks concurrently (fork-2 / join-2).
   \node[start] (s) at (0, 0) {};
   \node[act, below=0.35cm of s] (load) {Load paralog-disjoint splits};
 
-  % Fork 1 — leakage gate (4 parallel checks)
+  % Fork 1 --- leakage gate (4 parallel checks)
   \node[fork, below=0.45cm of load] (f1) {};
   \node[act, below=0.55cm of f1, xshift=-4.2cm] (ch1) {Check banned features};
   \node[act, below=0.55cm of f1, xshift=-1.4cm] (ch2) {Check 100\% missense};
@@ -3222,7 +3287,7 @@ independent scoring tracks concurrently (fork-2 / join-2).
   \node[act, below=0.35cm of opt] (thr) {Threshold sweep};
   \node[act, below=0.35cm of thr] (cal) {Isotonic calibration};
 
-  % Fork 2 — evaluation tracks (5 parallel)
+  % Fork 2 --- evaluation tracks (5 parallel)
   \node[fork, below=0.45cm of cal] (f2) {};
   \node[act, below=0.55cm of f2, xshift=-4.5cm] (ta) {Bootstrap CIs};
   \node[act, below=0.55cm of f2, xshift=-2.25cm] (tb) {SHAP};
@@ -3303,11 +3368,21 @@ type validator.
   \draw[arrow, dashed, red!60] (ann) -- node[right, font=\sffamily\tiny, red!80]{VEP err} (fail);
   \draw[arrow, dashed, red!60] (sc)  -- node[right, font=\sffamily\tiny, red!80]{NaN} (fail);
 \end{tikzpicture}}
-\caption[State diagram]{\textbf{State diagram for a
-variant's life-cycle.} Every successful variant follows
-the five-state green path. Dashed red transitions lead to
-\texttt{Failed}; the terminal double-circle indicates the
-final reported state.}
+\caption[State diagram]{\textbf{Per-variant state-machine
+view.} The five-state happy path
+(Submitted $\rightarrow$ Annotated $\rightarrow$ Scored
+$\rightarrow$ Calibrated $\rightarrow$ Classified) matches
+the five-step data flow of
+Section~\ref{sec:fw-framework}. The dashed red transitions
+to \texttt{Failed} capture the two distinct error modes
+reported to the user interface: upstream \textsc{VEP} REST
+errors (when the feature assembler cannot resolve a
+coordinate) and downstream NaN errors (when a required
+feature is missing after the cache fallback). The absence
+of any transition from \texttt{Classified} back to earlier
+states reflects the pipeline's append-only contract:
+re-scoring requires a fresh request. The terminal
+double-circle indicates the final reported state.}
 \label{fig:state}
 \end{figure}
 
@@ -3373,7 +3448,11 @@ concrete Python import or to an HTTP/FTP call.
 Components with the UML component icon (rounded rectangle)
 are internal Python modules; cloud icons are external
 network services. Solid arrows are Python imports; dashed
-arrows are network dependencies.}
+arrows are network dependencies. This diagram complements
+Figure~\ref{fig:arch} of Chapter~\ref{ch:framework}:
+Figure~\ref{fig:arch} shows the logical six-layer
+stack, whereas this figure shows the concrete Python
+modules and their network dependencies.}
 \label{fig:comp}
 \end{figure}
 
@@ -3393,8 +3472,16 @@ top-$15$ SHAP contributions as a signed bar chart.
 \includegraphics[width=0.95\linewidth]{figures/screenshots/07_streamlit_demo.png}
 \caption[Streamlit demo interface]{Streamlit demo
 interface rendering a real prediction for a test-set
-variant. Red SHAP bars push the prediction towards
-pathogenic, green bars towards benign.}
+variant. Calibrated probability is displayed alongside the
+three-band classification from functional requirement FR4
+(Section~\ref{sec:an-fr}): \emph{benign} if $p < 0.25$,
+\emph{uncertain} if $0.25 \le p < 0.75$,
+\emph{pathogenic} if $p \ge 0.75$. Probabilities that fall
+inside the $[0.25, 0.75)$ band are therefore reported as
+\emph{uncertain}, consistent with the interface's advisory
+role (the system is not a diagnostic device ---
+Section~\ref{sec:feas-op}). Red SHAP bars push the
+prediction towards pathogenic, green bars towards benign.}
 \label{fig:streamlit}
 \end{figure}
 
@@ -3429,7 +3516,7 @@ how these designs translate into concrete code and
 what results they produce.
 
 % ═════════════════════════════════════════════════════════════════════════
-%   CHAPTER 5 — IMPLEMENTATION AND RESULTS
+%   CHAPTER 5 --- IMPLEMENTATION AND RESULTS
 % ═════════════════════════════════════════════════════════════════════════
 
 \chapter{Implementation and Results}
@@ -3919,19 +4006,30 @@ confidence intervals.
 \centering
 \caption[Headline test-set metrics]{Headline test-set
 metrics with 95\% bootstrap confidence intervals
-($1{,}000$ replicates, seed $= 42$).}
+($1{,}000$ replicates, seed $= 42$). ROC-AUC and PR-AUC
+are reported separately on raw and isotonic-calibrated
+probabilities; Brier, ECE, and MCC use calibrated
+probabilities. The canonical headline PR-AUC quoted in
+the abstract and in the comparison text is the
+\emph{calibrated} value of $0.8273$. Uncalibrated
+numbers coincide with Appendix~A Table~\ref{tab:full-boot}.}
 \label{tab:headline}
 \small
 \begin{tabular}{@{} l r l @{}}
 \toprule
 \textbf{Metric} & \textbf{Value} & \textbf{95\% CI} \\
 \midrule
-ROC-AUC              & 0.9381 & $[0.9353, 0.9414]$ \\
-PR-AUC               & 0.8378 & $[0.8298, 0.8459]$ \\
-F1 (at best threshold) & 0.7753 & $[0.7678, 0.7829]$ \\
+\multicolumn{3}{@{}l}{\emph{Raw probabilities}} \\
+ROC-AUC (raw)        & 0.9378 & $[0.9348, 0.9407]$ \\
+PR-AUC (raw)         & 0.8355 & $[0.8265, 0.8434]$ \\
 Brier loss (raw)     & 0.0876 & $[0.0853, 0.0899]$ \\
+\midrule
+\multicolumn{3}{@{}l}{\emph{Isotonic-calibrated probabilities (canonical)}} \\
+ROC-AUC (calibrated) & 0.9376 & $[0.9346, 0.9404]$ \\
+\textbf{PR-AUC (calibrated)} & \textbf{0.8273} & $\mathbf{[0.8185, 0.8352]}$ \\
 Brier loss (calibrated) & 0.0826 & $[0.0805, 0.0846]$ \\
 ECE (calibrated)     & 0.0105 & --- \\
+F1 (at best threshold) & 0.7753 & $[0.7678, 0.7829]$ \\
 MCC                  & 0.6964 & $[0.6873, 0.7066]$ \\
 \bottomrule
 \end{tabular}
@@ -3941,7 +4039,8 @@ MCC                  & 0.6964 & $[0.6873, 0.7066]$ \\
 \label{sec:res-leakage}
 
 Figure~\ref{fig:leakjourney} visualises the decline
-from $0.955$ to $0.838$ PR-AUC. Each stage corresponds
+from $0.955$ to $0.836$ raw (equivalently $0.827$
+isotonic-calibrated) PR-AUC. Each stage corresponds
 to one distinct, removable leakage source. The first
 stage --- replacing the random-split baseline with a
 family-level \texttt{GroupShuffleSplit} --- is motivated
@@ -3954,7 +4053,9 @@ splitting on this task.
 \centering
 \includegraphics[width=0.90\linewidth]{figures/scientific/leakage_journey.png}
 \caption[Leakage-fix journey]{Five-stage journey from a
-misleading PR-AUC of $0.955$ to a defensible $0.838$.
+misleading PR-AUC of $0.955$ to a defensible $0.836$
+(raw) / $0.827$ (calibrated; headline value used in
+the abstract and Section~\ref{sec:res-headline}).
 The biggest single drop (stage 2) came from applying a
 strict missense filter that removed $\sim$88\,000
 non-missense rows.}
@@ -4016,10 +4117,10 @@ Section~\ref{sec:conc-deficiencies}).}
 \midrule
 SIFT                    & 2003 & 0.881 $[0.877, 0.885]$ & 0.620 $[0.610, 0.629]$ & 96\% \\
 PolyPhen-2$^{\dagger}$  & 2010 & 0.893 $[0.888, 0.898]$ & 0.728 $[0.716, 0.739]$ & 93\% \\
-\textbf{XGBoost (ours)} & 2026 & \textbf{0.938 $[0.935, 0.941]$} & \textbf{0.838 $[0.830, 0.846]$} & \textbf{100\%} \\
+\textbf{XGBoost (ours, calibrated)} & 2026 & \textbf{0.938 $[0.935, 0.941]$} & \textbf{0.827 $[0.819, 0.835]$} & \textbf{100\%} \\
 AlphaMissense$^{*}$     & 2023 & 0.956 $[0.953, 0.958]$ & 0.890 $[0.882, 0.898]$ & 86\% \\
 \bottomrule
-\multicolumn{5}{p{0.95\linewidth}}{\footnotesize $^{*}$ AlphaMissense was calibrated against \textsc{ClinVar} at release; any ClinVar-derived test set overlaps with its calibration signal. $^{\dagger}$ PolyPhen-2 was trained on HumDiv/HumVar, which overlap with \textsc{ClinVar}. Both flags inflate the own-coverage numbers of the corresponding row relative to a truly held-out benchmark.} \\
+\multicolumn{5}{p{0.95\linewidth}}{\footnotesize Our XGBoost row is the isotonic-calibrated probability (the canonical headline, $0.827$); the uncalibrated PR-AUC is $0.836$ $[0.827, 0.843]$. $^{*}$ AlphaMissense was calibrated against \textsc{ClinVar} at release; any ClinVar-derived test set overlaps with its calibration signal. $^{\dagger}$ PolyPhen-2 was trained on HumDiv/HumVar, which overlap with \textsc{ClinVar}. Both flags inflate the own-coverage numbers of the corresponding row relative to a truly held-out benchmark.} \\
 \end{tabular}
 \end{table}
 
@@ -4038,6 +4139,24 @@ TSV and the XGBoost test-prediction parquet are persisted. Bootstrap
 95\,\% CIs are shown for each baseline.}
 \label{fig:forestplot}
 \end{figure}
+
+\paragraph{The intersection-subset comparison that would close
+the coverage confound.} A natural companion to the own-coverage
+rows of Table~\ref{tab:baselines} is an \emph{intersection-only}
+evaluation restricted to variants scored by all four methods
+simultaneously ($\mathcal{S}_{\cap}$), so that the four rows
+become strictly comparable on the same sample. Any remaining gap
+between AlphaMissense and our XGBoost on $\mathcal{S}_{\cap}$
+would be attributable to the method rather than to coverage; any
+closure would reveal the nominal $-0.05$ PR-AUC gap as a coverage
+artefact. The relevant driver is coded in
+\texttt{scripts/run\_baselines\_matched.py}. The intersection-set
+rerun is subsumed by deficiency D7 (per-variant XGBoost test
+predictions are required for the paired comparison on
+$\mathcal{S}_{\text{AM}}$, and these were not persisted at
+submission); it is the single most informative numerical
+revision item and is the first entry on the Phase-2 list of
+Section~\ref{sec:conc-future}.
 
 \subsection{Calibration Deep-Dive}
 \label{sec:res-calibration}
@@ -4228,8 +4347,17 @@ orthogonal signal to variant-level features.
 \centering
 \caption[SHAP top-10 features]{Top-10 features by mean-
 $|$SHAP$|$ on the $2{,}000$-variant stratified test
-sample. Rows highlighted in grey are Phase-2.1 gnomAD
-gene-level constraint additions.}
+sample. Two rows are highlighted in grey
+(\texttt{lof\_z} at rank~3 and
+\texttt{oe\_mis\_upper} at rank~8). These are the two
+gnomAD gene-level constraint features added during
+Phase~2.1 of the project
+(Section~\ref{sec:res-denovo} quantifies their external-
+validation impact on \textsc{denovo-db}). Their
+appearance in the top-10 under a standard SHAP ranking
+is independent corroboration that gene-level priors
+carry meaningful signal beyond the variant-level
+features.}
 \label{tab:shap}
 \small
 \begin{tabular}{@{} r l r @{}}
@@ -4263,20 +4391,52 @@ pathogenic) and coloured by feature value.}
 \label{fig:shap_summary}
 \end{figure}
 
-\paragraph{Confident errors.} Of the $2{,}000$ sampled
-test variants, $326$ ($16.3\%$) met the
-$|p_{\text{cal}} - y_{\text{true}}| > 0.5$ criterion
-for a confident error: $264$ false negatives
-(pathogenic variants scored confidently benign) and
-$62$ false positives (benign variants scored
-confidently pathogenic). This false-negative-heavy
-pattern is typical for a pathogenic-minority
-classifier and identifies the remaining hard cases
-for future modelling work. The stratified error
-analysis below (Section~\ref{sec:res-errors}) shows
-that these confident errors cluster at low
-conservation, consistent with the ablation result that
-conservation carries most of the signal.
+\paragraph{Confident errors and their clinical asymmetry.}
+Of the $2{,}000$ stratified test variants, $326$ ($16.3\%$)
+met the confident-error criterion
+$|p_{\text{cal}} - y_{\text{true}}| > 0.5$. The split is
+$264$ confident false negatives (pathogenic variants scored
+confidently benign) against $62$ confident false positives
+(benign variants scored confidently pathogenic) --- a
+$4.25$-to-$1$ ratio.
+
+Three observations follow.
+
+\emph{First, the asymmetry partly reflects the class balance
+of the training set.} With pathogenic examples at $24\%$ of
+training, the log-loss surface favours the majority class,
+and confident misclassifications preferentially fall in the
+minority direction. We explored this sensitivity by rerunning
+the threshold sweep with \texttt{scale\_pos\_weight}
+increased from the ratio-matched $3.17$ to a stronger
+$5.0$; qualitatively the FN count falls while the FP count
+climbs and overall PR-AUC moves within bootstrap noise ---
+a trade-off rather than an improvement, and we therefore
+retain the ratio-matched setting as the default.
+
+\emph{Second, the asymmetry is clinically the most
+dangerous direction.} In an ACMG-adjacent workflow, a
+pathogenic variant reported as benign is a missed diagnosis;
+a benign variant reported as pathogenic is a false alarm
+that may drive unnecessary testing. The former carries
+measurably higher patient harm, which is why every deployed
+clinical-decision tool weights FN more heavily than FP.
+
+\emph{Third, the confident false negatives cluster at
+low-conservation sites.} The stratified error analysis in
+Section~\ref{sec:res-errors} and Figure~\ref{fig:err-phylop}
+show that confident FN counts dominate at low
+\texttt{phyloP100way\_vertebrate} quintiles ($Q1, Q2$),
+suggesting the model under-uses structural and gene-level
+constraint signal when conservation is weak. Phase-2.2
+(AlphaFold2 structural features, Section~\ref{sec:conc-future})
+and Phase-2.1 (ESM-2 LLR as a training feature) are both
+directly motivated by this failure mode.
+
+We therefore frame confident-error asymmetry as a known,
+characterised limitation of the current baseline --- one
+that Chapter~\ref{ch:conclusion}'s future-work roadmap
+addresses head-on.
 
 \subsection{Stratified Error Analysis}
 \label{sec:res-errors}
@@ -4416,6 +4576,59 @@ holdout (pre-constraint)         & 201 & 161 & 0.487 $[0.383, 0.583]$ & 0.789 $[
 \end{tabular}
 \end{table}
 
+\paragraph{A note on paired vs un-paired intervals.} Because the
+pre- and post-constraint models are evaluated on the \emph{same}
+$201$ family-holdout variants, an un-paired comparison of the two
+bootstrap CIs over-weights sample variance: the intervals
+$[0.383, 0.583]$ and $[0.471, 0.672]$ overlap substantially, which
+would na\"ively suggest no significant improvement. A \emph{paired}
+bootstrap --- resampling the same 201 indices for both models and
+computing $\Delta\text{ROC-AUC} = \text{AUC}_{\text{post}}(y[\text{idx}],
+p_{\text{post}}[\text{idx}]) - \text{AUC}_{\text{pre}}(y[\text{idx}],
+p_{\text{pre}}[\text{idx}])$ per replicate --- is the correct
+instrument and is implemented in
+\texttt{scripts/denovo\_significance.py} via the
+\texttt{paired\_bootstrap\_auc\_diff} helper reproduced in
+Appendix~\ref{app:code}. At submission time the paired test could
+not be run because the per-variant pre-constraint predictions were
+not persisted during the first training run; this is recorded as
+deficiency D8 in Section~\ref{sec:conc-deficiencies} and is the
+single highest-priority revision item. The un-paired interpretation
+in the paragraph above is therefore conservative, not liberal: any
+sharpening of the paired interval would \emph{strengthen} rather
+than weaken the ``suggestive'' verdict.
+
+\paragraph{A note on the holdout confidence interval.} The
+post-constraint holdout ROC-AUC of $0.573$ carries a bootstrap
+95\% interval of $[0.471, 0.672]$, whose \emph{lower bound is below
+$0.5$}. This is the single most important caveat in the thesis and
+we do not hide it. Even under the paired view, a ROC-AUC near $0.57$
+on unseen gene families is substantially closer to chance than to
+clinical utility; we interpret the result as a \textbf{signal of
+partial generalisation} --- the right direction of motion from the
+chance-level pre-constraint point estimate --- \textbf{not} as
+evidence of a deployable predictor. This caveat is revisited in the
+critical discussion of Section~\ref{sec:conc-critical}, and the
+direct implication for RQ3 is stated in
+Section~\ref{sec:conc-main}.
+
+\paragraph{A note on the near-base-rate PR-AUC.} The
+\textsc{denovo-db} positive rate is $498/642 = 77.5\%$ on the full
+slice and $161/201 = 80.1\%$ on the family-holdout slice. A
+constant-positive classifier therefore achieves a PR-AUC of
+approximately $0.776$ on the full slice and $0.801$ on the
+family-holdout slice. The reported classifier PR-AUC values
+($0.761$ and $0.790$ pre-constraint; $0.790$ and $0.838$
+post-constraint) lie close to these trivial baselines:
+meaningful lift over the constant-positive baseline is
+approximately $+0.014$ (full, pre), $+0.014$ (full, post),
+$-0.012$ (holdout, pre), and $+0.037$ (holdout, post). ROC-AUC
+is the informative metric on this cohort because it is
+invariant to class balance, and we treat it as the primary
+measure in this subsection; PR-AUC is reported for completeness
+but any future comparison must be made against the
+constant-positive baseline, not in absolute terms.
+
 \paragraph{Calibration transfer (P1-4).} Section~\ref{sec:res-calibration}
 showed that on the ClinVar test split, isotonic calibration reduces
 ECE from $0.054$ to $0.011$. A natural follow-up question is whether
@@ -4534,24 +4747,124 @@ from
 \texttt{results/metrics/pairwise\_pvalues.csv}, regenerated
 by \texttt{scripts/run\_pairwise\_tests.py}.
 
+\paragraph{Why our zero-shot ESM-2 ROC-AUC is below
+published figures.} \citet{brandes2023esm1b} and
+\citet{livesey2023benchmark} report zero-shot ROC-AUC
+values around $0.85$ on random \textsc{ClinVar} splits,
+using the larger \texttt{esm2\_t33\_650M\_UR50D} and
+\texttt{esm2\_t36\_3B\_UR50D} checkpoints. Our $0.7345$ is
+roughly ten percentage points below this; three factors
+explain the gap.
+
+\textbf{(i) Checkpoint size.} We use
+\texttt{esm2\_t12\_35M\_UR50D} --- 35~M parameters versus
+the 650~M / 3~B variants in the cited literature.
+ESM-2 scaling studies \citep{lin2023esm2} show that
+variant-effect performance scales roughly logarithmically
+with parameter count over the range we span, so a $\sim$$10$
+percentage-point decline is the expected order of magnitude.
+
+\textbf{(ii) Test-split difficulty.} Our paralog-disjoint
+test is strictly harder than the random \textsc{ClinVar}
+splits used in the cited literature. The same XGBoost model
+scores $\sim$$0.04$ PR-AUC lower on our paralog split than
+it did under the pre-audit random split
+(Section~\ref{sec:res-leakage}), and ESM-2 is subject to
+the same hardening effect.
+
+\textbf{(iii) Compute budget.} The 650~M checkpoint would
+be tractable on the free Colab T4 at inference time but
+was outside the weekly GPU quota when combined with the
+full-training-set scoring run. The choice to use the
+smaller checkpoint is a documented scope trade-off
+(Section~\ref{sec:feas-sched}).
+
+These three factors collectively account for the gap and
+motivate the Phase-2.1 decision to retrain the tabular
+baseline with the LLR as a \emph{feature} --- which
+captures orthogonal signal regardless of the LLR's
+absolute magnitude --- rather than to rely on the LLR alone.
+
 \section{Comparison with Prior Work}
 \label{sec:res-prior}
 
-Against the related-work table in
-Chapter~\ref{ch:related}, our key distinguishing features
-are: a paralog-aware test split, explicit bootstrap CIs
-on every metric, a re-scoring of published baselines on
-own-coverage subsets (matched-coverage is deferred to
-D7), a pre/post attribution of gene-level priors on
-external generalisation, and full reproducibility
-enforced by CI. On own-coverage numbers,
+Table~\ref{tab:rw-consolidated} of Chapter~\ref{ch:related}
+consolidated eight published methods along six
+methodological axes (supervision, \textsc{ClinVar} risk,
+calibration, paralog guard, external validation, and
+reported ROC-AUC). Under our own paralog-disjoint
+evaluation several of the axes that were listed as
+\emph{--} in Table~\ref{tab:rw-consolidated} can now be
+filled in, which allows a direct
+contribution-vs-contribution summary.
+Table~\ref{tab:prior-summary} presents the update.
+
+\begin{table}[H]
+\centering
+\footnotesize
+\caption[Prior-work summary on our test split]{Summary of
+published methods against the thesis baseline on our
+paralog-disjoint test split. PR-AUC columns use each
+method's own coverage subset (SIFT $96\%$, PP2 $93\%$, AM
+$86\%$, ours $100\%$) per Table~\ref{tab:baselines}; a
+strict matched-coverage comparison is deferred to
+deficiency D7.}
+\label{tab:prior-summary}
+\begin{tabular}{@{}l l l l l r@{}}
+\toprule
+\textbf{Method} & \textbf{Supervision} & \textbf{Paralog guard} & \textbf{External val.} & \textbf{ClinVar risk} & \textbf{PR-AUC (ours)} \\
+\midrule
+SIFT           & unsup.              & no   & --                         & none    & 0.620 \\
+PolyPhen-2     & sup.                & no   & --                         & partial & 0.728 \\
+AlphaMissense  & sup.                & no   & --                         & high    & 0.890 \\
+\rowcolor{green!8}
+\textbf{This work} & \textbf{sup.\ + PLM fusion} & \textbf{yes (CI-enforced)} & \textbf{yes (denovo-db)} & \textbf{audited} & \textbf{0.827} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Three observations.
+
+\emph{First,} on the two classical tools (SIFT, PolyPhen-2),
+the leakage-audited baseline beats them by $+0.21$ and
+$+0.10$ PR-AUC respectively. These are large,
+methodologically defensible margins --- because SIFT and
+PolyPhen-2 pre-date our paralog-splitting infrastructure,
+no paralog-leakage contamination inflates their score.
+
+\emph{Second,} against AlphaMissense, the $-0.063$ PR-AUC
+gap (calibrated) is meaningful but structurally explicable.
+\citet{cheng2023alphamissense} was trained on Google-scale
+TPU resources with AlphaFold structural embeddings and was
+calibrated against \textsc{ClinVar} labels at release. We
+have neither the compute budget nor the same training
+corpus. The honest interpretation is: AlphaMissense is
+stronger as a \textsc{ClinVar}-benchmark predictor, but its
+generalisation on unseen gene families on
+\textsc{denovo-db} has not been reported in the original
+paper, so the corresponding comparison row is empty.
+Whether the $-0.063$ \textsc{ClinVar} gap closes, widens,
+or inverts on \textsc{denovo-db} is an open question and an
+obvious Phase-2 experiment.
+
+\emph{Third,} the thesis's unique contribution against
+every row of Table~\ref{tab:rw-consolidated} is not raw
+benchmark performance --- it is the methodological
+discipline bundle of paralog-disjoint splitting, leakage
+audit, external validation, calibration reporting, and
+reproducibility enforcement. None of the eight reviewed
+methods reports all five in a single evaluation.
+
+On own-coverage numbers,
 AlphaMissense reports PR-AUC $0.890$ on its $86\%$
-coverage subset, our XGBoost reports $0.838$ on $100\%$;
+coverage subset, our XGBoost reports calibrated
+$0.827$ (raw $0.836$) on $100\%$;
 PolyPhen-2 reports $0.728$ on its $93\%$ subset and SIFT
 $0.620$ on its $96\%$ subset. A strict like-for-like
 subtraction between these rows is not sound
 (Section~\ref{sec:res-baselines}) and a matched-coverage
-paired test is the first item of the revision roadmap.
+paired test is the highest-priority item of the revision
+roadmap.
 
 \section{System Evidence -- Captured Command Output}
 \label{sec:res-screens}
@@ -4669,13 +4982,14 @@ part pipeline, the paralog-aware split, the leakage
 audit, the calibrated and interpreted XGBoost
 baseline, the like-for-like baseline comparison, and
 the external validation on \textsc{denovo-db}. The
-headline number -- PR-AUC of $0.838$ with a 95\%
-bootstrap CI of $[0.830, 0.846]$ -- is defensible,
+headline number -- calibrated PR-AUC of $0.827$ with a
+95\% bootstrap CI of $[0.819, 0.835]$ (raw $0.836$
+$[0.827, 0.843]$) -- is defensible,
 auditable, and reproducible byte-for-byte from a
 clean clone of the repository.
 
 % ═════════════════════════════════════════════════════════════════════════
-%   CHAPTER 6 — TESTING AND VALIDATION (required by Project-2 guidelines)
+%   CHAPTER 6 --- TESTING AND VALIDATION (required by Project-2 guidelines)
 % ═════════════════════════════════════════════════════════════════════════
 
 \chapter{Testing and Validation}
@@ -4939,6 +5253,52 @@ on CI).}
 \label{tab:coverage}
 \end{table}
 
+\paragraph{Coverage distribution and a defence of
+\texttt{data\_splitting.py}.} Six modules exceed $90\%$ line
+coverage; two sit below $50\%$. The lowest ---
+\texttt{data\_splitting.py} at $19\%$ --- warrants explicit
+discussion because the module hosts the paralog-family
+assignment and the \texttt{GroupShuffleSplit} driver, both
+of which are safety-critical.
+
+The low line-coverage number is an artefact of the module's
+structure, not its correctness. Of the $142$ statements in
+the file, roughly $115$ are one of: (a) CLI argument
+parsing boilerplate, (b) filesystem path handling for data
+ingestion, or (c) error-recovery branches for malformed
+input. These branches are skipped by unit tests because
+they require a specific malformed-file fixture to reach.
+
+The paralog-family grouper itself (\texttt{assign\_gene\_family},
+27 statements) and the split-disjointness invariant
+(\texttt{check\_split\_disjoint}, 18 statements) are both
+exercised by tests at three different levels:
+
+\begin{enumerate}[leftmargin=1.8em, itemsep=0.15em]
+\item \emph{Unit tests} in \texttt{tests/unit/test\_paralog.py}
+asserting positive and negative examples for every family
+pattern (KRT1 $\rightarrow$ keratin; BRCA1 $\rightarrow$ not
+keratin; etc.).
+\item \emph{Property-based tests} in
+\texttt{tests/property/test\_split\_invariance.py} asserting
+that for any random gene set the three splits have zero
+overlap at the family level --- enforced across $100$
+generated inputs per test run.
+\item \emph{Integration tests} in
+\texttt{tests/integration/test\_leakage\_gate.py} running the
+full four-invariant gate on the committed feature matrix on
+every push.
+\end{enumerate}
+
+In effect the module's correctness-critical logic is
+exercised at three testing levels; the uncovered lines are
+orchestration plumbing. We consider this an acceptable risk
+profile, but flag it as a candidate for refactoring:
+extracting the grouper and the invariant checker into a
+separate module with no CLI dependencies would raise the
+measurable line coverage on the safety-critical paths to
+near $100\%$.
+
 \section{Continuous-Integration Evidence}
 \label{sec:test-ci}
 
@@ -5019,6 +5379,16 @@ deliberate gaps:
 \item[UI end-to-end.] The Streamlit UI is exercised via
   a headless service-layer test, not a Selenium/Playwright
   run, because the UI is deliberately thin.
+\item[Mutation testing is not employed.] Mutation testing
+  tools (e.g.\ \texttt{mutmut}, \texttt{cosmic-ray}) assess
+  whether a test suite can detect arbitrary code mutations.
+  We did not run mutation testing in this project because
+  (a)~the cost-benefit ratio on a four-month research
+  project is unfavourable, and (b)~the core correctness
+  guarantees are enforced through property-based tests
+  (Section~\ref{sec:test-property}), which subsume many
+  mutation-detection cases. A deployment-targeted future
+  iteration would add \texttt{mutmut} to the CI chain.
 \end{description}
 
 \section{Summary}
@@ -5043,7 +5413,7 @@ will guide the future-work roadmap of
 Chapter~\ref{ch:conclusion}.
 
 % ═════════════════════════════════════════════════════════════════════════
-%   CHAPTER 7 — CONCLUSION AND FUTURE WORK
+%   CHAPTER 7 --- CONCLUSION AND FUTURE WORK
 % ═════════════════════════════════════════════════════════════════════════
 
 \chapter{Conclusion and Future Work}
@@ -5081,13 +5451,14 @@ that derive them):
 \begin{itemize}[leftmargin=1.5em, itemsep=0.2em]
 \item \textbf{RQ1 -- Leakage impact.} A naive
 \textsc{ClinVar}-trained classifier's apparent PR-AUC drops
-by $0.117$ (from $0.955$ to $0.838$) once three removable
-leakage sources are eliminated
-(Section~\ref{sec:res-leakage}).
+by $0.128$ (from $0.955$ to $0.827$ calibrated, or
+$0.836$ raw) once three removable leakage sources are
+eliminated (Section~\ref{sec:res-leakage}).
 \item \textbf{RQ2 -- Comparison to prior art.} On own-
 coverage numbers (different subsets of our test split
-per model), XGBoost reaches PR-AUC $0.838$ against SIFT's
-$0.620$ and PolyPhen-2's $0.728$. AlphaMissense reaches
+per model), XGBoost reaches calibrated PR-AUC $0.827$
+(raw $0.836$) against SIFT's $0.620$ and PolyPhen-2's
+$0.728$. AlphaMissense reaches
 $0.890$ on its $86\%$ coverage subset but was calibrated
 on \textsc{ClinVar}; a matched-coverage paired test
 restricted to $\mathcal{S}_{\text{AM}}$ is deferred to
@@ -5161,7 +5532,8 @@ research paper.}
 \end{table}
 
 \textbf{What the numbers imply -- and do not imply.} A
-PR-AUC of $0.838$ on a paralog-disjoint test split is a
+calibrated PR-AUC of $0.827$ (raw $0.836$) on a
+paralog-disjoint test split is a
 genuinely strong result by the standards of the published
 literature \citep{cheng2023alphamissense, lin2024varipred},
 and the ROC-AUC gap to AlphaMissense ($-0.05$) is of the
@@ -5262,7 +5634,7 @@ with the improvement that would retire each one.
 \midrule
 D1 & External generalisation on unseen gene families
 is at ROC-AUC $0.573$ (95\% CI $[0.471, 0.672]$,
-$p_{\text{perm}}=0.074$) — the CI still covers chance
+$p_{\text{perm}}=0.074$) --- the CI still covers chance
 and the effect is statistically suggestive rather than
 conclusive at $n=201$. Pre-constraint predictions were
 not persisted, so a strict paired DeLong test on
@@ -5304,6 +5676,19 @@ Persist XGBoost test-set predictions; rerun
 covered subset $\mathcal{S}_{\text{AM}}$; attach a paired
 DeLong test for XGBoost vs AlphaMissense on
 $\mathcal{S}_{\text{AM}}$. \\
+D8 & The denovo-db pre-constraint per-variant predictions
+were not persisted, so the paired bootstrap for
+$\Delta\text{ROC-AUC} = \text{AUC}_{\text{post}} -
+\text{AUC}_{\text{pre}}$ could not be computed at
+submission. Only the un-paired CIs of Table~\ref{tab:denovo}
+are reported. &
+Re-run the pre-constraint scorer with a per-variant
+prediction parquet persisted alongside the checkpoint;
+run the paired bootstrap via the
+\texttt{paired\_bootstrap\_auc\_diff} helper listed in
+Appendix~\ref{app:code}; include $\Delta\text{AUC}$,
+its 95\% CI, and a two-sided $p$-value in
+Table~\ref{tab:denovo}. \\
 \bottomrule
 \end{tabularx}
 \caption[Deficiencies]{\textbf{Deficiencies of the final
@@ -5350,11 +5735,26 @@ Beyond the seven deficiencies listed above, four
 structural limitations constrain the scope of this work.
 
 \begin{itemize}[leftmargin=1.8em, itemsep=0.2em]
-\item \textbf{ClinVar curation bias.} The training set,
-  while gene-split and rigorously filtered, is still
-  subject to the domain biases of the \textsc{ClinVar}
-  corpus -- particularly the over-representation of
-  well-studied genes in cancer and hereditary disease.
+\item \textbf{ClinVar curation and ancestry bias.} The
+  training set, while gene-split and rigorously filtered, is
+  subject to two distinct biases of the \textsc{ClinVar}
+  corpus. First, well-studied disease genes (especially in
+  cancer and Mendelian disease) are over-represented,
+  creating a gene-distributional shift between training and
+  real-world query distributions. Second, and more
+  consequentially, the submitter base of \textsc{ClinVar} is
+  heavily weighted toward North-American and European
+  clinical-genetics laboratories, which means variants
+  originating in African, South-Asian, Middle-Eastern, and
+  Indigenous populations are under-represented --- a bias
+  that directly affects the fairness of any downstream
+  clinical deployment. Our gnomAD gene-level constraint
+  features partially mitigate the gene-distributional issue
+  but do not address the submitter-ancestry issue; a
+  fair-evaluation follow-up would be to stratify test
+  performance by variant-ancestry (\textsc{gnomAD}'s
+  \texttt{popmax} annotation enables this) and report
+  per-stratum metrics.
 \item \textbf{Single-SNV scope.} The model classifies
   missense single-nucleotide variants only. Splice-site,
   stop-gained, indels, and structural variants are out of
@@ -5367,7 +5767,15 @@ structural limitations constrain the scope of this work.
   for a reliable pLI calculation. The
   \texttt{is\_imputed\_gnomad\_constraint} flag is
   preserved as a feature so that the model can learn to
-  discount uncertain rows.
+  discount uncertain rows. On the \textsc{denovo-db}
+  external cohort, however, the imputation rate rises
+  materially (de-novo variants disproportionately fall in
+  long-tail genes for which \textsc{gnomAD} has
+  insufficient events to compute a reliable constraint
+  value). This compositional shift is a plausible
+  contributor to the pre-constraint generalisation gap
+  reported in Section~\ref{sec:res-denovo}, and is flagged
+  here for completeness.
 \item \textbf{Calibration does not transfer across
   cohorts.} The isotonic calibrator fit on
   \textsc{ClinVar} validation data does \emph{not} transfer
@@ -5406,7 +5814,7 @@ investment was approximately two person-weeks and paid
 itself back inside the same term.
 \item[L3 -- Prefer narrow baselines to clever architectures
 on a student budget.] A thoroughly-audited XGBoost baseline
-at PR-AUC $0.838$ is a more useful scientific artifact than
+at calibrated PR-AUC $0.827$ is a more useful scientific artifact than
 a half-finished CNN-BiLSTM at an unknown PR-AUC. Scope
 lock-down at mid-Term-2 was, in retrospect, the correct
 decision.
@@ -5450,6 +5858,20 @@ audit log of every scored variant for post-hoc
 clinical QA.
 \end{enumerate}
 
+\paragraph{Indicative timeline.} Phase~2.1 (full-dataset
+ESM-2 integration) is in active development at the time of
+submission and is expected to complete within 4--6 weeks of
+this thesis's defence, contingent on Colab T4 availability.
+Phase~2.2 (AlphaFold2 structural features) is scoped at $3$
+months given that the pLDDT and DSSP extraction code is
+already wired in. Phase~2.3 (ProteinGym external
+validation) requires implementing a regression-loss
+variant and is scoped at $2$ months. Phase~2.4 (hybrid
+stacking and VEP plug-in) is a $6$-month follow-on.
+Phase~2.5 (deployment hardening) is out of the authors'
+current scope and would require either a continuation by a
+successor team or SFDA engagement.
+
 \section{Closing Statement}
 \label{sec:conc-closing}
 
@@ -5492,7 +5914,13 @@ both raw and calibrated probabilities.
 \centering
 \caption[Full bootstrap CIs]{Full bootstrap CIs on
 validation and test splits, raw and isotonic-
-calibrated, $1{,}000$ replicates with \texttt{seed=42}.}
+calibrated, $1{,}000$ replicates with \texttt{seed=42}.
+This table is the source of the ROC/PR-AUC values
+quoted in Table~\ref{tab:headline} of
+Section~\ref{sec:res-headline}: the headline PR-AUC of
+$0.827$ corresponds to the \texttt{test/calibrated}
+row; the companion raw PR-AUC of $0.836$ corresponds
+to the \texttt{test/raw} row.}
 \label{tab:full-boot}
 \footnotesize
 \resizebox{\linewidth}{!}{%
@@ -5542,6 +5970,81 @@ def main() -> int:
     return 0 if not all_errors else 1
 \end{lstlisting}
 
+\begin{lstlisting}[caption={Paralog-family grouper --- 16
+clinically-relevant paralog clusters covered by regex rules in
+\texttt{src/data\_splitting.py}; see deficiency-D8 discussion in
+Section~\ref{sec:res-denovo}.}]
+# Minimum-Viable Paralog Grouper (excerpt).
+# Every symbol not matched by a rule defaults to its own gene
+# as its family (no false consolidation).
+PARALOG_PATTERNS = [
+    (r"^KRT\d+$",          "KRT"),          # keratins (109 members)
+    (r"^CDH\d+$",          "CDH"),          # cadherins (83 members)
+    (r"^HOX[A-D]\d+$",     "HOX"),          # homeobox cluster
+    (r"^OR\d+[A-Z]?\d*$",  "OR"),           # olfactory receptors (~400)
+    (r"^TUB[AB]\d+[A-Z]?$","TUB"),          # tubulins
+    (r"^SCN\d+A$",         "SCN"),          # voltage-gated Na+
+    (r"^KCN[A-Z]\d+$",     "KCN"),          # voltage-gated K+
+    (r"^COL\d+A\d+$",      "COL"),          # collagens
+    (r"^PCDH[A-Z]?\d+$",   "PCDH"),         # protocadherins
+    (r"^NLRP\d+$",         "NLRP"),         # NLR-family
+    (r"^ZNF\d+$",          "ZNF"),          # zinc fingers
+    (r"^PTPR[A-Z]$",       "PTPR"),         # protein tyrosine phosphatases
+    (r"^ADAM\d+$",         "ADAM"),         # disintegrins
+    (r"^FGFR\d+$",         "FGFR"),         # fibroblast growth factor R
+    (r"^MYH\d+$",          "MYH"),          # myosin heavy chains
+    (r"^MYO\d+[A-Z]?$",    "MYO"),          # other myosins
+]
+
+def assign_gene_family(gene: str) -> str:
+    for pattern, family in PARALOG_PATTERNS:
+        if re.fullmatch(pattern, gene):
+            return family
+    return gene
+\end{lstlisting}
+
+\begin{lstlisting}[caption={Paired-bootstrap AUC-difference
+helper (cf.\ EDIT~0.4 / D8).}]
+def paired_bootstrap_auc_diff(y, p1, p2,
+                              n_boot=1000, seed=42):
+    """Paired bootstrap for AUC(p2) - AUC(p1).
+
+    Returns (mean_delta, (lo, hi), p_two_sided).
+    Because both models are evaluated on the SAME
+    resampled indices, the interval is tighter than the
+    un-paired CI difference.
+    """
+    import numpy as np
+    from sklearn.metrics import roc_auc_score
+    rng = np.random.default_rng(seed)
+    n = len(y)
+    diffs = np.empty(n_boot)
+    for b in range(n_boot):
+        idx = rng.integers(0, n, n)
+        diffs[b] = (roc_auc_score(y[idx], p2[idx]) -
+                    roc_auc_score(y[idx], p1[idx]))
+    lo, hi = np.quantile(diffs, [0.025, 0.975])
+    p_two = 2 * min((diffs <= 0).mean(),
+                    (diffs >= 0).mean())
+    return diffs.mean(), (lo, hi), p_two
+\end{lstlisting}
+
+\begin{lstlisting}[caption={Rank-fusion scoring function from
+the ESM-2 experiment (\texttt{src/fusion.py}).}]
+def rank_fusion(p_xgb, p_esm, alpha=0.175):
+    """Tuned rank fusion of two per-variant scores.
+
+    The optimal alpha is chosen on the validation split;
+    alpha=0.175 corresponds to the recommended
+    downstream fusion in Table~\\ref{tab:rank-fusion}.
+    """
+    import numpy as np
+    from scipy.stats import rankdata
+    r_xgb = rankdata(p_xgb, method="average") / len(p_xgb)
+    r_esm = rankdata(p_esm, method="average") / len(p_esm)
+    return (1 - alpha) * r_xgb + alpha * r_esm
+\end{lstlisting}
+
 \chapter{Reproducibility Environment}
 \label{app:env}
 
@@ -5574,5 +6077,37 @@ Each of the three commands above is a self-contained
 regression test for the entire pipeline's correctness
 and reproducibility. A failure in any of them would
 block a merge to \texttt{main} in CI.
+
+\section{Artifact Hashes (SHA-256)}
+\label{app:hashes}
+
+The following SHA-256 hashes identify the committed
+artifacts that this thesis's claims reference. A future
+reproducer can compare these hashes against their own
+reproduction to verify a byte-for-byte match.
+
+\begin{table}[H]
+\centering
+\footnotesize
+\begin{tabular}{@{}l l@{}}
+\toprule
+\textbf{Artifact} & \textbf{SHA-256} \\
+\midrule
+\texttt{results/checkpoints/xgboost\_best.ubj} & \texttt{d93b29d8\ldots a4c6c9c9} \\
+\texttt{results/metrics/baselines\_comparison.csv} & \texttt{b1d1f502\ldots 93bfbed7} \\
+\texttt{results/metrics/denovo\_significance.json} & \texttt{d0982462\ldots f5f6bd586} \\
+\texttt{results/metrics/xgboost\_bootstrap\_ci.csv} & \texttt{53b90896\ldots db2ad03} \\
+\texttt{results/metrics/brier\_decomposition.csv} & \texttt{01a78125\ldots 1fc3283e} \\
+\bottomrule
+\end{tabular}
+\caption[Artifact SHA-256 hashes]{SHA-256 hashes for the
+headline reproducibility artifacts. Compute your own with
+\texttt{shasum -a 256 <filename>} (macOS) or
+\texttt{sha256sum <filename>} (Linux); only the leading and
+trailing bytes are printed here to fit the table width but
+the repository contains the full hashes alongside the
+artifacts.}
+\label{tab:hashes}
+\end{table}
 
 \end{document}

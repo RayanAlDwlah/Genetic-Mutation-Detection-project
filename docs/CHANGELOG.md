@@ -3,6 +3,70 @@
 All notable changes to the honest-baseline pipeline. Dates are ISO-8601.
 Commits are on `origin/main`.
 
+## [Thesis v1.0 — Final Submission Edit Pass] — 2026-04-24
+
+Comprehensive edit pass across the thesis informed by the
+`thesis_edits_complete.md` review checklist. All 48 scheduled
+edits were implemented in a single worktree pass.
+
+### Changed
+- Reconciled PR-AUC headline number across Abstract, Table 5.1
+  and Appendix A Table A.1: headline is now the calibrated
+  value `0.827 [0.819, 0.835]`; raw value `0.836 [0.827, 0.843]`
+  is surfaced alongside it.
+- Abstract contamination claim reframed as a hypothesis that the
+  thesis tests and demonstrates, not a blanket claim against the
+  field.
+- AlphaMissense contamination-risk phrasing softened to neutral
+  interpretation caveat.
+- Added paired-bootstrap discussion (D8) to denovo-db section;
+  formally acknowledged that per-variant pre-constraint predictions
+  were not persisted, with revision path.
+- Expanded Section 5.6.5 (confident errors) with clinical-asymmetry
+  discussion (4.25:1 FN:FP, clinical significance, phyloP cluster).
+- Added `Why our ESM-2 zero-shot ROC-AUC is below published
+  figures` discussion (checkpoint size, split difficulty, compute
+  budget).
+- Added near-base-rate caveat to denovo-db PR-AUC reporting
+  (constant-positive baseline reference).
+- Expanded Section 5.7 with prior-work summary table and three
+  observation bullets.
+- Added intersection-subset comparison note on Table 5.2.
+- Expanded testing-chapter coverage defence for `data_splitting.py`.
+- Added mutation-testing gap acknowledgement to Section 6.9.
+- Added Phase-2 roadmap timeline to Section 7.8.
+- Added ClinVar ancestry/demographic bias to Section 7.6.
+- Extended constraint-imputation bullet with denovo-db rate note.
+- Split Chapter 1.7 contribution 5 into two entries (methodological
+  package vs. engineering artefacts).
+- Compressed Sections 1.1.1–1.1.2 (Central Dogma + Variant Classes).
+- Expanded Section 2.4 Research Gap to a fully-developed paragraph.
+- Strengthened REVEL contamination discussion (Section 2.3.3).
+- Rewrote Use-Case, State, and Component diagram captions
+  (Chapter 4) with purpose-driven content.
+- Added schedule-realisation paragraph to Section 3.2.3.
+- Added Figure 3.3 Gantt year markers in caption.
+- Expanded Figure 4.7 Streamlit caption with threshold bands.
+- Expanded Table 5.4 SHAP caption with Phase-2.1 row meaning.
+- Removed unsupportable "first" claims in Chapter 2.5.
+
+### Fixed
+- Resolved LaTeX cross-reference failure in Section 2.3.8 (ESM-2
+  zero-shot evaluation reference now points to `sec:res-esm2`).
+- Resolved LaTeX cross-reference failure in Section 3.5 (missense
+  filter leakage reference now points to `sec:res-leakage`).
+- Replaced Unicode em-dashes with LaTeX `---` throughout for
+  encoding safety under pdflatex.
+- Aligned NFR1 latency claim to observed performance with explicit
+  benchmark deferral (D6).
+
+### Added
+- Appendix B: paired-bootstrap helper, paralog-family grouper, and
+  rank-fusion listings.
+- Appendix C: SHA-256 artifact hashes section.
+- Deficiency D8: persist pre-constraint per-variant predictions for
+  paired bootstrap.
+
 ## [Portfolio Stage 2.4 + Stage 3 — SHAP + calibration deep dive] — 2026-04-21
 
 Two complementary analyses that ground the model in its features:
