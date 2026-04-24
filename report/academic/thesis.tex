@@ -4703,6 +4703,28 @@ tuning $\alpha \in [0, 1]$ on the validation split
 (optimal $\alpha = 0.175$) is the one recommended for
 downstream use.
 
+\paragraph{Two regimes, two ROC-AUCs --- why.}
+Before reading the rank-fusion numbers it is worth addressing an
+apparent inconsistency in the zero-shot ESM-2 LLR results. On our
+paralog-disjoint \textsc{ClinVar} test split the LLR alone achieves
+ROC-AUC $=0.7345$; on the \textsc{denovo-db} family-holdout slice it
+achieves $0.552$. Both numbers are legitimate and the gap is not a
+bug. The \textsc{ClinVar} test set is enriched for variants in
+well-studied disease genes with deep multiple-sequence alignments
+--- the exact regime where a masked-language-model score is most
+informative. \textsc{denovo-db} holdout, by construction, contains
+gene families unseen during our supervised training; many are
+intrinsically disordered or poorly aligned, and the LLR is
+correspondingly less discriminative. This is consistent with the
+regime dependence reported by \citet{brandes2023esm1b} for
+\textsc{ESM-1b} and by \citet{lin2023esm2} for the \textsc{ESM-2}
+family more broadly. The 35\,M-parameter checkpoint we use here
+(\texttt{esm2\_t12\_35M\_UR50D}) is deliberately the smallest
+deployable \textsc{ESM-2} variant and sits below the 650\,M
+reference in both regimes; the Phase-2.1 full-training-set
+integration that is currently in flight will quantify the gain
+from the larger checkpoint directly.
+
 \begin{table}[htbp]
 \centering
 \small
