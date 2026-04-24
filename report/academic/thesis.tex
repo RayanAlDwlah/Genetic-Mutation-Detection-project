@@ -3791,6 +3791,76 @@ the probability range.}
 \label{fig:triptych}
 \end{figure}
 
+\subsection{Feature-Group Ablation}
+\label{sec:res-ablation}
+
+Table~\ref{tab:ablation} reports the effect of removing each of the
+six feature groups from Figure~\ref{fig:feature-groups} and retraining
+XGBoost with the Optuna-tuned hyperparameters frozen (no per-ablation
+re-tune). The $\Delta$ columns are full-baseline $-$ ablated, so
+positive $\Delta$ ROC-AUC means the group \emph{carries} signal;
+95\,\% confidence intervals come from a $500$-replicate paired case-
+resampling bootstrap on the test split. The ablation is reproducible
+via \texttt{scripts/run\_ablation.py}; the full CSV lives at
+\texttt{results/metrics/ablation.csv} and the accompanying bar chart
+at \texttt{results/figures/ablation.png}.
+
+\begin{table}[H]
+\centering
+\caption[Feature-group ablation]{Feature-group ablation on the
+paralog-disjoint test split. Full-baseline ROC-AUC is $0.939$ and
+PR-AUC is $0.834$. Conservation is by far the dominant group; AA
+identity, physicochemical distance, gene-constraint and imputation
+flags each contribute at or below the noise floor once conservation
+is already in the model.}
+\label{tab:ablation}
+\small
+\begin{tabular}{@{}l r r r l l@{}}
+\toprule
+\textbf{Group removed} & \textbf{$n$ cols} &
+\textbf{Test ROC} & \textbf{Test PR} &
+\textbf{$\Delta$ ROC (95\% CI)} & \textbf{$\Delta$ PR (95\% CI)} \\
+\midrule
+\textbf{conservation}       &  6 & 0.814 & 0.620 &
+  \textbf{$+0.125$} & \textbf{$+0.215$} \\
+allele\_frequency           &  4 & 0.936 & 0.819 &
+  $+0.004$ & $+0.016$ \\
+physicochemical             & 16 & 0.938 & 0.828 &
+  $+0.002$ & $+0.007$ \\
+gene\_constraint            &  5 & 0.938 & 0.828 &
+  $+0.001$ & $+0.006$ \\
+aa\_identity                &  2 & 0.939 & 0.834 &
+  $+0.001$ & $+0.001$ \\
+imputation\_flags           &  5 & 0.939 & 0.833 &
+  $-0.000$ & $+0.001$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.98\linewidth]{figures/ablation.png}
+\caption[Feature-group ablation bar chart]{Left panel:
+$\Delta$ ROC-AUC when each feature group is removed from the full
+baseline (positive means the group carried signal). Right panel:
+corresponding $\Delta$ PR-AUC. Conservation dominates at $\sim$$+0.13$
+ROC and $+0.22$ PR; all other groups contribute $<0.01$ ROC-AUC at
+this training-set size. Error bars are 500-replicate paired-bootstrap
+95\,\% CIs on the test split.}
+\label{fig:ablation}
+\end{figure}
+
+The single highest-impact group is \textbf{conservation}
+(phyloP100way, phyloP30way, phastCons, GERP++): removing it drops
+ROC-AUC by $0.125$ and PR-AUC by $0.215$. This is consistent with
+the SHAP ranking (Section~\ref{sec:res-shap}) where
+\texttt{phyloP100way\_vertebrate} is the top feature by a wide
+margin. The lowest-impact group is \textbf{imputation flags}: the
+$\Delta$ is statistically indistinguishable from zero, so these
+columns could be dropped in a leaner revision without loss. AA
+identity and gene-constraint each contribute at most $\sim$$0.001$
+ROC-AUC at this training-set size.
+
 \subsection{SHAP Interpretability and Confident Errors}
 \label{sec:res-shap}
 
