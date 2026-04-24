@@ -722,11 +722,19 @@ detail, because they do not share our target task.
 \section{Literature Review}
 \label{sec:rw-literature}
 
-The following eight subsections review one or two representative
-methods from each historical wave. Every subsection follows the
-same structure -- core idea, algorithmic summary, formal
-description where useful, a schematic figure drawn in TikZ, and
-a bullet-list discussion of strengths and weaknesses relative
+The next eighteen subsections cover the full literature landscape.
+The first eight are canonical anchors in each historical wave and
+carry a TikZ pipeline figure (SIFT, PolyPhen-2, REVEL, CADD, VARITY,
+EVE, ESM-1b/2, AlphaMissense). The following ten subsections
+(Sections~\ref{sec:rw-mvp}--\ref{sec:rw-dyna}) are more recent
+neighbours of our approach and are treated narrative-only for space;
+they follow the abridged template core idea $\to$ algorithmic
+summary $\to$ pros / cons. A final subsection
+(Section~\ref{sec:rw-methodology-refs}) cites two non-model
+methodology works used as benchmarking references throughout the
+thesis. Every subsection follows the same structure -- core idea,
+algorithmic summary, and a short discussion of strengths and
+weaknesses relative
 to the benchmark on which we ultimately evaluate.
 
 % ───────────────────────── SIFT ─────────────────────────
@@ -1315,6 +1323,208 @@ objective. The raw output is calibrated against
     and external validation.
 \end{itemize}
 
+% ───────────── additional papers (P1-5 of thesis review) ─────────────
+
+\subsection{MVP (2021) \texorpdfstring{\citep{qi2021mvp}}{(Qi et al., 2021)}}
+\label{sec:rw-mvp}
+
+\textbf{Core idea.} The Missense Variant Pathogenicity predictor (MVP) is
+a residual-network classifier trained on a composite feature matrix of
+conservation, biochemistry, and pre-computed VEP scores
+\citep{qi2021mvp}.
+
+\textbf{Algorithmic summary.} A ResNet-style architecture (38 layers,
+skip connections) maps a 38-dimensional per-variant feature vector to
+a single pathogenicity score; separate models are fit for genes with
+and without strong evolutionary constraint. Training uses the HGMD
+disease panel plus \textsc{ClinVar}. Reported AUROC is $0.91$ on
+constrained genes and $0.85$ on non-constrained.
+
+\textbf{Pros.} First published ResNet for this task; demonstrates that
+moderately deep architectures outperform shallow classifiers on the
+same feature matrix. \textbf{Cons.} Evaluated with random
+splits; no paralog guard; feature matrix includes meta-predictors,
+which creates circularity when benchmarking on \textsc{ClinVar}.
+
+\subsection{gMVP (2022) \texorpdfstring{\citep{zhang2022gmvp}}{(Zhang et al., 2022)}}
+\label{sec:rw-gmvp}
+
+\textbf{Core idea.} Replaces MVP's dense feature pack with a graph
+attention network that reasons directly over a co-evolution graph
+\citep{zhang2022gmvp}.
+
+\textbf{Algorithmic summary.} Each protein is represented by a
+position-by-position graph whose edges are derived from MSA
+co-evolution and (when available) predicted contact maps. A graph
+attention network aggregates evolutionary context into a
+per-position embedding; a small head predicts pathogenicity. Reported
+AUROC is $0.88$ on a random split with HGMD + \textsc{ClinVar} labels.
+
+\textbf{Pros.} Introduces explicit relational reasoning over
+evolutionary context, a structurally richer representation than
+MVP's dense feature pack. \textbf{Cons.} Still random-split
+evaluation; no external-cohort validation; no paralog guard.
+
+\subsection{MutFormer (2023) \texorpdfstring{\citep{jiang2023mutformer}}{(Jiang et al., 2023)}}
+\label{sec:rw-mutformer}
+
+\textbf{Core idea.} Combines a CNN over the local protein window with a
+BERT-style transformer over longer-range sequence context
+\citep{jiang2023mutformer}.
+
+\textbf{Algorithmic summary.} A 1D CNN encodes the $\pm 30$-residue
+window around the variant; a BERT encoder processes the full
+sequence; the two embeddings are concatenated with optional dbNSFP
+features before a sigmoid head. Published AUROC is $0.94$ on a
+ClinVar-derived benchmark.
+
+\textbf{Pros.} Architecturally closest in spirit to our Phase-2 plan
+(hybrid sequence + tabular). \textbf{Cons.} Again random-split; the
+hybrid depends on dbNSFP which carries its own contamination risk;
+inference cost is nontrivial.
+
+\subsection{mvPPT (2023) \texorpdfstring{\citep{tong2023mvppt}}{(Tong et al., 2023)}}
+\label{sec:rw-mvppt}
+
+\textbf{Core idea.} A LightGBM-based missense predictor fit on dbNSFP
++ gnomAD tabular features, including a number of meta-predictor
+columns \citep{tong2023mvppt}.
+
+\textbf{Algorithmic summary.} Standard gradient-boosted trees on
+dbNSFP conservation, amino-acid chemistry, and population-frequency
+features, with a handful of meta-predictor scores retained as
+inputs. Reports AUROC $\sim$$0.91$ on a random split.
+
+\textbf{Pros.} Closest peer to our XGBoost baseline in terms of
+feature type and algorithm family. \textbf{Cons.} Uses
+meta-predictors as features, which are themselves ClinVar-trained
+--- this is the precise contamination source our banned-feature
+list (Section~\ref{sec:fw-part2}) removes.
+
+\subsection{MAGPIE (2024) \texorpdfstring{\citep{liu2024magpie}}{(Liu et al., 2024)}}
+\label{sec:rw-magpie}
+
+\textbf{Core idea.} A gradient-boosted tree model spanning six variant
+types (missense, silent, splice, frameshift, indel, stop-gained) in a
+single unified head \citep{liu2024magpie}.
+
+\textbf{Algorithmic summary.} Uses $64$ features across conservation,
+biochemistry, population frequency, and domain annotations. On the
+DS-MVP missense benchmark MAGPIE reports AUROC $0.892$. No
+protein-language-model signal is included.
+
+\textbf{Pros.} Unified, interpretable, and multi-variant-type.
+\textbf{Cons.} Reports gene-level split only; no paralog guard; no
+external-cohort validation.
+
+\subsection{ESM-1v (2021) \texorpdfstring{\citep{meier2021esm1v}}{(Meier et al., 2021)}}
+\label{sec:rw-esm1v}
+
+\textbf{Core idea.} The earliest zero-shot protein-language-model
+approach to variant-effect prediction, pre-dating ESM-1b and ESM-2
+\citep{meier2021esm1v}.
+
+\textbf{Algorithmic summary.} Ensembles five ESM-1v 650M checkpoints
+trained on UniRef90; scores every variant by a masked log-likelihood
+ratio analogous to the one we use in
+Section~\ref{sec:arch-esm2}. Evaluated on 41 DMS assays; no
+\textsc{ClinVar} dependence.
+
+\textbf{Pros.} Fully unsupervised; the cleanest possible external
+baseline for our rank-fusion experiment. \textbf{Cons.} Large model
+(650M $\times$ 5) makes large-corpus scoring expensive on free GPU
+budgets.
+
+\subsection{PrimateAI-3D (2023) \texorpdfstring{\citep{gao2023primateai3d}}{(Gao et al., 2023)}}
+\label{sec:rw-primateai3d}
+
+\textbf{Core idea.} A 3D CNN that ingests a voxelised representation
+of the local protein structure around the variant residue, plus
+cross-species variation from 233 primate genomes
+\citep{gao2023primateai3d}.
+
+\textbf{Algorithmic summary.} Crops a 3D volume around the variant's
+$\text{C}\alpha$, voxelises amino-acid identity and conservation into
+per-voxel channels, and passes the tensor through a 3D CNN. The
+model is trained to separate variants \emph{observed} in primates
+from those \emph{unobserved} (the so-called ``primate-AI'' label),
+which is a strictly non-\textsc{ClinVar} signal. Published AUROC on
+\textsc{ClinVar} is $0.94$.
+
+\textbf{Pros.} First large-scale structural signal that is \emph{not}
+derived from \textsc{ClinVar}. \textbf{Cons.} Training corpus is
+proprietary (Illumina primate sequencing); model weights are not
+fully redistributable.
+
+\subsection{VariPred (2024) \texorpdfstring{\citep{lin2024varipred}}{(Lin et al., 2024)}}
+\label{sec:rw-varipred}
+
+\textbf{Core idea.} A twin-network architecture over ESM-1b embeddings
+that scores a reference/alternate pair directly
+\citep{lin2024varipred}.
+
+\textbf{Algorithmic summary.} Two parallel ESM-1b passes (one on the
+reference sequence, one on the alternate) feed a small
+difference-head that outputs a pathogenicity score. A surprising
+ablation in the paper shows ESM-1b $>$ ESM-2 for this task at 650M
+parameters, which is our baseline motivation for scoring the 35M
+ESM-2 as a proof-of-concept rather than the production model.
+
+\textbf{Pros.} Clean twin-network design; published AUROC $0.928$ and
+MCC $0.714$. \textbf{Cons.} 650M $\times 2$ inference is expensive;
+training requires a labelled \textsc{ClinVar} slice.
+
+\subsection{VespaG (2024) \texorpdfstring{\citep{marquet2024vespag}}{(Marquet et al., 2024)}}
+\label{sec:rw-vespag}
+
+\textbf{Core idea.} Distils GEMME (a pure-evolution unsupervised method)
+into ESM-2 embeddings, producing a fast, fully-unsupervised predictor
+that can score the human proteome in minutes on a single GPU
+\citep{marquet2024vespag}.
+
+\textbf{Algorithmic summary.} ESM-2 embeddings are frozen; a light
+per-residue head is trained to mimic GEMME's position-specific
+scoring matrix. The result is a $\text{GPU-sec}$-per-protein scorer
+that preserves evolutionary semantics without re-running an MSA.
+
+\textbf{Pros.} The cheapest published PLM-based scorer; natural
+partner for the rank-fusion experiment of Section~\ref{sec:res-esm2}.
+\textbf{Cons.} Relies on ESM-2 embeddings being discriminative, which
+our sanity tests (Section~\ref{sec:res-esm2}, P0-2) suggest may
+degrade at small model sizes.
+
+\subsection{DYNA (2025) \texorpdfstring{\citep{zhan2025dyna}}{(Zhan et al., 2025)}}
+\label{sec:rw-dyna}
+
+\textbf{Core idea.} Siamese fine-tuning of ESM over a \emph{disease-
+specific} labelled slice, producing a classifier specialised to a
+narrow clinical domain \citep{zhan2025dyna}.
+
+\textbf{Algorithmic summary.} A pair of shared-weight ESM branches
+processes the reference and alternate sequences; a contrastive
+disease-specific loss sharpens the embedding separation. The paper
+reports AUROC gains of $>5$ percentage points over ESM-1b on disease-
+specific benchmarks (e.g.\ cardiomyopathy, retinopathy).
+
+\textbf{Pros.} Plausible path to clinical deployment where a single
+general-purpose classifier underperforms. \textbf{Cons.} Requires a
+labelled disease-specific training slice; generalisation outside
+that slice is unstudied.
+
+\subsection{Methodology references (not a model):
+\texorpdfstring{\citep{livesey2023benchmark_v2, notin2023proteingym_v2}}%
+{Livesey \& Marsh 2023; ProteinGym 2023}}
+\label{sec:rw-methodology-refs}
+
+Two recent works are cited throughout the thesis but are not
+themselves predictors. \citet{livesey2023benchmark_v2} benchmark 55
+VEPs against deep mutational scanning (DMS) assays and quantify the
+benchmark-inflation effect of \textsc{ClinVar}-only evaluation;
+\citet{notin2023proteingym_v2} publish \textsc{ProteinGym}, a
+large-scale DMS benchmark with 217 assays that our Phase-2 roadmap
+(Section~\ref{sec:conc-future}) targets as the next external-cohort
+validation after \textsc{denovo-db}.
+
 % ───────────────────────── Consolidated comparison ─────────────────────────
 \subsection{Consolidated Comparison}
 \label{sec:rw-consolidated}
@@ -1361,10 +1571,20 @@ SIFT           & 2003  & unsup.\      & none     & --          & No & No       \
 PolyPhen-2     & 2010  & sup.\        & partial  & soft        & No & No       \\
 CADD           & 2014+ & self-sup.\   & none     & phred       & No & No       \\
 REVEL          & 2016  & sup.\        & compound & --          & No & No       \\
+MVP            & 2021  & sup.\        & compound & --          & No & No       \\
 VARITY         & 2021  & sup.\        & partial  & reported    & No (gene only) & Partial \\
 EVE            & 2021  & unsup.\      & none     & ELBO only   & No (gene only) & No       \\
+ESM-1v         & 2021  & zero-shot    & none     & --          & No             & No       \\
+gMVP           & 2022  & sup.\        & partial  & --          & No             & No       \\
+MutFormer      & 2023  & sup.\        & partial  & --          & No             & No       \\
+mvPPT          & 2023  & sup.\        & compound & --          & No             & No       \\
 ESM-1b/ESM-2   & 2023  & zero-shot    & none     & --          & No             & Partial  \\
+PrimateAI-3D   & 2023  & self-sup.\   & none     & --          & No             & No       \\
 AlphaMissense  & 2023  & sup.\        & high     & calibrated  & No (gene only) & No       \\
+VariPred       & 2024  & sup.\        & partial  & --          & No             & No       \\
+VespaG         & 2024  & unsup.\      & none     & --          & No             & No       \\
+MAGPIE         & 2024  & sup.\        & partial  & --          & No             & No       \\
+DYNA           & 2025  & sup.\        & partial  & --          & No             & No       \\
 \midrule
 \textbf{This work} & \textbf{2026} & \textbf{sup.+zs fusion}
  & \textbf{audited} & \textbf{isotonic}

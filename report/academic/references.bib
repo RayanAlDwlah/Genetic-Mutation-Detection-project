@@ -558,3 +558,100 @@
   doi     = {10.1101/2020.06.08.140111},
   note    = {Introduces the gene-level split as the minimum acceptable evaluation standard; shows random split inflates AUROC by 5--15 percentage points across 55 VEPs.},
 }
+
+@article{gao2023primateai3d,
+  title   = {The Landscape of Tolerated Genetic Variation in Humans and Primates},
+  author  = {Gao, Hong and Hamp, Tobias and Ede, Jeffrey and Schraiber, Joshua G. and McRae, Jeremy and Singer-Berk, Moriel and Yang, Yanshen and Dietrich, Anastasia S.V. and Fiziev, Petko P. and Kuderna, Lukas F.K. and others},
+  journal = {Science},
+  volume  = {380},
+  number  = {6648},
+  pages   = {eabn8197},
+  year    = {2023},
+  doi     = {10.1126/science.abn8197},
+  note    = {Introduces PrimateAI-3D, a 3D CNN over voxelised protein structures predicting pathogenicity.},
+}
+
+@inproceedings{meier2021esm1v,
+  title     = {Language Models Enable Zero-Shot Prediction of the Effects of Mutations on Protein Function},
+  author    = {Meier, Joshua and Rao, Roshan and Verkuil, Robert and Liu, Jason and Sercu, Tom and Rives, Alexander},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  volume    = {34},
+  year      = {2021},
+  note      = {ESM-1v — the original zero-shot PLM for variant-effect prediction.},
+}
+
+@article{marquet2024vespag,
+  title   = {Embeddings from Protein Language Models Predict Conservation and Variant Effects},
+  author  = {Marquet, C{\'e}line and H{\"o}nigschmid, Peter and Heinzinger, Michael and Olenyi, Tobias and Ilzh{\"o}fer, David and Rost, Burkhard},
+  journal = {Human Genetics (/ Bioinformatics)},
+  year    = {2024},
+  doi     = {10.1007/s00439-024-02625-2},
+  note    = {VespaG: ESM-2 embeddings distilled from GEMME via knowledge transfer; proteome-scale inference in minutes.},
+}
+
+@article{zhan2025dyna,
+  title   = {{DYNA}: Disease-Specific Variant Effect Prediction via Siamese Protein Language Model Fine-Tuning},
+  author  = {Zhan, Huixin and Kang, Jia-Rong and Liu, Dian and Yuan, Qiuhao and Zhang, Zongyi and Wang, Qiuyue and Liu, Yan and Zhang, Zhongming},
+  journal = {Nature Machine Intelligence},
+  year    = {2025},
+  note    = {Siamese ESM fine-tuning; reports $>5\%$ AUROC gain over ESM-1b on disease-specific benchmarks.},
+}
+
+@article{jiang2023mutformer,
+  title   = {{MutFormer}: A Context-Dependent Transformer-Based Model to Predict Pathogenic Missense Mutations},
+  author  = {Jiang, Theodore T. and Fang, Li and Wang, Kai},
+  journal = {The Innovation},
+  volume  = {4},
+  number  = {3},
+  pages   = {100410},
+  year    = {2023},
+  doi     = {10.1016/j.xinn.2023.100410},
+  note    = {CNN + BERT hybrid over raw protein sequences + optional dbNSFP features.},
+}
+
+@article{zhang2022gmvp,
+  title   = {Predicting Missense Variants Pathogenicity with a Graph Attention Neural Network},
+  author  = {Zhang, Hongjian and Xu, Michael S. and Fan, Xuejun and Chung, Wendy K. and Shen, Yufeng},
+  journal = {Nature Machine Intelligence},
+  volume  = {4},
+  pages   = {1038--1047},
+  year    = {2022},
+  doi     = {10.1038/s42256-022-00561-w},
+  note    = {gMVP: graph attention over protein co-evolution; integrates evolutionary and structural context.},
+}
+
+@article{tong2023mvppt,
+  title   = {{mvPPT}: Missense Variants Pathogenicity Prediction Based on Gradient Boosting with dbNSFP Features},
+  author  = {Tong, Xin and others},
+  journal = {Genomics, Proteomics and Bioinformatics},
+  year    = {2023},
+  note    = {LightGBM over dbNSFP + gnomAD; uses meta-predictors as inputs (partial circularity risk).},
+}
+
+@article{liu2024magpie,
+  title   = {{MAGPIE}: Multi-Type Accurate Gradient-Boosted Prediction Method for Variant Interpretation and Effect Estimation},
+  author  = {Liu, Yingzhou and others},
+  journal = {Genome Medicine},
+  volume  = {16},
+  year    = {2024},
+  note    = {GBT with 64 features across six variant types; reports AUROC 0.892 on DS-MVP.},
+}
+
+@article{livesey2023benchmark_v2,
+  title   = {Updated Benchmarking of Variant-Effect Predictors Using Deep Mutational Scanning},
+  author  = {Livesey, Benjamin J. and Marsh, Joseph A.},
+  journal = {Molecular Systems Biology},
+  volume  = {19},
+  pages   = {e11474},
+  year    = {2023},
+  doi     = {10.15252/msb.202211474},
+  note    = {Benchmark of 55 VEPs against DMS; documents ClinVar-benchmark inflation and recommends ProteinGym as an external reference.},
+}
+
+@article{notin2023proteingym_v2,
+  title   = {{ProteinGym}: Large-Scale Benchmarks for Protein Fitness Prediction and Design},
+  author  = {Notin, Pascal and Kollasch, Aaron W. and Ritter, Daniel and van Niekerk, Lood and Paul, Steffanie and Spinner, Han and Rollins, Nathan and Shaw, Ada and Orenbuch, Rose and Weitzman, Ruben and Frazer, Jonathan and Dias, Mafalda and Franceschi, Dinko and Gal, Yarin and Marks, Debora S.},
+  journal = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year    = {2023},
+  note    = {Benchmark suite with 217 DMS assays; external-reference alternative to ClinVar for zero-shot/PLM evaluation.},
+}
