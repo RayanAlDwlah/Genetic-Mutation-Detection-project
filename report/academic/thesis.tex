@@ -3983,8 +3983,98 @@ $62$ false positives (benign variants scored
 confidently pathogenic). This false-negative-heavy
 pattern is typical for a pathogenic-minority
 classifier and identifies the remaining hard cases
-for future modelling work (typically pathogenic
-variants at sites of low conservation).
+for future modelling work. The stratified error
+analysis below (Section~\ref{sec:res-errors}) shows
+that these confident errors cluster at low
+conservation, consistent with the ablation result that
+conservation carries most of the signal.
+
+\subsection{Stratified Error Analysis}
+\label{sec:res-errors}
+
+With the paralog-aware split in place, the natural
+follow-up analysis is to cut the test errors by gene
+family (Section~\ref{sec:fw-part1}) and by the
+biochemistry of the substitution, and to test the SHAP
+hypothesis that confident errors cluster at low
+conservation. The three cuts below are all computed by
+\texttt{scripts/run\_error\_analysis.py}; the complete
+long-format table is at
+\texttt{results/metrics/error\_analysis.csv}.
+
+\textbf{By paralog family.} Figure~\ref{fig:err-family}
+stratifies the per-variant FN rate, FP rate, and
+ROC-AUC over the top-10 paralog families by $n$ in the
+test split. The best-AUC families are
+\textsc{NSD} (AUC $0.97$), \textsc{NLRP} ($0.94$) and
+\textsc{TCF} ($0.94$); the worst is \textsc{APOB}
+(AUC $0.72$, FN rate $1.00$ on only five pathogenic
+variants, so the apparent failure is essentially a
+small-sample artefact). \textsc{GCK} has the highest FP
+rate ($30\%$), which is explained by the very high
+base-rate of pathogenic variants in that family
+($337/347$): even a near-random classifier accepts
+most GCK variants as pathogenic.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\linewidth]{figures/error_by_family.png}
+\caption[Error by family]{Error stratification by the
+top-10 paralog families in the test split. Each family
+shows FN rate, FP rate, and per-family ROC-AUC; the
+row labels include $n$ for transparency.}
+\label{fig:err-family}
+\end{figure}
+
+\textbf{By amino-acid class.}
+Figure~\ref{fig:err-aa} renders a $6\times 6$ heat-map
+of FN rate by (\texttt{ref\_aa} class,
+\texttt{alt\_aa} class) over the pathogenic variants
+only. The classes are polar, non-polar, positive,
+negative, aromatic, and \emph{special} (Gly, by itself
+because of its backbone flexibility). FN rates are
+highest for non-polar $\to$ non-polar and polar $\to$
+polar substitutions (conservative substitutions are
+harder for the model to label pathogenic), and lowest
+for positive $\to$ negative or aromatic $\to$ special
+(radical chemistry).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.78\linewidth]{figures/error_by_aa_class.png}
+\caption[Error by AA class]{FN rate heat-map over
+(ref, alt) amino-acid classes, restricted to
+pathogenic variants in the test split. Each cell shows
+the FN rate and the number of variants. Blank cells
+had no variants in the test split for that class
+pair.}
+\label{fig:err-aa}
+\end{figure}
+
+\textbf{By conservation quintile.}
+Figure~\ref{fig:err-phylop} answers the SHAP-derived
+hypothesis directly. Confident errors are stratified by
+\texttt{phyloP100way\_vertebrate} quintile. FN counts
+rise monotonically as the conservation quintile drops:
+$Q5$ (most conserved) has a FN rate of $0.07$;
+$Q1$ (least conserved) has $0.95$. Conversely, FP
+counts rise as conservation rises ($Q1 \to Q5$:
+$0.001 \to 0.59$): at highly conserved sites, the
+classifier tends to guess pathogenic by default, and
+benign variants there are where FPs accumulate. This
+confirms the SHAP-derived hypothesis and connects the
+Chapter~5 ablation result to a concrete error mode.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.92\linewidth]{figures/confident_errors_by_phyloP.png}
+\caption[Confident errors by phyloP]{Confident errors
+stratified by \texttt{phyloP100way\_vertebrate}
+quintile. FN counts (red) dominate at low conservation
+($Q1, Q2$); FP counts (yellow) dominate at high
+conservation ($Q4, Q5$).}
+\label{fig:err-phylop}
+\end{figure}
 
 \subsection{External Validation on \textsc{denovo-db}}
 \label{sec:res-denovo}
