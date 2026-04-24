@@ -130,11 +130,70 @@ def check_label_balance() -> list[str]:
     return errors
 
 
+def check_phase21_features_present() -> list[str]:
+    """If Phase-2.1 was trained, its feature manifest must include
+    num__esm2_llr and num__is_imputed_esm2_llr (catches an accidental drop)."""
+    errors: list[str] = []
+    p21_features = REPO_ROOT / "results/metrics/xgboost_phase21_feature_columns.csv"
+    if not p21_features.exists():
+        return errors  # Phase 2.1 not run; skip.
+    cols = pd.read_csv(p21_features)
+    feature_names = set(cols.iloc[:, 0].astype(str))
+    required = {"num__esm2_llr", "num__is_imputed_esm2_llr"}
+    missing = required - feature_names
+    if missing:
+        errors.append(
+            f"[phase21_features] Phase-2.1 manifest missing required ESM-2 features: {sorted(missing)}"
+        )
+    return errors
+
+
+def check_esm2_split_integrity() -> list[str]:
+    """Assert that ESM-2 score parquets are consistent with HEAD splits.
+
+    Skips silently when the parquets aren't available (Phase-2.1 not run).
+    """
+    errors: list[str] = []
+    paths = {
+        "train": REPO_ROOT / "data/splits/train.parquet",
+        "val": REPO_ROOT / "data/splits/val.parquet",
+        "test": REPO_ROOT / "data/splits/test.parquet",
+        "scored_train": REPO_ROOT / "data/intermediate/esm2/scores_train.parquet",
+        "scored_val": REPO_ROOT / "data/intermediate/esm2/scores_val.parquet",
+        "scored_test": REPO_ROOT / "data/intermediate/esm2/scores_test.parquet",
+    }
+    if not all(p.exists() for p in paths.values()):
+        return errors
+
+    keys = {k: set(pd.read_parquet(p)["variant_key"].astype(str)) for k, p in paths.items()}
+    if not keys["scored_train"].issubset(keys["train"]):
+        leak = len(keys["scored_train"] - keys["train"])
+        errors.append(f"[esm2_split_integrity] {leak} scored_train keys NOT in train")
+    if not keys["scored_val"].issubset(keys["val"]):
+        leak = len(keys["scored_val"] - keys["val"])
+        errors.append(f"[esm2_split_integrity] {leak} scored_val keys NOT in val")
+    if not keys["scored_test"].issubset(keys["test"]):
+        leak = len(keys["scored_test"] - keys["test"])
+        errors.append(f"[esm2_split_integrity] {leak} scored_test keys NOT in test")
+    cross_tt = len(keys["scored_train"] & keys["test"])
+    if cross_tt:
+        errors.append(f"[esm2_split_integrity] {cross_tt} variant_keys in BOTH scored_train and test")
+    cross_tv = len(keys["scored_train"] & keys["val"])
+    if cross_tv:
+        errors.append(f"[esm2_split_integrity] {cross_tv} variant_keys in BOTH scored_train and val")
+    cross_vt = len(keys["scored_val"] & keys["test"])
+    if cross_vt:
+        errors.append(f"[esm2_split_integrity] {cross_vt} variant_keys in BOTH scored_val and test")
+    return errors
+
+
 CHECKS = [
     ("Feature hygiene", check_feature_hygiene),
     ("Missense filter", check_missense_filter),
     ("Split disjointness (gene + family)", check_split_disjoint),
     ("Label balance across splits", check_label_balance),
+    ("Phase-2.1 ESM-2 features present", check_phase21_features_present),
+    ("ESM-2 split integrity", check_esm2_split_integrity),
 ]
 
 

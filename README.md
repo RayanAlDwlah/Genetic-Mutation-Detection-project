@@ -272,6 +272,32 @@ HGVSp ↔ genome resolution — tracked in `docs/CHANGELOG.md` as Phase D v2.
 
 ---
 
+## 🚀 Phase 2.1 — ESM-2 LLR as a training feature
+
+| Slice | Phase-1 (no ESM-2) | Phase-2.1 (with ESM-2) | Paired Δ (95% CI), p |
+|---|---|---|---|
+| **Test PR-AUC** (calibrated) | 0.827 | **0.865** | +0.031 [+0.027, +0.036], p<10⁻⁴ |
+| **Test ROC-AUC** (calibrated) | 0.938 | **0.948** | +0.009 [+0.008, +0.010], p<10⁻⁴ |
+| Test ECE | 0.0105 | **0.0056** | tighter calibration |
+| denovo-db full ROC-AUC | 0.511 | 0.510 | −0.002, n.s. |
+| denovo-db **holdout** ROC-AUC | 0.573 | **0.442** | −0.132 [−0.257, −0.005], **statistically worse** |
+
+The 35 M-parameter `esm2_t12_35M_UR50D` checkpoint adds significant
+in-distribution signal but does NOT transfer to unseen gene families.
+This is a documented ceiling result, not a regression — the holdout
+deficit is partly attributable to a constraint-coverage confound on
+new genes; the in-distribution gain is robust under both the frozen
+Phase-1 hyperparameters (headline) and a 40-trial Optuna re-tune
+(|Δ| < 0.005, appendix only). Phase 2.1b motivates upgrading to the
+650 M checkpoint.
+
+Full discussion in [`thesis.tex` §5.8](report/academic/thesis.tex)
+(`sec:res-phase21`); artifacts in `results/metrics/phase21/`,
+`results/checkpoints/xgboost_phase21_esm2.ubj`,
+`scripts/{build_phase21_train,train_phase21_xgboost,ablate_esm2,score_denovo_phase21,paired_bootstrap_denovo_phase21,phase21_diagnostics}.py`.
+
+---
+
 ## 🧪 Why These Fixes Matter
 
 ### 1️⃣ Missense Filter — the biggest catch

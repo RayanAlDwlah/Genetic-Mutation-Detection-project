@@ -1,0 +1,7 @@
+comparison,metric,delta,ci_low,ci_high,p_value,test,n
+internal_test (full vs no_esm2),roc_auc,0.0092853354644095,0.008157766763968,0.0103320390345657,0.0,paired bootstrap (1000 reps),28098
+internal_test (full vs no_esm2),pr_auc,0.0313224320532169,0.0265651497572893,0.0360550377833019,0.0,paired bootstrap (1000 reps),28098
+denovo_db_full (Phase-2.1 vs Phase-1),roc_auc,-0.0015757474341812,-0.0593261963777291,0.0635393179293908,0.505,"paired bootstrap (1000 reps, one-sided)",642
+denovo_db_full (Phase-2.1 vs Phase-1),pr_auc,-0.0062407497215392,-0.0365713986870759,0.0279523027355049,0.619,"paired bootstrap (1000 reps, one-sided)",642
+denovo_db_holdout (Phase-2.1 vs Phase-1),roc_auc,-0.1315993788819875,-0.2567208023208439,-0.0045744518162996,0.977,"paired bootstrap (1000 reps, one-sided)",201
+denovo_db_holdout (Phase-2.1 vs Phase-1),pr_auc,-0.052503582434662,-0.1033690199759584,0.0012455305292844,0.972,"paired bootstrap (1000 reps, one-sided)",201

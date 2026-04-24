@@ -1186,6 +1186,57 @@ RESULT: all checks passed. Baseline is leak-free.
   \end{columns}
 \end{frame}
 
+% ───────────── SLIDE: Phase 2.1 ablation ─────────────
+\begin{frame}{Phase 2.1: ESM-2 LLR as a training feature}
+  \begin{columns}[T]
+    \begin{column}{0.55\textwidth}
+      \footnotesize
+      \begin{tabular}{@{}l r r@{}}
+        \toprule
+        \textbf{Model} & \textbf{Test ROC} & \textbf{Test PR} \\
+        \midrule
+        Phase-1 (no ESM-2)            & 0.938 & 0.827 \\
+        Phase-2.1 \texttt{no\_esm2}   & 0.939 & 0.840 \\
+        Phase-2.1 \texttt{esm2\_only} & 0.739 & 0.610 \\
+        \rowcolor{green!10}
+        \textbf{Phase-2.1 full}       & \textbf{0.948} & \textbf{0.865} \\
+        \bottomrule
+      \end{tabular}
+      \vspace{0.4em}
+      \begin{itemize}\footnotesize
+        \item Paired bootstrap full vs no\_esm2 ($n{=}28{,}098$):
+        \item $\Delta\text{PR-AUC} = +0.031$ \;[+0.027,\,+0.036], $p<10^{-4}$
+        \item $\Delta\text{ROC-AUC} = +0.009$ \;[+0.008,\,+0.010], $p<10^{-4}$
+        \item Frozen Phase-1 hyperparams; Optuna re-tune
+              $|\Delta|<0.005$ (appendix only).
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.45\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{figures/ablation_esm2_forest_phase21.png}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ───────────── SLIDE: SHAP shift Phase-1 vs Phase-2.1 ─────────────
+\begin{frame}{What ESM-2 changed in SHAP}
+  \begin{center}
+    \includegraphics[width=0.95\linewidth]{figures/phase21_feature_importance_comparison.png}
+  \end{center}
+  \begin{itemize}\footnotesize
+    \item \texttt{esm2\_llr} enters at rank 4 (mean $|$SHAP$|$ $\approx$ 0.42).
+    \item \texttt{is\_imputed\_esm2\_llr} ranks 1 -- skipped variants
+          live in non-canonical or truncated transcripts; the
+          ``unusual-context'' flag is itself informative.
+    \item Conservation features (phyloP, GERP) remain dominant; ESM-2
+          partly substitutes for, partly supplements, the conservation axis
+          (Spearman $\rho \le |0.31|$).
+    \item denovo-db family-holdout: $\Delta\text{ROC-AUC} = -0.13$
+          $\Rightarrow$ in-distribution gain does not transfer to unseen
+          gene families at the 35\,M-parameter checkpoint scale.
+  \end{itemize}
+\end{frame}
+
 % ═════════════════ PART 9: CONCLUSION ═════════════════
 \section{Conclusion}
 

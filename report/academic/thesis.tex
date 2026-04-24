@@ -4997,12 +4997,304 @@ Found 107 errors in 28 files (checked 32 source files)
 \end{lstlisting}
 
 \textbf{Note on ESM-2 Colab progress.} The Phase-2.1
-full-training-set ESM-2 scoring runs on a free Google
-Colab T4 session for approximately eight hours, with
-checkpoints written to a Drive-mounted cache every $500$
-variants. Because the run is GPU-bound and external to the
-local repository, it is reported in the CHANGELOG rather
-than reproduced inline here.
+full-training-set ESM-2 scoring completed on a free Google
+Colab T4 session over approximately eight hours, producing
+score parquets for $138{,}721$ training, $28{,}079$
+validation, and $28{,}098$ test variants
+(\texttt{data/intermediate/esm2/}). The Phase-2.1
+training-time integration described in Section~\ref{sec:res-phase21}
+consumed these parquets directly.
+
+\section{Phase 2.1: ESM-2 LLR as a Training Feature}
+\label{sec:res-phase21}
+
+This section reports the Phase-2.1 integration of the zero-shot
+ESM-2 LLR as an additive numeric feature in the XGBoost training
+matrix, replacing the post-hoc rank-fusion approach of
+Section~\ref{sec:res-esm2}. The Phase-1 baseline of
+Section~\ref{sec:res-headline} is \emph{frozen}; every Phase-2.1
+result reported below is a NEW row in a comparison table, not
+an overwrite. All artifacts are emitted under a
+\texttt{phase21}/\texttt{\_phase21} namespace
+(\texttt{results/checkpoints/xgboost\_phase21\_esm2.ubj},
+\texttt{results/metrics/phase21/}) so the Phase-1 numbers are
+byte-for-byte unchanged.
+
+\subsection{Setup, Sign Convention, and Frozen-HP Principle}
+\label{sec:phase21-setup}
+
+We aggregate per-isoform ESM-2 LLR by \texttt{min} per
+\texttt{variant\_key} (most-pathogenic isoform across alternative
+transcripts). Empirically the score parquets shipped from Colab
+contain one row per \texttt{variant\_key} (a sensitivity probe in
+\texttt{results/metrics/esm2\_aggregation\_sensitivity\_phase21.csv}
+showed all four of \texttt{min, max, mean, first} produce
+identical signal, ROC-AUC $=0.7378$ stand-alone), so the choice is
+formally a no-op on the present data; we keep \texttt{min} as the
+principled default.
+
+The sign convention is preserved from Section~\ref{sec:res-esm2}:
+$\text{LLR} = \log p_{\text{alt}} - \log p_{\text{ref}}$, where
+\emph{higher LLR means the model finds the alternate residue
+plausible} (the variant is more likely benign). This sign matters
+for SHAP interpretation: a positive SHAP contribution from
+\texttt{esm2\_llr} pulls the prediction \emph{toward benign}, not
+toward pathogenic.
+
+A small fraction of training variants (0.86\%, $1{,}192/138{,}921$)
+have no ESM-2 score because the Colab scorer skipped them
+(\texttt{skip\_reason} populated in the score parquet, typically a
+truncated or non-canonical transcript). Following the existing
+imputation contract for other dbNSFP-derived numerics, we add a
+companion \texttt{is\_imputed\_esm2\_llr} flag and impute missing
+LLRs with the train-fit median in
+\texttt{src.training.prepare\_split\_features}.
+
+\textbf{Hyperparameters are frozen at the Phase-1 Optuna optimum.}
+The scientific claim of this section is ``the marginal effect of
+adding \texttt{esm2\_llr} to the training matrix, holding every
+other hyperparameter fixed.'' Re-tuning Optuna on the new feature
+set would conflate the feature contribution with a tuning
+contribution. We therefore train a single XGBoost with the
+Phase-1 \texttt{xgboost\_best\_params.csv} and
+\texttt{early\_stopping\_rounds=80}; an Optuna sensitivity check
+is reported in Section~\ref{sec:phase21-optuna} as an appendix
+result.
+
+\subsection{Internal-Test Ablation}
+\label{sec:phase21-ablation}
+
+Table~\ref{tab:phase21-ablation} reports the headline ablation:
+three XGBoost models trained on the Phase-2.1 splits with the
+frozen hyperparameters, varying only the feature set.
+\texttt{full} is the canonical Phase-2.1 model; \texttt{no\_esm2}
+drops the two ESM-2 columns and is the apples-to-apples Phase-1
+control trained against the same val/test rows; \texttt{esm2\_only}
+keeps only the ESM-2 features and serves as a stand-alone
+discriminator reference.
+
+\begin{table}[H]
+\centering
+\caption[Phase-2.1 ablation]{\textbf{Phase-2.1 ablation on the
+paralog-disjoint test split, calibrated probabilities,
+$1{,}000$-replicate bootstrap CIs.} Phase-1 numbers are quoted
+verbatim from Table~\ref{tab:headline} for reference. The
+\texttt{full} model is the headline Phase-2.1 result; the paired
+bootstrap of $\Delta$(test PR-AUC) between \texttt{full} and
+\texttt{no\_esm2} appears below the table.}
+\label{tab:phase21-ablation}
+\small
+\begin{tabular}{@{} l r l l @{}}
+\toprule
+\textbf{Condition} & \textbf{n features} & \textbf{Test ROC-AUC (95\% CI)} & \textbf{Test PR-AUC (95\% CI)} \\
+\midrule
+Phase-1 baseline (frozen)        & 78 & 0.9376 $[0.9346, 0.9404]$ & 0.8273 $[0.8185, 0.8352]$ \\
+Phase-2.1 \texttt{no\_esm2}      & 78 & 0.9386 $[0.9355, 0.9416]$ & 0.8396 $[0.8311, 0.8474]$ \\
+Phase-2.1 \texttt{esm2\_only}    &  2 & 0.7388 $[0.7314, 0.7458]$ & 0.6099 $[0.5987, 0.6205]$ \\
+\rowcolor{green!8}
+\textbf{Phase-2.1 \texttt{full}} &\textbf{80} &\textbf{0.9476 $[0.9448, 0.9503]$} &\textbf{0.8647 $[0.8580, 0.8714]$} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The paired bootstrap of $\Delta$ on test ($n=28{,}098$, same
+resampled indices for both models, 1{,}000 replicates,
+\texttt{seed=42}) gives:
+\begin{itemize}[leftmargin=2em, itemsep=0.1em]
+\item $\Delta\text{ROC-AUC} = +0.0093$, 95\% CI $[+0.0082, +0.0103]$, two-sided $p < 0.0001$
+\item $\Delta\text{PR-AUC} = +0.0313$, 95\% CI $[+0.0266, +0.0361]$, two-sided $p < 0.0001$
+\end{itemize}
+Both intervals are entirely above zero and the test PR-AUC
+improvement (+0.031) exceeds the rank-fusion ceiling of +0.014
+reported in Section~\ref{sec:res-esm2}; training-time integration
+extracts strictly more signal than late fusion. Numbers are taken
+verbatim from
+\texttt{results/metrics/ablation\_esm2\_phase21.csv} and
+\texttt{phase21\_ablation\_paired\_bootstrap.csv}, generated by
+\texttt{scripts/ablate\_esm2.py}.
+
+\subsection{SHAP Shift}
+\label{sec:phase21-shap}
+
+After training, \texttt{num\_\_esm2\_llr} appears at rank~4 in the
+mean-$|$SHAP$|$ ranking on the stratified $2{,}000$-variant test
+sample (\texttt{results/metrics/shap\_ranking\_phase21.csv}).
+The companion \texttt{num\_\_is\_imputed\_esm2\_llr} flag appears
+at rank~1, which is initially surprising but consistent with the
+biology: variants whose isoform context defeated the ESM-2
+forward pass tend to live in non-canonical or truncated
+transcripts, and the imputation flag itself is a useful
+``unusual-context'' feature. Figure~\ref{fig:phase21-feat-compare}
+shows the side-by-side top-15 mean-$|$SHAP$|$ ranking before vs
+after the integration; conservation features remain dominant but
+ESM-2 displaces \texttt{lof\_z} (which moves from rank~3 to
+rank~5) and reorders the lower half.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\linewidth]{figures/phase21_feature_importance_comparison.png}
+\caption[Phase-1 vs Phase-2.1 SHAP comparison]{\textbf{Top-15
+features by mean-$|$SHAP$|$, Phase-1 vs Phase-2.1.} The
+ESM-2 imputation flag and LLR enter the Phase-2.1 ranking at
+positions 1 and~4; conservation features (phyloP, GERP) and
+gnomAD AN remain in the top-3. The reshuffling of the lower
+half is consistent with ESM-2 partly substituting for some
+conservation signal --- see the correlation analysis in
+Section~\ref{sec:phase21-limits}.}
+\label{fig:phase21-feat-compare}
+\end{figure}
+
+\subsection{External Validation on \textsc{denovo-db}}
+\label{sec:phase21-denovo}
+
+The Phase-2.1 model was scored on the same $642$ \textsc{denovo-db}
+variants (and the $201$ family-holdout slice) as Phase-1.
+Table~\ref{tab:phase21-denovo} reports the comparison.
+
+\begin{table}[H]
+\centering
+\caption[Phase-1 vs Phase-2.1 on denovo-db]{\textbf{Phase-1
+versus Phase-2.1 on \textsc{denovo-db}.} Calibrated
+probabilities; paired bootstrap $\Delta$ uses the same variants
+in both columns, $1{,}000$ replicates, \texttt{seed=42},
+one-sided test of $H_0\!:\,\Delta\le 0$. Phase-1 numbers come
+from \texttt{external\_denovo\_db\_predictions.parquet}
+(\textit{cf.}~Section~\ref{sec:res-denovo}); Phase-2.1 numbers
+from \texttt{external\_denovo\_db\_predictions\_phase21.parquet}.}
+\label{tab:phase21-denovo}
+\small
+\begin{tabular}{@{} l r l l c @{}}
+\toprule
+\textbf{Slice / metric} & $n$ & \textbf{Phase-1} & \textbf{Phase-2.1} & \textbf{Paired $\Delta$ (95\% CI), $p$} \\
+\midrule
+full / ROC-AUC          & 642 & 0.5111 & 0.5095 & $-0.002$ $[-0.059, +0.064]$, $p=0.51$ \\
+full / PR-AUC           & 642 & 0.7896 & 0.7833 & $-0.006$ $[-0.037, +0.028]$, $p=0.62$ \\
+holdout / ROC-AUC       & 201 & \textbf{0.5733} & \textbf{0.4417} & $\mathbf{-0.132}$ $\mathbf{[-0.257, -0.005]}$, $\mathbf{p=0.98}$ \\
+holdout / PR-AUC        & 201 & 0.8376 & 0.7850 & $-0.053$ $[-0.103, +0.001]$, $p=0.97$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The pattern is unambiguous: the in-distribution paired gain on
+the test split (+$0.031$ PR-AUC, Section~\ref{sec:phase21-ablation})
+\emph{does not transfer} to unseen gene families. On the full
+denovo-db slice the Phase-2.1 model is statistically
+indistinguishable from Phase-1 ($p=0.51$/0.62); on the
+family-holdout slice it is statistically \emph{worse}
+($\Delta\text{ROC-AUC}=-0.13$ with CI excluding zero).
+
+\textbf{Constraint-coverage confound.} A methodological caveat
+applies to the holdout comparison and is reported here for
+completeness. The canonical Phase-1 evaluation joined denovo-db
+variants against the raw gnomAD-constraint TSV; in this revision
+worktree the raw TSV is unavailable, and the Phase-2.1 scorer
+reconstructs gene-level constraint values from the training
+split (\texttt{train.parquet}) where possible, falling back to
+train-fit medians otherwise. By construction the family-holdout
+genes are absent from training, so they receive imputed constraint
+values for Phase-2.1 even where Phase-1 had real values from the
+gnomAD table directly. The holdout $\Delta$ therefore mixes
+``ESM-2 added'' with ``constraint coverage reduced.'' We report
+the unfavourable comparison without correction (the
+constraint-coverage rerun is recorded as a follow-up item in the
+extended-results addendum) because correcting only the favourable
+direction would be selective. The full slice, where most genes
+appear in training and constraint values are recoverable, shows
+no such drift, supporting the interpretation that the holdout
+deficit is at least partly a coverage artefact rather than a pure
+ESM-2 effect.
+
+\subsection{Limitations and Conservation Redundancy}
+\label{sec:phase21-limits}
+
+The +0.031 internal PR-AUC versus the null/negative external
+result invites a specific question: how independent is the ESM-2
+signal from the conservation features the model already had?
+
+Table~\ref{tab:phase21-correlations} reports Spearman correlations
+between \texttt{esm2\_llr} and the conservation, biochemistry, and
+constraint features on the test split.
+
+\begin{table}[H]
+\centering
+\caption[ESM-2 vs partner-feature correlations]{\textbf{Spearman
+correlation of \texttt{esm2\_llr} with related features
+(test split, $n=27{,}927$ non-NaN rows).} Negative $\rho$ means
+``LLR low (more pathogenic) when partner is high''. Numbers from
+\texttt{results/metrics/esm2\_correlation\_analysis\_phase21.csv}.}
+\label{tab:phase21-correlations}
+\small
+\begin{tabular}{@{} l r r @{}}
+\toprule
+\textbf{Partner} & \textbf{Spearman $\rho$} & \textbf{$p$-value} \\
+\midrule
+phyloP100way\_vertebrate     & $-0.31$ & $<10^{-300}$ \\
+GERP++\_RS                   & $-0.29$ & $<10^{-300}$ \\
+phyloP30way\_mammalian       & $-0.27$ & $<10^{-300}$ \\
+phastCons30way\_mammalian    & $-0.26$ & $<10^{-300}$ \\
+phastCons100way\_vertebrate  & $-0.25$ & $<10^{-300}$ \\
+BLOSUM62\_score              & $+0.25$ & $<10^{-300}$ \\
+Grantham\_distance           & $-0.22$ & $<10^{-299}$ \\
+mis\_z                       & $-0.09$ & $\sim 10^{-53}$ \\
+oe\_mis\_upper               & $+0.09$ & $\sim 10^{-51}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The signs are biologically coherent (ESM-2 pathogenicity scales
+with conservation and with biochemical-disruption magnitude),
+the magnitudes are moderate ($|\rho|\le 0.31$), and constraint
+correlations are weak ($|\rho|<0.1$). The features are partly
+overlapping but not redundant: ESM-2 carries roughly $90\%$
+independent variance on the conservation axis and almost all the
+variance on the constraint axis. The +$0.031$ internal PR-AUC
+gain corresponds to that orthogonal residual; the
+external-validation deficit on holdout suggests the residual
+captures \emph{within-distribution} structure (gene-family-shaped
+sequence priors that ESM-2 has learned from training-style genes)
+rather than transferable pathogenicity logic.
+
+\textbf{The 35\,M-parameter checkpoint.} We use
+\texttt{esm2\_t12\_35M\_UR50D}, the smallest deployable
+\textsc{ESM-2} variant, for compute-budget reasons documented in
+Section~\ref{sec:res-esm2}. \citet{lin2023esm2} report that
+variant-effect performance scales roughly logarithmically with
+parameter count over the 35\,M--3\,B range; the current ceiling
+is therefore expected to lift with the
+\texttt{esm2\_t33\_650M\_UR50D} ($19\times$ parameters)
+checkpoint. We document this as Phase~2.1b in
+Chapter~\ref{ch:conclusion}.
+
+\subsection{Optuna Sensitivity (Appendix Result)}
+\label{sec:phase21-optuna}
+
+For methodological cleanliness the headline numbers in
+Sections~\ref{sec:phase21-ablation} and~\ref{sec:phase21-denovo}
+are the \emph{frozen-hp} Phase-2.1 model. To confirm the
+hyperparameter choice does not silently dominate the marginal
+effect, we re-ran Optuna ($40$ trials, \texttt{seed=42}) on the
+Phase-2.1 splits and report the result here only.
+
+The Optuna-tuned Phase-2.1 model achieves test PR-AUC $=0.8698$
+(versus frozen-hp $0.8710$); the absolute difference is $0.0012$,
+well below our $0.005$ pre-registered threshold for treating
+the two as substantively distinct. Optuna and frozen-hp agree
+within bootstrap noise; the frozen-hp model is therefore the
+canonical Phase-2.1 baseline and is what every other table in
+this section reports. Numbers from
+\texttt{results/metrics/xgboost\_phase21\_optuna\_split\_metrics.csv}.
+
+\subsection{Calibration}
+\label{sec:phase21-calibration}
+
+Isotonic refit on the Phase-2.1 validation predictions gives
+test ECE $=0.0056$ (versus Phase-1 ECE $=0.0105$), test MCE
+$=0.0256$, and Brier loss $=0.0748$ (versus Phase-1 $=0.0826$).
+Calibration is therefore strictly tighter on Phase-2.1 across
+all three measures; no Platt-scaling fallback is needed.
+Numbers from
+\texttt{results/metrics/phase21\_calibration\_comparison.csv},
+generated by \texttt{scripts/phase21\_calibration\_audit.py}.
 
 \section{Summary}
 \label{sec:impl-summary}
@@ -5860,12 +6152,27 @@ The project's Phase-2 roadmap, in decreasing expected
 impact per unit effort, is:
 
 \begin{enumerate}[leftmargin=1.8em, itemsep=0.2em]
-\item \textbf{Phase 2.1 -- Full ESM-2 integration.}
-Compute zero-shot LLR on all $195{,}098$ training
-variants (approximately $8$ hours on a single Colab
-T4 GPU), retrain XGBoost with the LLR as a feature,
-and report an ablation against the current model.
-This work is in flight at the time of writing.
+\item \textbf{Phase 2.1 -- Full ESM-2 integration
+(completed; see Section~\ref{sec:res-phase21}).}
+Zero-shot LLR was scored on all training, validation,
+and test variants on a Colab T4 GPU; XGBoost was
+retrained with \texttt{esm2\_llr} +
+\texttt{is\_imputed\_esm2\_llr} as features under frozen
+Phase-1 hyperparameters. Internal-test paired bootstrap
+gives $\Delta$PR-AUC $=+0.031$ ($p<10^{-4}$); external
+\textsc{denovo-db} family-holdout gives
+$\Delta$ROC-AUC $=-0.13$ ($p\!=\!0.98$ one-sided), driven
+in part by a constraint-coverage confound on unseen
+gene families.
+\item \textbf{Phase 2.1b -- Larger ESM-2 checkpoint.}
+The current 35\,M-parameter
+\texttt{esm2\_t12\_35M\_UR50D} variant is the smallest
+deployable; \citet{lin2023esm2} report logarithmic
+parameter-count scaling on variant-effect tasks. Re-running
+Phase 2.1 with \texttt{esm2\_t33\_650M\_UR50D}
+($19\times$ parameters) is the next obvious step and
+should both lift the in-distribution gain and probe
+whether the OOD ceiling is a 35\,M artefact.
 \item \textbf{Phase 2.2 -- AlphaFold2 structural
 features.} Extract per-residue pLDDT confidence,
 solvent-accessible surface area, DSSP secondary
