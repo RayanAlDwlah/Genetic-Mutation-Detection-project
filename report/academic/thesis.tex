@@ -186,12 +186,18 @@ interval of $[0.830, 0.846]$. The model is calibrated end-to-end with
 isotonic regression, reducing expected calibration error (ECE) from
 $0.054$ to $0.011$, which is below the $0.02$ clinical target.
 
-Under identical evaluation, we re-score three published predictors on
-our own test split: SIFT, PolyPhen-2, and AlphaMissense. Our XGBoost
-model outperforms the classical tools by $+0.22$ PR-AUC against SIFT
-and $+0.11$ against PolyPhen-2, and falls $-0.05$ PR-AUC below
-AlphaMissense -- a model that was calibrated on \textsc{ClinVar} at
-release and therefore carries contamination risk of its own.
+We re-score three published predictors (SIFT, PolyPhen-2, AlphaMissense)
+on our paralog-disjoint test split. Because each baseline covers a
+different subset of variants, the reported numbers are on each model's
+\emph{own coverage} (SIFT 96\,\%, PolyPhen-2 93\,\%, AlphaMissense
+86\,\%, XGBoost 100\,\%) and are therefore not directly comparable. On
+own-coverage numbers our XGBoost reaches PR-AUC $0.838$; SIFT
+$0.620$, PolyPhen-2 $0.728$, and AlphaMissense $0.890$. A strict
+matched-coverage evaluation restricted to the AlphaMissense-covered
+subset, together with a paired DeLong test, is left for a revision
+(Deficiency D7) since the required artefacts were not persisted at
+submission time. AlphaMissense was moreover calibrated on \textsc{ClinVar}
+at release and therefore carries contamination risk of its own.
 
 The most important finding of the project emerges from external
 validation on \textsc{denovo-db}. A classifier trained on
@@ -3682,27 +3688,49 @@ final audited baseline on the right.}
 \subsection{Baseline Comparison}
 \label{sec:res-baselines}
 
-Table~\ref{tab:baselines} reports the like-for-like
-baseline comparison. Figure~\ref{fig:forestplot} shows
-the same information as a forest plot.
+Table~\ref{tab:baselines} reports the published
+baselines scored on our paralog-disjoint test split.
+\textbf{Important caveat:} each baseline scores a
+different subset of variants -- SIFT covers $96\%$,
+PolyPhen-2 $93\%$, AlphaMissense $86\%$, and our
+XGBoost $100\%$ -- so the ROC-AUC / PR-AUC values
+below are each computed on the model's \emph{own
+coverage} subset and are not directly comparable.
+Direct subtraction between rows (for example, the
+nominal $-0.05$ PR-AUC gap to AlphaMissense) is
+\emph{not} a like-for-like gap, since AlphaMissense
+reports on the easier 86\,\% of our variants. A
+strict matched-coverage evaluation on
+$\mathcal{S}_{\text{AM}}$ (the $\sim$24,060 variants
+that AlphaMissense can score) together with a paired
+DeLong test is coded in
+\texttt{scripts/run\_baselines\_matched.py} and is
+listed as \textbf{deficiency D7} in
+Section~\ref{sec:conc-deficiencies}; it could not be
+run at submission time because the raw AlphaMissense
+TSV ($\sim$8\,GB) is not checked into the repository
+and the trained XGBoost test predictions were not
+persisted alongside the checkpoint.
 
 \begin{table}[H]
 \centering
 \caption[Baseline comparison]{Published baselines scored
-on our paralog-disjoint test split. Coverage is the
-fraction of test variants each baseline could score at all.}
+on our paralog-disjoint test split. Each row uses that
+baseline's own coverage subset, so rows are NOT directly
+comparable (see the paragraph above and D7 in
+Section~\ref{sec:conc-deficiencies}).}
 \label{tab:baselines}
 \small
 \begin{tabular}{@{} l r l l r @{}}
 \toprule
-\textbf{Baseline} & \textbf{Year} & \textbf{ROC-AUC (95\% CI)} & \textbf{PR-AUC (95\% CI)} & \textbf{Coverage} \\
+\textbf{Baseline} & \textbf{Year} & \textbf{ROC-AUC (own cov., 95\% CI)} & \textbf{PR-AUC (own cov., 95\% CI)} & \textbf{Coverage} \\
 \midrule
 SIFT                    & 2003 & 0.881 $[0.877, 0.885]$ & 0.620 $[0.610, 0.629]$ & 96\% \\
-PolyPhen-2              & 2010 & 0.893 $[0.888, 0.898]$ & 0.728 $[0.716, 0.739]$ & 93\% \\
-\textbf{XGBoost (ours)} & 2026 & \textbf{0.938}          & \textbf{0.838}          & \textbf{100\%} \\
+PolyPhen-2$^{\dagger}$  & 2010 & 0.893 $[0.888, 0.898]$ & 0.728 $[0.716, 0.739]$ & 93\% \\
+\textbf{XGBoost (ours)} & 2026 & \textbf{0.938 $[0.935, 0.941]$} & \textbf{0.838 $[0.830, 0.846]$} & \textbf{100\%} \\
 AlphaMissense$^{*}$     & 2023 & 0.956 $[0.953, 0.958]$ & 0.890 $[0.882, 0.898]$ & 86\% \\
 \bottomrule
-\multicolumn{5}{l}{\footnotesize $^{*}$ calibrated on \textsc{ClinVar} at release; ClinVar numbers are inflated by overlap.} \\
+\multicolumn{5}{p{0.95\linewidth}}{\footnotesize $^{*}$ AlphaMissense was calibrated against \textsc{ClinVar} at release; any ClinVar-derived test set overlaps with its calibration signal. $^{\dagger}$ PolyPhen-2 was trained on HumDiv/HumVar, which overlap with \textsc{ClinVar}. Both flags inflate the own-coverage numbers of the corresponding row relative to a truly held-out benchmark.} \\
 \end{tabular}
 \end{table}
 
@@ -4464,11 +4492,16 @@ that derive them):
 by $0.117$ (from $0.955$ to $0.838$) once three removable
 leakage sources are eliminated
 (Section~\ref{sec:res-leakage}).
-\item \textbf{RQ2 -- Comparison to prior art.} Under
-identical evaluation on our paralog-disjoint test split,
-the model beats SIFT by $+0.22$ PR-AUC and PolyPhen-2 by
-$+0.11$ PR-AUC, and sits $-0.05$ below AlphaMissense
-(Section~\ref{sec:res-baselines}).
+\item \textbf{RQ2 -- Comparison to prior art.} On own-
+coverage numbers (different subsets of our test split
+per model), XGBoost reaches PR-AUC $0.838$ against SIFT's
+$0.620$ and PolyPhen-2's $0.728$. AlphaMissense reaches
+$0.890$ on its $86\%$ coverage subset but was calibrated
+on \textsc{ClinVar}; a matched-coverage paired test
+restricted to $\mathcal{S}_{\text{AM}}$ is deferred to
+Deficiency D7 because the required per-variant XGBoost
+predictions and raw AlphaMissense TSV were not persisted
+at submission (Section~\ref{sec:res-baselines}).
 \item \textbf{RQ3 -- External generalisation.} The
 classifier performs at chance (ROC-AUC $= 0.487$) on
 \textsc{denovo-db} unseen gene families \emph{before}
@@ -4663,6 +4696,16 @@ Streamlit app; there is no REST API and no
 VEP plug-in. &
 Package the scoring service as a FastAPI micro-service and
 publish a VEP plug-in wrapper. \\
+D7 & The baseline comparison in Table~\ref{tab:baselines}
+reports each model on its own coverage subset (AM $86\%$,
+PP2 $93\%$, SIFT $96\%$, XGBoost $100\%$); the
+$-0.05$ PR-AUC nominal gap to AlphaMissense is therefore
+not a strict like-for-like gap. &
+Persist XGBoost test-set predictions; rerun
+\texttt{scripts/run\_baselines\_matched.py} on the AM-
+covered subset $\mathcal{S}_{\text{AM}}$; attach a paired
+DeLong test for XGBoost vs AlphaMissense on
+$\mathcal{S}_{\text{AM}}$. \\
 \bottomrule
 \end{tabularx}
 \caption[Deficiencies]{\textbf{Deficiencies of the final
