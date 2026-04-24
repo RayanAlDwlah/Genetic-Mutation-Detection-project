@@ -1,0 +1,2 @@
+max_depth,learning_rate,min_child_weight,subsample,colsample_bytree,colsample_bylevel,gamma,reg_alpha,reg_lambda,max_delta_step,scale_pos_weight,best_threshold,selected_trial_score,n_numeric_features,n_categorical_features,n_encoded_features,categorical_columns,frozen_hp
+8,0.0301852467046767,10,0.8167743829039052,0.6242326441733154,0.9907061203793806,3.9526170348231866,0.0001829647387962,0.4440325184796529,2,3.0886776348706477,0.53,,40,2,80,ref_aa|alt_aa,True

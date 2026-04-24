@@ -26,6 +26,11 @@ data/splits/strict/*
 !data/splits/strict/train.parquet
 !data/splits/strict/val.parquet
 !data/splits/strict/test.parquet
+!data/splits/phase21/
+data/splits/phase21/*
+!data/splits/phase21/train.parquet
+!data/splits/phase21/val.parquet
+!data/splits/phase21/test.parquet
 
 # Large CSV files
 *.csv
@@ -40,6 +45,9 @@ results/checkpoints/*
 results/metrics/*
 !results/metrics/.gitkeep
 !results/metrics/*.csv
+!results/metrics/phase21/
+results/metrics/phase21/*
+!results/metrics/phase21/*.csv
 
 # Assistant worktrees
 .claude/
