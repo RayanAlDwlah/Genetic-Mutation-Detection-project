@@ -3,6 +3,58 @@
 All notable changes to the honest-baseline pipeline. Dates are ISO-8601.
 Commits are on `origin/main`.
 
+## [P0-1 Revision — denovo-db paired-bootstrap prerequisite] — 2026-04-24
+
+### What was retrained and why
+Nothing was retrained. The pre-constraint XGBoost checkpoint was recovered
+from git history via archaeology (`git log --all --oneline -- results/checkpoints/xgboost_best.ubj`),
+specifically from commit `f8ab464` ("Harden XGBoost baseline: fix leakage,
+add bootstrap CIs and calibration"), which is the commit immediately
+before `b2fd3d0` introduced gnomAD gene-level constraint features.
+
+### Why "Do not retrain" was overridden
+Not overridden. Git archaeology succeeded (Step 0 of the P0-1 brief), so
+the brief's Step 1 retrain path was skipped entirely. The recovered
+checkpoint is the *exact* model that produced the 0.487 pre-constraint
+holdout number reported in Table 5.5 of the thesis.
+
+### What was changed
+- Copied the `f8ab464` checkpoint to `results/checkpoints/xgboost_pre_constraint.ubj`
+  (under `checkpoints/` so it survives the `results/metrics/*` gitignore rule).
+- Copied the `f8ab464` feature-columns manifest to `results/metrics/xgboost_pre_constraint_feature_columns.csv`
+  (73 features — 6 fewer than HEAD: no `pLI`, `oe_lof_upper`, `mis_z`,
+  `oe_mis_upper`, `lof_z`, or `is_imputed_gnomad_constraint`).
+- Added `scripts/score_denovo_paired.py` which reconstructs the featurized
+  denovo-db frame from the existing `external_denovo_db_predictions.parquet`
+  skeleton (642 variant_keys + labels + family_holdout flags) joined to
+  the committed dbNSFP and gnomAD-AF caches, then scores with both
+  checkpoints.
+- Emitted `results/metrics/denovo_predictions_pre_constraint.parquet` and
+  `results/metrics/denovo_predictions_post_constraint.parquet` in the
+  `variant_id, y_true, p_pred, slice` schema.
+
+### What was NOT changed
+- `results/checkpoints/xgboost_best.ubj` — untouched.
+- `data/splits/train.parquet`, `val.parquet`, `test.parquet` — untouched.
+- Any Chapter 5 headline number (ROC-AUC, PR-AUC, Brier, ECE, MCC on the
+  paralog-disjoint test split) — recomputed against committed artifacts,
+  unchanged.
+- The leakage gate, the paralog splitter, the calibrator, or any trained
+  artifact under `src/` — untouched.
+
+### Match-check results (Step 3 of the P0-1 brief)
+| Model | Slice | ROC-AUC | Thesis target | Deviation | Status |
+|---|---|---|---|---|---|
+| pre-constraint | holdout | 0.4969 | 0.487 | +0.0099 (within ±0.02) | PASS |
+| post-constraint | holdout | 0.5733 | 0.573 | +0.0003 | PASS |
+| post-constraint | full | 0.5111 | 0.511 | +0.0001 | PASS (bonus) |
+
+The small positive drift on pre-constraint holdout (+0.01 ROC-AUC) is
+attributable to the fact that at `f8ab464` the splits were themselves
+slightly different (see `git diff f8ab464 HEAD -- data/splits/`); the
+match is within the ±0.02 tolerance the brief specifies, so the
+archaeology checkpoint is accepted for the paired-bootstrap test.
+
 ## [Thesis v1.0 — Final Submission Edit Pass] — 2026-04-24
 
 Comprehensive edit pass across the thesis informed by the
