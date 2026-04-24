@@ -1,0 +1,24 @@
+{
+  "seed": 42,
+  "n_permutations": 10000,
+  "predictions_file": "results/metrics/external_denovo_db_predictions.parquet",
+  "full": {
+    "n": 642,
+    "n_positive": 498,
+    "auc_post": 0.5110929830432842,
+    "auc_post_ci_lo": 0.45758468544967446,
+    "auc_post_ci_hi": 0.5636645342455918,
+    "auc_post_gt_half_pvalue": 0.3353
+  },
+  "family_holdout": {
+    "n": 201,
+    "n_positive": 161,
+    "auc_post": 0.5732919254658385,
+    "auc_post_ci_lo": 0.4709555970758801,
+    "auc_post_ci_hi": 0.6720801767676768,
+    "auc_post_gt_half_pvalue": 0.0744
+  },
+  "paired_delta": {
+    "status": "not-computed: pre-constraint predictions were not persisted (they come from a different trained model without gnomAD constraint features); a strict paired DeLong/bootstrap test requires both prediction vectors on the same variants. The thesis reports the pre- vs post-constraint numbers but softens the claim to 'point-estimate improvement whose confidence interval still includes chance on the 201-variant holdout'."
+  }
+}
