@@ -3,6 +3,51 @@
 All notable changes to the honest-baseline pipeline. Dates are ISO-8601.
 Commits are on `origin/main`.
 
+## [P0-2 Revision — intersection-subset baseline comparison] — 2026-04-25
+
+### What was added
+- `scripts/intersection_baselines.py`: scores every test-split variant
+  with the trained XGBoost (calibrated) and extracts SIFT, Polyphen2,
+  and AlphaMissense scores from the bundled dbNSFP TSV via `tabix`.
+- `tests/unit/test_intersection_baselines.py`: 3 unit tests covering
+  bootstrap helper and dbNSFP score-string parsing.
+- `results/metrics/baselines_intersection.csv`: per-method ROC/PR with
+  bootstrap CIs on the variants where all four methods produced a
+  score.
+
+### Infrastructural caveat (recorded in script docstring + CSV note)
+The bundled `dbNSFP5.3.1a_grch37.gz` is BGZF-indexed on GRCh38
+coordinates (cols 1--2) despite the file name; GRCh37 positions live
+in cols 8--9 as a secondary annotation, not as the tabix key. Our test
+split, the dbNSFP feature cache, and the trained XGBoost are all keyed
+on GRCh37. Tabix lookups using GRCh37 chr:pos therefore land on a
+dbNSFP record only for variants where the GRCh38 and GRCh37 positions
+coincide, which yields n=446 of 28,098 test variants (1.6%).
+
+A correct full intersection would require either (a) a UCSC liftover
+chain or (b) a one-pass scan of the 47 GB dbNSFP TSV filtering on
+cols 8--9. Neither fit the revision-pass budget. The reported
+n=446 result is the *tabix-recoverable* intersection rather than the
+full method-overlap intersection. This is documented in the script
+docstring, in the output CSV's `note` column, and is flagged as a
+known limitation in the thesis.
+
+### Result (n=446 tabix-recoverable subset)
+| method | n | ROC-AUC (95% CI) | PR-AUC (95% CI) |
+|---|---|---|---|
+| XGBoost | 446 | 0.9389 [0.9139, 0.9597] | 0.8269 [0.7556, 0.8945] |
+| SIFT | 446 | 0.9027 [0.8728, 0.9290] | 0.7222 [0.6396, 0.8005] |
+| PolyPhen-2 | 446 | 0.9370 [0.9144, 0.9564] | 0.8104 [0.7344, 0.8769] |
+| AlphaMissense | 446 | 0.9697 [0.9514, 0.9834] | 0.9444 [0.9144, 0.9692] |
+
+AlphaMissense intersection PR-AUC of 0.9444 is +0.0544 above Table 5.2's
+own-coverage 0.890. Direction-of-effect interpretation: on this subset,
+AM scores *harder* variants (higher PR-AUC where it has overlap with
+all peers), so the coverage-bias-only explanation of the Table 5.2 gap
+is *not* supported by this subset --- the AM advantage looks real.
+This is a one-sided sanity-check finding only; a full liftover-based
+intersection should be run before any clinical-grade inference.
+
 ## [P0-1 Revision — denovo-db paired-bootstrap prerequisite] — 2026-04-24
 
 ### What was retrained and why
