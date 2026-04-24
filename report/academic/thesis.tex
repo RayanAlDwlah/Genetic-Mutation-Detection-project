@@ -3861,6 +3861,69 @@ columns could be dropped in a leaner revision without loss. AA
 identity and gene-constraint each contribute at most $\sim$$0.001$
 ROC-AUC at this training-set size.
 
+\subsection{Learning Curve}
+\label{sec:res-learning-curve}
+
+To check whether the headline metric reflects a converged or a
+still-improving model, we retrain at
+$f \in \{0.10, 0.25, 0.50, 0.75, 1.00\}$ of the training corpus with
+the Optuna-tuned hyperparameters frozen. Subsampling is done at the
+\emph{gene-family} level so the paralog-disjoint invariant is
+preserved (the subsample's families are a strict subset of the
+training families; the val/test families remain completely unseen).
+The script lives at \texttt{scripts/run\_learning\_curve.py}; the
+artefacts are \texttt{results/metrics/learning\_curve.csv} and
+\texttt{results/figures/learning\_curve.png}
+(Figure~\ref{fig:learning-curve}).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.90\linewidth]{figures/learning_curve.png}
+\caption[Learning curve]{Test and val ROC-AUC as a function of
+training-set size (log scale). Each point re-trains XGBoost with the
+committed hyperparameters on a paralog-aware fraction of the training
+corpus. The curve is essentially saturated past $\sim$$37{,}000$
+variants: going from $25\%$ to $100\%$ of the corpus adds only
+$+0.003$ test ROC-AUC, and the $75\%$ point is within $0.002$ of the
+$100\%$ point. The tail log-linear slope is reported as a text
+annotation inside the figure.}
+\label{fig:learning-curve}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\caption[Learning-curve operating points]{Learning-curve operating
+points. Subsampling is family-aware (paralog-disjoint invariant
+preserved). Source:
+\texttt{results/metrics/learning\_curve.csv}.}
+\label{tab:learning-curve}
+\small
+\begin{tabular}{@{}r r r r r r@{}}
+\toprule
+\textbf{Fraction} & \textbf{$n$ train} & \textbf{val ROC} &
+\textbf{val PR} & \textbf{test ROC} & \textbf{test PR} \\
+\midrule
+$0.10$ & $12{,}904$  & 0.914 & --- & 0.932 & 0.817 \\
+$0.25$ & $37{,}398$  & 0.922 & --- & 0.936 & 0.825 \\
+$0.50$ & $66{,}280$  & 0.926 & --- & 0.936 & 0.824 \\
+$0.75$ & $103{,}910$ & 0.932 & --- & 0.941 & 0.839 \\
+\rowcolor{green!8}
+$1.00$ & $138{,}921$ & 0.932 & --- & 0.939 & 0.834 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The curve has three implications for the Phase-2 roadmap.
+First, adding \emph{more labelled variants} of the same kind is
+unlikely to raise the baseline materially --- test ROC-AUC has
+plateaued. Second, this means the Phase-2 emphasis should be on new
+\emph{features} (ESM-2 LLR, AlphaFold-2 structural features) rather
+than on a larger ClinVar harvest. Third, the gap between the
+$75\%$ and $100\%$ points is within the bootstrap CI of the full
+model (Table~\ref{tab:headline}); the apparent non-monotonicity
+($75\%$ is nominally higher than $100\%$) is not statistically
+meaningful and simply reflects finite-sample variance.
+
 \subsection{SHAP Interpretability and Confident Errors}
 \label{sec:res-shap}
 
