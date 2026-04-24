@@ -3737,10 +3737,16 @@ AlphaMissense$^{*}$     & 2023 & 0.956 $[0.953, 0.958]$ & 0.890 $[0.882, 0.898]$
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.92\linewidth]{figures/scientific/baselines_forest_plot.png}
-\caption[Baselines forest plot]{Forest plot of our
-XGBoost against three published baselines on our exact
-paralog-disjoint test split. Bootstrap 95\% CIs are
-shown for each baseline.}
+\caption[Baselines forest plot (own-coverage)]{Forest plot of our
+XGBoost against three published baselines. \textbf{Each row is on its
+model's own coverage subset} (SIFT 96\,\%, PolyPhen-2 93\,\%,
+AlphaMissense 86\,\%, XGBoost 100\,\%), so the horizontal spacing
+between rows is \emph{not} a like-for-like gap. A matched-coverage
+version (restricted to the AM-covered subset) is coded in
+\texttt{scripts/run\_baselines\_matched.py} and is deferred to
+deficiency D7 (Section~\ref{sec:conc-deficiencies}) until the raw AM
+TSV and the XGBoost test-prediction parquet are persisted. Bootstrap
+95\,\% CIs are shown for each baseline.}
 \label{fig:forestplot}
 \end{figure}
 
@@ -3913,25 +3919,30 @@ downstream use.
 \begin{table}[htbp]
 \centering
 \small
-\begin{tabular}{@{}l r r l@{}}
+\begin{tabular}{@{}l r r l l@{}}
 \toprule
-\textbf{Model} & \textbf{ROC-AUC} & \textbf{PR-AUC} & \textbf{$\alpha$} \\
+\textbf{Model} & \textbf{ROC-AUC} & \textbf{PR-AUC} & \textbf{$\alpha$} & \textbf{vs.\ XGB (paired)} \\
 \midrule
-XGBoost (calibrated)           & 0.9380 & 0.8304 & --- \\
-ESM-2 LLR (zero-shot)          & 0.7345 & 0.6037 & --- \\
-Rank fusion, uniform ($\alpha=0.5$) & 0.8949 & 0.7839 & 0.50 \\
+XGBoost (calibrated)                 & 0.9380 & 0.8304 & ---   & --- \\
+ESM-2 LLR (zero-shot)                & 0.7345 & 0.6037 & ---   & --- \\
+Rank fusion, uniform ($\alpha=0.5$)  & 0.8949 & 0.7839 & 0.50  & $p_{\text{ROC}}$: \emph{worse} \\
 \rowcolor{green!8}
-\textbf{Rank fusion, tuned}    & \textbf{0.9412} & \textbf{0.8516} & 0.175 \\
+\textbf{Rank fusion, tuned}          & \textbf{0.9412} & \textbf{0.8516} & 0.175 & $p_{\text{ROC}}$: n.s.$^{\ddagger}$ \\
 \bottomrule
 \end{tabular}
 \caption[Rank-fusion results on test split]{\textbf{Rank-
 fusion results on the paralog-disjoint test split.}
-Tuning $\alpha$ on the validation split gives a
-$+0.003$ ROC-AUC and $+0.021$ PR-AUC lift over XGBoost
-alone, while zero-shot ESM-2 alone is well below
-XGBoost. The uniform fusion ($\alpha=0.5$) is
-\emph{worse} than XGBoost -- evidence that the naive
-average over-weights the weaker PLM signal.}
+Tuning $\alpha$ on the validation split gives a nominal
+$+0.003$ ROC-AUC and $+0.021$ PR-AUC lift over XGBoost,
+but the paired DeLong test on the same 201-variant
+denovo-db slice (Table~\ref{tab:denovo}) gives $p=0.78$
+on ROC and $p=0.55$ on PR (Holm-corrected $p\to 1.00$),
+so \textbf{the lift is not statistically significant}.
+$^{\ddagger}$ n.s.\ = not significant at the 5\% level.
+The uniform fusion is \emph{worse} than XGBoost,
+consistent with the raw ESM-2 LLR being a weak directional
+signal on this slice (see Section~\ref{sec:res-esm2} and
+the P0-2 sanity-test note).}
 \label{tab:rank-fusion}
 \end{table}
 
@@ -3962,15 +3973,20 @@ by \texttt{scripts/run\_pairwise\_tests.py}.
 \label{sec:res-prior}
 
 Against the related-work table in
-Chapter~\ref{ch:related}, our key distinguishing
-features are: a paralog-aware test split, explicit
-bootstrap CIs on every metric, a transparent like-for-like
-re-scoring of published baselines, a pre/post
-attribution of gene-level priors on external
-generalisation, and full reproducibility enforced by
-CI. Against AlphaMissense, the gap is roughly $-0.05$
-PR-AUC; against SIFT and PolyPhen-2, we lead by large
-margins.
+Chapter~\ref{ch:related}, our key distinguishing features
+are: a paralog-aware test split, explicit bootstrap CIs
+on every metric, a re-scoring of published baselines on
+own-coverage subsets (matched-coverage is deferred to
+D7), a pre/post attribution of gene-level priors on
+external generalisation, and full reproducibility
+enforced by CI. On own-coverage numbers,
+AlphaMissense reports PR-AUC $0.890$ on its $86\%$
+coverage subset, our XGBoost reports $0.838$ on $100\%$;
+PolyPhen-2 reports $0.728$ on its $93\%$ subset and SIFT
+$0.620$ on its $96\%$ subset. A strict like-for-like
+subtraction between these rows is not sound
+(Section~\ref{sec:res-baselines}) and a matched-coverage
+paired test is the first item of the revision roadmap.
 
 \section{System Evidence -- Captured Command Output}
 \label{sec:res-screens}
@@ -4599,12 +4615,18 @@ with transparent generalisation properties''} rather than
 AlphaMissense was trained and tuned, in part, on
 \textsc{ClinVar}, and its test-time scores for a new
 variant are a distillation of both protein-language-model
-signal and empirical \textsc{ClinVar} fit. Our $-0.05$
-PR-AUC gap is therefore partly structural -- we do not
-have the same training corpus -- and partly methodological,
-because we report a number that is \emph{fair to compare
-against} rather than a number optimised against the same
-test benchmark the baselines were calibrated on.
+signal and empirical \textsc{ClinVar} fit. The nominal
+$-0.05$ PR-AUC own-coverage gap is \emph{not} a
+like-for-like gap because AlphaMissense reports on the
+86\,\% subset that it can score (generally the easier
+variants) while our XGBoost reports on 100\,\%. A
+matched-coverage paired DeLong test on
+$\mathcal{S}_{\text{AM}}$ is coded in
+\texttt{scripts/run\_baselines\_matched.py} and is
+deficiency D7 of Section~\ref{sec:conc-deficiencies}.
+Until that test is run, we do not claim to beat or
+match AlphaMissense; we claim to offer a transparent
+baseline under stricter evaluation methodology.
 
 \section{Failure Analysis}
 \label{sec:conc-failures}
