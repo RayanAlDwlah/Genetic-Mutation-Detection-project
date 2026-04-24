@@ -3935,17 +3935,28 @@ average over-weights the weaker PLM signal.}
 \label{tab:rank-fusion}
 \end{table}
 
-On the external \textsc{denovo-db} family-holdout slice,
-the zero-shot ESM-2 LLR alone achieves ROC-AUC of
-$0.552$. Rank fusion with the XGBoost calibrated
-probability raises the score to ROC-AUC $= 0.588$ -- a
-$+0.015$ additive gain under the same rank-fusion
-scheme. Taken together, the test-set and external
-numbers constitute two independent empirical signals
-that the two models carry orthogonal information, which
-motivates the Phase-2.1 decision to integrate ESM-2
-as a training-time feature on the full corpus rather
-than only as a post-hoc fusion partner.
+On the external \textsc{denovo-db} family-holdout slice
+($n=201$), the zero-shot ESM-2 LLR alone achieves
+ROC-AUC of $0.552$. Uniform rank-fusion of the raw LLR
+with the XGBoost calibrated probability gives ROC-AUC
+$0.586$ (paired DeLong vs.\ XGBoost alone:
+$\Delta = +0.012$, 95\% CI $[-0.074, +0.099]$, $p = 0.78$;
+Holm-Bonferroni-corrected $p \to 1.00$ over the three
+paired comparisons). The analogous PR-AUC paired
+bootstrap gives $\Delta = +0.013$, 95\% CI
+$[-0.030, +0.059]$, $p = 0.55$. \textbf{No paired gain is
+statistically significant at $n=201$ after correction}; we
+therefore report the fusion observation as a numerical
+improvement, not as a \emph{fusion gain}. A caveat worth
+flagging: raw ESM-2 LLR has AUROC $0.552$ on this slice,
+which contradicts the theoretical expectation that
+more-negative LLR should mean more pathogenic; the sign
+anomaly is documented and checked in
+\texttt{tests/integration/test\_esm2\_sanity.py}
+(P0-2 of the thesis review). Numbers are taken verbatim
+from
+\texttt{results/metrics/pairwise\_pvalues.csv}, regenerated
+by \texttt{scripts/run\_pairwise\_tests.py}.
 
 \section{Comparison with Prior Work}
 \label{sec:res-prior}
