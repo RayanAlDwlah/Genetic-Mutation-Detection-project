@@ -2112,6 +2112,32 @@ gene-level constraint (Figure~\ref{fig:feature-groups}).
 This grouping structure is the natural unit of analysis
 for the SHAP interpretation of Section~\ref{sec:res-shap}.
 
+\paragraph{Why 39 and not more?} REVEL combines 13
+meta-predictors and CADD uses $>\!1{,}400$ features, so a
+reviewer may reasonably ask why our feature set is so
+small. Two deliberate decisions explain the count.
+\emph{First}, every meta-predictor trained on
+\textsc{ClinVar} is excluded: using, e.g., REVEL or
+\textsc{ClinPred} as an input would make the benchmark
+circular, since those tools themselves train on a
+snapshot of the same labels we are trying to predict
+(Section~\ref{sec:intro-contributions}, contribution
+\#1). This rules out more than fifteen scores that would
+otherwise inflate the headline number. \emph{Second}, we
+prefer singly-sourced, individually-interpretable
+features over dense feature packs: every SHAP row in
+Table~\ref{tab:shap} maps to a column the reader can
+trace back to a named source (phyloP100way, BLOSUM62,
+LOEUF, etc.), which is what makes the
+quality-attribute trade-off of
+Section~\ref{sec:fw-quality} (interpretability vs.\
+predictive performance) resolvable in favour of
+interpretability without loss of performance. The
+feature-group ablation in Section~\ref{sec:res-ablation}
+confirms this trade-off is cheap: conservation alone
+carries almost all the signal, so pack size would
+deliver diminishing returns.
+
 \begin{figure}[htbp]
 \centering
 \resizebox{\linewidth}{!}{%
