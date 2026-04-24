@@ -1320,25 +1320,33 @@ objective. The raw output is calibrated against
 \label{sec:rw-consolidated}
 
 Table~\ref{tab:rw-consolidated} synthesises the eight
-reviewed methods along six axes relevant to a
+reviewed methods along eight axes relevant to a
 methodologically honest evaluation: supervision,
-\textsc{ClinVar} contamination risk, split strategy
-used at publication, calibration, paralog guard, and
-reported external-cohort validation.
+\textsc{ClinVar} contamination risk, calibration,
+\emph{paralog-aware split?}, \emph{leakage audit
+reported?}, and external-cohort validation. Every
+published method we reviewed uses at most a gene-level
+split; none publish a paralog-family-level split, and
+none publish a systematic leakage audit with
+before-and-after numbers. The last two columns of the
+table make this explicit.
 
 \begin{table}[htbp]
 \centering
 \caption[Related-work consolidated comparison]{
 Consolidated comparison of the eight reviewed missense
-pathogenicity predictors. \emph{Supervision} indicates
-whether the model consumes clinical pathogenicity labels
-during training. \emph{Clinvar risk} summarises whether
-the published benchmark is at risk of training-set
-contamination. \emph{Paralog guard} indicates whether
-the publication reports an evaluation free of paralog
-leakage. \emph{External?} indicates whether the paper
-validates on a cohort not derived from \textsc{ClinVar}
-(e.g.\ \textsc{denovo-db}, ProteinGym).}
+pathogenicity predictors.
+\textbf{Supervision} — whether the model consumes
+clinical pathogenicity labels during training.
+\textbf{ClinVar risk} — whether the published benchmark
+is at risk of training-set contamination.
+\textbf{Paralog-aware split?} — whether the publication
+enforces a family-level split (not just gene-level).
+\textbf{Leakage audit reported?} — whether the paper
+publishes a systematic audit with numerical
+before/after deltas for at least one leakage source.
+\textbf{External?} — whether the paper validates on a
+cohort not derived from \textsc{ClinVar}.}
 \label{tab:rw-consolidated}
 \footnotesize
 \renewcommand{\arraystretch}{1.2}
@@ -1347,24 +1355,46 @@ validates on a cohort not derived from \textsc{ClinVar}
 \toprule
 \textbf{Method} & \textbf{Year} & \textbf{Supervision}
  & \textbf{ClinVar risk} & \textbf{Calibration}
- & \textbf{Paralog guard} & \textbf{External?} \\
+ & \textbf{Paralog-aware split?} & \textbf{Leakage audit reported?} \\
 \midrule
-SIFT           & 2003 & unsup.\  & none    & --          & --   & --   \\
-PolyPhen-2     & 2010 & sup.\    & partial & soft        & --   & --   \\
-CADD           & 2014+ & self-sup.\ & none    & phred      & --   & --   \\
-REVEL          & 2016 & sup.\    & compound& --          & --   & --   \\
-VARITY         & 2021 & sup.\    & partial & reported    & gene & --   \\
-EVE            & 2021 & unsup.\  & none    & ELBO only   & gene & partial \\
-ESM-1b/ESM-2   & 2023 & zero-shot& none    & --          & --   & partial \\
-AlphaMissense  & 2023 & sup.\    & high    & calibrated  & gene & --   \\
+SIFT           & 2003  & unsup.\      & none     & --          & No & No       \\
+PolyPhen-2     & 2010  & sup.\        & partial  & soft        & No & No       \\
+CADD           & 2014+ & self-sup.\   & none     & phred       & No & No       \\
+REVEL          & 2016  & sup.\        & compound & --          & No & No       \\
+VARITY         & 2021  & sup.\        & partial  & reported    & No (gene only) & Partial \\
+EVE            & 2021  & unsup.\      & none     & ELBO only   & No (gene only) & No       \\
+ESM-1b/ESM-2   & 2023  & zero-shot    & none     & --          & No             & Partial  \\
+AlphaMissense  & 2023  & sup.\        & high     & calibrated  & No (gene only) & No       \\
 \midrule
 \textbf{This work} & \textbf{2026} & \textbf{sup.+zs fusion}
- & \textbf{audited} & \textbf{isotonic} & \textbf{paralog family}
- & \textbf{denovo-db} \\
+ & \textbf{audited} & \textbf{isotonic}
+ & \textbf{Yes (family)} & \textbf{Yes (Section~\ref{sec:res-leakage})} \\
 \bottomrule
 \end{tabular}%
 }
 \end{table}
+
+\paragraph{Legend for Table~\ref{tab:rw-consolidated}.}
+\emph{Supervision} $\in$ \{unsup., self-sup., sup., zero-shot, sup.+zs fusion\}.
+\emph{ClinVar risk} $\in$ \{none, partial, compound, high, audited\};
+\emph{none} = no overlap with ClinVar-derived training data;
+\emph{partial} = overlap with one or more ClinVar-adjacent
+curations (HumDiv, HumVar); \emph{compound} = meta-predictor
+composed of ClinVar-trained base tools; \emph{high} = calibrated
+directly against \textsc{ClinVar} at release;
+\emph{audited} = contamination sources enumerated and
+quantitatively removed (this work).
+\emph{Calibration} $\in$ \{--, soft, phred, ELBO only, reported,
+calibrated, isotonic\}; \emph{--} = no calibration reported,
+\emph{soft} = three-way soft label (benign / possibly / probably),
+\emph{phred} = Phred-scaled, \emph{ELBO only} = VAE evidence
+lower-bound difference, \emph{reported} = reliability diagram
+only, \emph{calibrated} = post-hoc calibrator at release,
+\emph{isotonic} = isotonic regression fit on held-out val
+probabilities.
+\emph{Paralog-aware split?} and \emph{Leakage audit reported?}
+are binary. ``gene only'' marks methods that achieve a
+gene-level split but do not go further to paralog family.
 
 \section{Research Gap}
 \label{sec:rw-gap}
@@ -2211,7 +2241,14 @@ paralog clusters (keratin, cadherin, HLA, zinc finger,
 olfactory receptor, ribosomal protein, mitochondrial,
 etc.), then split at the family level using
 \texttt{GroupShuffleSplit} with \texttt{seed=42} and a
-$70/15/15$ ratio.
+$70/15/15$ ratio. This design is \emph{strictly stronger
+than the gene-level split} that \citet{heijl2020gap}
+propose as the minimum acceptable evaluation standard
+for variant-effect predictors: a gene-level split alone
+still lets paralogous families straddle train and test,
+and their benchmark over 55 published VEPs shows that
+random splitting inflates AUROC by 5--15 percentage
+points on this task.
 \end{enumerate}
 
 \subsection{Part 2 -- Model Training and Leakage Audit}
@@ -3685,7 +3722,13 @@ MCC                  & 0.6964 & $[0.6873, 0.7066]$ \\
 
 Figure~\ref{fig:leakjourney} visualises the decline
 from $0.955$ to $0.838$ PR-AUC. Each stage corresponds
-to one distinct, removable leakage source.
+to one distinct, removable leakage source. The first
+stage --- replacing the random-split baseline with a
+family-level \texttt{GroupShuffleSplit} --- is motivated
+directly by the \citet{heijl2020gap} benchmark of
+$55$ variant-effect predictors, which quantifies a
+$5$--$15$ percentage-point AUROC inflation under random
+splitting on this task.
 
 \begin{figure}[H]
 \centering
@@ -5058,8 +5101,11 @@ weight, are:
 
 \begin{enumerate}[leftmargin=1.8em, itemsep=0.2em]
 \item A leakage-audited XGBoost baseline for missense
-  pathogenicity on ClinVar with full paralog-aware
-  evaluation and bootstrap confidence intervals.
+  pathogenicity on \textsc{ClinVar} with a
+  paralog-family-level evaluation --- \emph{strictly
+  stronger than the gene-level split standard of}
+  \citet{heijl2020gap} --- and bootstrap confidence
+  intervals on every reported metric.
 \item A like-for-like re-scoring of SIFT, PolyPhen-2, and
   AlphaMissense on an identical test split, rather than
   second-hand citations.
@@ -5080,8 +5126,8 @@ weight, are:
 \section{Limitations}
 \label{sec:conc-limits}
 
-Beyond the six deficiencies listed above, three structural
-limitations constrain the scope of this work.
+Beyond the seven deficiencies listed above, four
+structural limitations constrain the scope of this work.
 
 \begin{itemize}[leftmargin=1.8em, itemsep=0.2em]
 \item \textbf{ClinVar curation bias.} The training set,
@@ -5102,6 +5148,20 @@ limitations constrain the scope of this work.
   \texttt{is\_imputed\_gnomad\_constraint} flag is
   preserved as a feature so that the model can learn to
   discount uncertain rows.
+\item \textbf{Calibration does not transfer across
+  cohorts.} The isotonic calibrator fit on
+  \textsc{ClinVar} validation data does \emph{not} transfer
+  to \textsc{denovo-db}: ECE rises from $0.44$ (raw) to
+  $0.54$ (calibrated) on the full slice, and from $0.46$
+  to $0.56$ on the family-holdout slice, with Brier loss
+  moving in the same direction
+  (Section~\ref{sec:res-denovo},
+  Table~\ref{tab:denovo-calibration}). This indicates
+  that probability calibration is dataset-specific: a
+  single calibrator fit on a $\sim$24\% pathogenic prior
+  cannot serve both clinical ClinVar-adjacent use and
+  a $\sim$78\% pathogenic de-novo cohort. Per-cohort
+  re-calibration is required for any deployment.
 \end{itemize}
 
 \section{Lessons Learned}
