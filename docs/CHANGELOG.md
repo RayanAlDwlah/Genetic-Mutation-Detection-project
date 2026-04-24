@@ -3,6 +3,83 @@
 All notable changes to the honest-baseline pipeline. Dates are ISO-8601.
 Commits are on `origin/main`.
 
+## [Phase 2.1 — ESM-2 LLR as a training feature] — 2026-04-25
+
+### Decisions (recorded with the user before any code was written)
+1. **Aggregation:** `min(esm2_llr)` per `variant_key` (most-pathogenic isoform).
+   Sensitivity probe in `results/metrics/esm2_aggregation_sensitivity_phase21.csv`
+   confirms the choice is a no-op on the current score parquets (one row
+   per `variant_key` shipped from Colab).
+2. **Hyperparameters:** BOTH paths run. Frozen Phase-1 hyperparameters are
+   the canonical headline (cleanest causal isolation of the ESM-2 marginal
+   effect); Optuna 40-trial retune is appendix-only and confirms |Δ| < 0.005
+   PR-AUC vs frozen-hp (`xgboost_phase21_optuna_split_metrics.csv`).
+3. **External validation:** denovo-db re-evaluated on Phase-2.1 model
+   (`external_denovo_db_predictions_phase21.parquet`); paired bootstrap
+   vs Phase-1 in `denovo_paired_bootstrap_phase21.csv`. Existing
+   `denovo_paired_bootstrap.csv` (pre-vs-post-constraint) is NEVER overwritten.
+4. **Null-result handling:** ship transparently; ceiling at 35 M scale
+   documented as Phase 2.1b motivator in §5.8.5 + Chapter 7.
+
+### Headline results
+- **Internal-test ablation (n=28,098, paired bootstrap, 1,000 reps, seed=42):**
+  - Δ test PR-AUC = **+0.0313** [+0.0266, +0.0361], p < 10⁻⁴
+  - Δ test ROC-AUC = **+0.0093** [+0.0082, +0.0103], p < 10⁻⁴
+  - Both intervals entirely above zero; gain exceeds the post-hoc
+    rank-fusion ceiling of +0.014 PR-AUC.
+- **Calibration:** Phase-2.1 test ECE = 0.0056 vs Phase-1 = 0.0105 (tighter).
+- **denovo-db full slice:** Δ ROC-AUC = −0.002 (n.s.), Δ PR-AUC = −0.006 (n.s.).
+- **denovo-db family-holdout (n=201):** Δ ROC-AUC = **−0.132** [−0.257, −0.005],
+  one-sided p = 0.98. Phase-2.1 is statistically worse on unseen gene
+  families. Confound: holdout genes lack constraint coverage in this
+  worktree (raw gnomAD-constraint TSV is gitignored), so Phase-2.1 holdout
+  uses imputed-everywhere constraint while Phase-1 had partial real coverage;
+  the deficit therefore mixes "ESM-2 added" with "constraint reduced." Full
+  slice (where train-recoverable constraint applies) shows no drift.
+
+### What's added
+- `data/splits/phase21/{train,val,test}.parquet` (53 cols = 51 + `esm2_llr`
+  + `is_imputed_esm2_llr`); 99.14 / 99.37 / 99.39 % ESM-2 coverage.
+- `results/checkpoints/xgboost_phase21_esm2.ubj` (frozen-hp; HEADLINE).
+- `results/checkpoints/xgboost_phase21_optuna_esm2.ubj` (appendix sensitivity).
+- `results/metrics/phase21/{xgboost_bootstrap_ci,xgboost_calibrated_metrics,xgboost_calibration_summary,xgboost_reliability_curve,xgboost_operating_points,xgboost_predictions}.parquet/csv`.
+- New CSVs/parquets in `results/metrics/`:
+  `xgboost_phase21_*`, `ablation_esm2_phase21`,
+  `phase21_ablation_paired_bootstrap`, `external_denovo_db_metrics_phase21`,
+  `external_denovo_db_predictions_phase21`,
+  `external_denovo_db_coverage_phase21`, `denovo_paired_bootstrap_phase21`,
+  `esm2_aggregation_sensitivity_phase21`,
+  `esm2_correlation_analysis_phase21`, `phase21_ablation_summary`,
+  `phase21_calibration_comparison`, `shap_values_phase21_test`,
+  `shap_ranking_phase21`.
+- 9 new scripts: `probe_esm2_aggregation`, `build_phase21_train`,
+  `verify_esm2_split_integrity`, `train_phase21_xgboost`, `compute_shap_phase21`,
+  `ablate_esm2`, `score_denovo_phase21`, `paired_bootstrap_denovo_phase21`,
+  `phase21_diagnostics`, `phase21_calibration_audit`.
+- 5 new figures (mirrored under `report/academic/figures/` for the LaTeX build):
+  `shap_summary_phase21`, `shap_bar_phase21`, `shap_dependence_top3_phase21`,
+  `ablation_esm2_forest_phase21`, `phase21_feature_importance_comparison`.
+- 4 new tests: `tests/unit/test_phase21_build.py`,
+  `tests/unit/test_ablate_esm2.py`,
+  `tests/integration/test_phase21_drift.py`,
+  `tests/integration/test_esm2_split_integrity.py`.
+- 2 new leakage-gate checks in `src/verify_no_leakage.py`:
+  Phase-2.1 ESM-2 features-present + ESM-2 split integrity. Gate reports 6 PASS.
+- `.gitignore` exemptions for `data/splits/phase21/` (mirroring the
+  `strict/` pattern).
+- New thesis `Section 5.8` (`sec:res-phase21`, 7 subsections); Section 7.8
+  Phase 2.1 entry updated from "in flight" → "completed; see §5.8" plus
+  new Phase 2.1b (650 M checkpoint) motivation.
+- 2 new defense slides between current rank-fusion slide and Conclusion.
+
+### What is NOT touched
+- `results/checkpoints/xgboost_best.ubj` — read-only.
+- `results/metrics/denovo_paired_bootstrap.csv` — unchanged
+  (pre-vs-post-constraint paired result from P0-1 stays untouched).
+- `results/metrics/baselines_intersection.csv` — unchanged.
+- Thesis Section 5.6 narrative — unchanged.
+- All Phase-1 / P0-fix CSVs and parquets — unchanged.
+
 ## [P0-2 Revision — intersection-subset baseline comparison] — 2026-04-25
 
 ### What was added
