@@ -72,3 +72,8 @@ coverage.xml
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
+
+# Exception: ESM-2 Stage 2.1 score parquets (needed for reproducibility)
+!data/intermediate/esm2/scores_train.parquet
+!data/intermediate/esm2/scores_val.parquet
+!data/intermediate/esm2/scores_test.parquet
