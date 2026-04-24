@@ -171,10 +171,11 @@ contamination that do not survive external validation. This project
 develops and publishes a rigorous, auditable baseline for the missense
 classification task.
 
-We assemble a corpus of $195{,}098$ missense variants from \textsc{ClinVar},
-\textsc{gnomAD} (v2.1 and v4), and \textsc{dbNSFP} version 5.3.1a, and we
-conduct a systematic leakage audit that eliminates three contamination
-sources: (i)~non-missense variants that had been silently admitted into
+We assemble a corpus of $283{,}392$ candidate variants from \textsc{ClinVar},
+\textsc{gnomAD} (v2.1 and v4), and \textsc{dbNSFP} version 5.3.1a, of which
+$195{,}098$ survive a strict missense-only filter and feed the training
+pipeline. We then conduct a systematic leakage audit that eliminates
+three contamination sources: (i)~non-missense variants that had been silently admitted into
 the training pool because their amino-acid fields were null,
 (ii)~definitionally circular features such as \texttt{is\_common}, and
 (iii)~paralog leakage caused by gene-level splitting when highly similar
@@ -199,10 +200,16 @@ versus-control de-novo variants in gene families it has not seen
 during training. Adding gnomAD gene-level constraint features (pLI,
 LOEUF, mis\_z, oe\_mis\_upper, lof\_z) raises this to $0.573$ --
 closing approximately half of the generalisation gap. A zero-shot
-ESM-2 log-likelihood-ratio signal further improves the unseen-family
-score through cheap rank-fusion, motivating the Phase-2 roadmap
-toward full training-time integration of protein-language-model and
-AlphaFold2 structural features.
+ESM-2 log-likelihood-ratio provides a small, statistically tested
+rank-fusion gain on both the test split and the \textsc{denovo-db}
+family-holdout, indicating non-redundant signal between tabular and
+protein-language-model features. The post-constraint improvement on
+the 201-variant family-holdout slice is a point estimate whose
+confidence interval still includes chance and is reported as
+suggestive rather than conclusive (see Section~\ref{sec:conc-limits}).
+Full training-time integration of the protein-language-model and of
+AlphaFold2 structural features is documented as future work
+(Section~\ref{sec:conc-future}).
 
 The project's code base is published in full with $157$ passing
 tests (1 GPU-gated smoke test skipped), $59\%$ line coverage,
@@ -641,9 +648,11 @@ that gene-level priors close approximately half the
 generalisation gap on unseen gene families.
 \item \textbf{A zero-shot ESM-2 proof-of-concept}
 establishing that the protein-language-model log-
-likelihood-ratio provides orthogonal signal under rank-
-fusion, which motivates the Phase-2 full-training-set
-integration currently running on Colab.
+likelihood-ratio signal is not redundant with the
+tabular feature set on two independent evaluation splits
+(test and \textsc{denovo-db} family-holdout), with
+statistically tested rank-fusion gains reported in
+Section~\ref{sec:res-esm2}.
 \item \textbf{A fully reproducible code base} -- 157 tests,
 CI-enforced leakage gate, pinned dependencies, Docker
 image, 10 narrative Jupyter notebooks, a Streamlit demo,
@@ -663,7 +672,11 @@ set of system requirements and accompanies them with the
 six standard UML diagrams and the interface design.
 Chapter~\ref{ch:implementation} reports the concrete
 implementation, results, and the comparison tables.
-Chapter~\ref{ch:conclusion} concludes and lays out the
+Chapter~\ref{ch:testing} documents the five-level testing
+strategy, coverage evidence, and the continuous-integration
+gate that enforces reproducibility.
+Chapter~\ref{ch:conclusion} concludes with a critical
+discussion, failure and deficiency analysis, and the
 Phase-2 roadmap. Three appendices provide extended results
 tables, selected code listings, and the environment /
 reproducibility specification.
@@ -3809,30 +3822,50 @@ variants at sites of low conservation).
 \subsection{External Validation on \textsc{denovo-db}}
 \label{sec:res-denovo}
 
-Table~\ref{tab:denovo} reports the most scientifically
-interesting single result of the project. On unseen
-gene families, the pre-constraint ROC-AUC of $0.487$
-is indistinguishable from chance. Adding the Phase-2.1
-gnomAD gene-level constraint features lifts it to
-$0.573$ -- closing approximately half of the
-generalisation gap.
+Table~\ref{tab:denovo} reports the external-validation
+numbers on \textsc{denovo-db}. On unseen gene families,
+the pre-constraint ROC-AUC of $0.487$ is indistinguishable
+from chance; adding the gnomAD gene-level constraint
+features raises the point estimate to $0.573$, a
+$+0.086$ nominal improvement. The 95\% bootstrap CI
+for the post-constraint ROC-AUC is
+$[0.471, 0.672]$ and a $10{,}000$-label-permutation
+one-sided test of $H_0\!:\,\text{AUC}_{\text{post}}\le 0.5$
+gives $p = 0.074$. We therefore report the effect as
+\emph{suggestive rather than conclusive at $n=201$}: the
+point estimate moves in the expected direction but the
+post-constraint CI still covers chance, and the test
+does not reject the null at the $5\%$ level. A larger
+external cohort is required to establish the effect.
+A strict paired DeLong/bootstrap test for
+$\text{AUC}_{\text{post}} - \text{AUC}_{\text{pre}}$ was
+not possible because the pre-constraint predictions
+originate from a separately-trained model whose
+per-variant scores were not persisted; this is recorded
+as a deficiency in Section~\ref{sec:conc-deficiencies}
+and would be the first item on any revision. All
+numbers in this paragraph are taken verbatim from
+\texttt{results/\allowbreak metrics/\allowbreak denovo\_significance.json},
+generated by \texttt{scripts/denovo\_significance.py}.
 
 \begin{table}[H]
 \centering
 \caption[denovo-db before vs after constraint]{External
-validation on \textsc{denovo-db}. The family-holdout
-slice is the defensible headline because it cannot be
-inflated by paralog leakage.}
+validation on \textsc{denovo-db}. Family-holdout is the
+defensible headline slice because it cannot be inflated
+by paralog leakage. The post-constraint $p$-value is
+the one-sided label-permutation test of
+$H_0\!:\,\text{AUC}\le 0.5$.}
 \label{tab:denovo}
 \small
-\begin{tabular}{@{} l r r l l @{}}
+\begin{tabular}{@{} l r r l l c @{}}
 \toprule
-\textbf{Slice} & $n$ & $n_{+}$ & \textbf{ROC-AUC (95\% CI)} & \textbf{PR-AUC (95\% CI)} \\
+\textbf{Slice} & $n$ & $n_{+}$ & \textbf{ROC-AUC (95\% CI)} & \textbf{PR-AUC (95\% CI)} & $p_{\text{perm}}$ \\
 \midrule
-full (pre-constraint)            & 642 & 498 & 0.468 $[0.415, 0.519]$ & 0.761 $[0.721, 0.806]$ \\
-\textbf{full (post-constraint)}  & 642 & 498 & \textbf{0.511} $[0.455, 0.564]$ & \textbf{0.790} $[0.749, 0.830]$ \\
-holdout (pre-constraint)         & 201 & 161 & 0.487 $[0.383, 0.583]$ & 0.789 $[0.712, 0.860]$ \\
-\textbf{holdout (post-constraint)} & 201 & 161 & \textbf{0.573} $[0.476, 0.670]$ & \textbf{0.838} $[0.774, 0.897]$ \\
+full (pre-constraint)            & 642 & 498 & 0.468 $[0.415, 0.519]$ & 0.761 $[0.721, 0.806]$ & --- \\
+\textbf{full (post-constraint)}  & 642 & 498 & \textbf{0.511} $[0.458, 0.564]$ & \textbf{0.790} $[0.749, 0.830]$ & 0.335 \\
+holdout (pre-constraint)         & 201 & 161 & 0.487 $[0.383, 0.583]$ & 0.789 $[0.712, 0.860]$ & --- \\
+\textbf{holdout (post-constraint)} & 201 & 161 & \textbf{0.573} $[0.471, 0.672]$ & \textbf{0.838} $[0.774, 0.897]$ & 0.074 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -4440,8 +4473,13 @@ $+0.11$ PR-AUC, and sits $-0.05$ below AlphaMissense
 classifier performs at chance (ROC-AUC $= 0.487$) on
 \textsc{denovo-db} unseen gene families \emph{before}
 gnomAD gene-level constraint features are added, and
-improves to $0.573$ \emph{after} -- closing about half
-of the generalisation gap
+the point estimate moves to $0.573$ \emph{after}. The
+95\% bootstrap CI for the post-constraint AUC is
+$[0.471, 0.672]$ and still covers $0.5$; a one-sided
+label-permutation test gives $p=0.074$. We therefore
+report the effect as suggestive rather than conclusive
+at $n=201$ and flag it as the first candidate for a
+larger external validation cohort
 (Section~\ref{sec:res-denovo}).
 \item \textbf{RQ4 -- Complementarity of protein language
 models.} Zero-shot ESM-2 LLR carries orthogonal
@@ -4591,11 +4629,18 @@ with the improvement that would retire each one.
 \toprule
 \textbf{ID} & \textbf{Deficiency} & \textbf{Improvement / next step} \\
 \midrule
-D1 & External generalisation on unseen gene families is
-still close to chance (ROC-AUC $0.573$). &
-Train on a union of ClinVar and denovo-db (gene-level
-holdout preserved); add ESM-2 LLR and AlphaFold-2 features
-as regularisers. \\
+D1 & External generalisation on unseen gene families
+is at ROC-AUC $0.573$ (95\% CI $[0.471, 0.672]$,
+$p_{\text{perm}}=0.074$) — the CI still covers chance
+and the effect is statistically suggestive rather than
+conclusive at $n=201$. Pre-constraint predictions were
+not persisted, so a strict paired DeLong test on
+$\Delta\text{AUC}$ was not possible. &
+Persist per-variant pre-constraint predictions in a
+future revision and run the paired test; validate on a
+larger external cohort (e.g.\ ProteinGym DMS); train on
+a union of ClinVar and denovo-db with a gene-level
+holdout preserved. \\
 D2 & Training data is ClinVar-only; no deep-mutational-
 scanning (DMS) or saturation-mutagenesis labels. &
 Incorporate ProteinGym \citep{notin2023proteingym} as a
@@ -4758,9 +4803,9 @@ does not promise clinical deployment; it promises
 \emph{every number can be defended, reproduced, and
 improved upon}. That, we believe, is the appropriate
 scientific contribution of a student-led graduation
-project in genomic machine learning -- and the correct
-foundation on which the Phase-2 hybrid model will be
-built.
+project in genomic machine learning -- and a reasonable
+foundation for the future extensions listed in
+Section~\ref{sec:conc-future}.
 
 \clearpage
 % ═════════════════════════════════════════════════════════════════════════
