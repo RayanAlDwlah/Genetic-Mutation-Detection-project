@@ -211,27 +211,26 @@ validation on \textsc{denovo-db}. A classifier trained on
 \textsc{ClinVar} scores at chance (ROC-AUC $= 0.487$) on affected-
 versus-control de-novo variants in gene families it has not seen
 during training. Adding gnomAD gene-level constraint features (pLI,
-LOEUF, mis\_z, oe\_mis\_upper, lof\_z) raises the point
-estimate to $0.573$. The un-paired bootstrap CIs of
-$[0.383, 0.583]$ (pre) and $[0.471, 0.672]$ (post) overlap;
-a paired bootstrap on the same 201 variants is the correct
-instrument and is recorded as deficiency D8 of
-Section~\ref{sec:conc-deficiencies}, pending persistence
-of the pre-constraint per-variant predictions. We therefore
-interpret the improvement as \emph{suggestive} of genuine
-signal from gene-level priors rather than conclusive, and
-frame it as a partial closure of the generalisation gap
-that motivates Phase-2 training-time integration. A zero-shot
-ESM-2 log-likelihood-ratio provides a small, statistically tested
-rank-fusion gain on both the test split and the \textsc{denovo-db}
-family-holdout, indicating non-redundant signal between tabular and
-protein-language-model features. The post-constraint improvement on
-the 201-variant family-holdout slice is a point estimate whose
-confidence interval still includes chance and is reported as
-suggestive rather than conclusive (see Section~\ref{sec:conc-limits}).
-Full training-time integration of the protein-language-model and of
-AlphaFold2 structural features is documented as future work
-(Section~\ref{sec:conc-future}).
+LOEUF, mis\_z, oe\_mis\_upper, lof\_z) raises the point estimate to
+$0.573$. We later run a paired bootstrap on the same 201 family-holdout
+variants using the recovered pre-constraint checkpoint and report
+$\Delta\text{ROC-AUC}=+0.0764$, 95\% CI $[-0.0207, +0.1720]$, one-sided
+$p=0.073$ (Section~\ref{sec:res-denovo}); the companion paired PR-AUC
+$\Delta=+0.0375$ reaches $p=0.041$. Even under the paired view a
+ROC-AUC near $0.57$ on unseen gene families is closer to chance than
+to clinical utility, so we frame the result as a \emph{partial closure
+of the generalisation gap} rather than as a deployable predictor. A
+zero-shot ESM-2 log-likelihood-ratio provides additional, statistically
+tested rank-fusion gain on the test split (Section~\ref{sec:res-esm2}),
+and a Phase-2.1 training-time integration of the same LLR as a numeric
+feature (Section~\ref{sec:res-phase21}) lifts calibrated test PR-AUC
+from $0.827$ to $0.865$ ($\Delta=+0.0313$, paired $p<10^{-4}$);
+the same feature does \emph{not} transfer to unseen gene families
+($\Delta\text{ROC-AUC}=-0.13$ on the family-holdout slice, partly
+attributable to a constraint-coverage confound), defining a documented
+ceiling at the 35\,M-parameter scale and motivating Phase-2.1b (a
+larger ESM-2 checkpoint) and Phase-2.2 (AlphaFold2 structural features)
+as future work (Section~\ref{sec:conc-future}).
 
 The project's code base is published in full with $157$ passing
 tests (1 GPU-gated smoke test skipped), $59\%$ line coverage,
@@ -639,13 +638,19 @@ presented in this literature.
 with pre- and post-gnomAD-constraint numbers, showing
 that gene-level priors close approximately half the
 generalisation gap on unseen gene families.
-\item \textbf{A zero-shot ESM-2 proof-of-concept}
-establishing that the protein-language-model log-
-likelihood-ratio signal is not redundant with the
-tabular feature set on two independent evaluation splits
-(test and \textsc{denovo-db} family-holdout), with
-statistically tested rank-fusion gains reported in
-Section~\ref{sec:res-esm2}.
+\item \textbf{A two-pass ESM-2 integration} --- a
+zero-shot proof-of-concept establishing that the
+protein-language-model log-likelihood-ratio is not
+redundant with the tabular feature set
+(Section~\ref{sec:res-esm2}, with statistically tested
+rank-fusion gains on test and \textsc{denovo-db}
+family-holdout), \emph{and} a Phase-2.1 training-time
+integration that lifts calibrated test PR-AUC from
+$0.827$ to $0.865$ ($\Delta=+0.0313$, paired bootstrap
+$p<10^{-4}$; Section~\ref{sec:res-phase21}). The same
+training-time feature does not transfer to unseen gene
+families, defining a documented ceiling at the
+35\,M-parameter checkpoint scale.
 \item \textbf{An auditable methodological package} --- a
 CI-enforced leakage gate encoding four invariants
 (banned features, missense-only, paralog disjointness,
@@ -674,7 +679,9 @@ design level. Chapter~\ref{ch:analysis} develops the full
 set of system requirements and accompanies them with the
 six standard UML diagrams and the interface design.
 Chapter~\ref{ch:implementation} reports the concrete
-implementation, results, and the comparison tables.
+implementation, the Phase-1 baseline results, the like-for-like
+comparison tables, and the Phase-2.1 training-time integration
+of the ESM-2 LLR (Section~\ref{sec:res-phase21}).
 Chapter~\ref{ch:testing} describes the five-level testing
 strategy, coverage evidence, continuous-integration gates,
 and the deliberate limits of the testing approach.
@@ -5116,12 +5123,13 @@ verbatim from
 \subsection{SHAP Shift}
 \label{sec:phase21-shap}
 
-After training, \texttt{num\_\_esm2\_llr} appears at rank~4 in the
-mean-$|$SHAP$|$ ranking on the stratified $2{,}000$-variant test
-sample (\texttt{results/metrics/shap\_ranking\_phase21.csv}).
-The companion \texttt{num\_\_is\_imputed\_esm2\_llr} flag appears
-at rank~1, which is initially surprising but consistent with the
-biology: variants whose isoform context defeated the ESM-2
+After training, \texttt{num\_\_is\_imputed\_esm2\_llr} appears at
+rank~1 (mean $|$SHAP$|=1.047$) and \texttt{num\_\_esm2\_llr} at
+rank~4 (mean $|$SHAP$|=0.419$) on the stratified
+$2{,}000$-variant test sample
+(\texttt{results/metrics/shap\_ranking\_phase21.csv}). The
+imputation flag dominating is initially surprising but consistent
+with the biology: variants whose isoform context defeated the ESM-2
 forward pass tend to live in non-canonical or truncated
 transcripts, and the imputation flag itself is a useful
 ``unusual-context'' feature. Figure~\ref{fig:phase21-feat-compare}
@@ -5275,10 +5283,16 @@ hyperparameter choice does not silently dominate the marginal
 effect, we re-ran Optuna ($40$ trials, \texttt{seed=42}) on the
 Phase-2.1 splits and report the result here only.
 
-The Optuna-tuned Phase-2.1 model achieves test PR-AUC $=0.8698$
-(versus frozen-hp $0.8710$); the absolute difference is $0.0012$,
-well below our $0.005$ pre-registered threshold for treating
-the two as substantively distinct. Optuna and frozen-hp agree
+The Optuna-tuned Phase-2.1 model achieves test PR-AUC
+$=0.8698$ on the un-calibrated split-metrics
+(\texttt{xgboost\_phase21\_optuna\_split\_metrics.csv})
+versus the frozen-hp $0.8710$ on the same metric; on the
+canonical bootstrap-CI calibrated number the frozen-hp result
+is $0.8647$ (Table~\ref{tab:phase21-ablation}). The absolute
+difference between Optuna and frozen-hp on the matched
+un-calibrated metric is $0.0012$, well below our
+pre-registered $0.005$ threshold for treating the two as
+substantively distinct. Optuna and frozen-hp agree
 within bootstrap noise; the frozen-hp model is therefore the
 canonical Phase-2.1 baseline and is what every other table in
 this section reports. Numbers from
@@ -5804,9 +5818,22 @@ to the absence of protein-language-model and structural
 features in the current training matrix.
 \item \textbf{RQ4 -- Complementarity of protein language
 models.} Zero-shot ESM-2 LLR carries orthogonal
-information to the tabular baseline: a cheap rank-fusion
-operator adds $+0.015$ ROC-AUC on the family-holdout
-slice (Section~\ref{sec:res-esm2}).
+information to the tabular baseline. \emph{Training-time}
+integration of the LLR as a numeric XGBoost feature lifts
+calibrated test PR-AUC from $0.827$ to $0.865$
+($\Delta=+0.0313$, paired bootstrap $p<10^{-4}$, $n=28{,}098$;
+Section~\ref{sec:res-phase21}). The same LLR delivers a
+smaller, statistically tested rank-fusion gain on the
+test split (Section~\ref{sec:res-esm2}), and the
+training-time gain extracts strictly more signal than late
+fusion. The integrated feature does \emph{not} transfer
+to unseen gene families ($\Delta\text{ROC-AUC}=-0.13$ on
+the \textsc{denovo-db} family-holdout slice, with a
+constraint-coverage confound documented in
+Section~\ref{sec:phase21-denovo}); this defines a
+deployable ceiling at the 35\,M-parameter checkpoint and
+motivates Phase-2.1b in
+Section~\ref{sec:conc-future}.
 \end{itemize}
 
 \section{Critical Discussion}
@@ -5844,7 +5871,14 @@ within $10^{-3}$. \\
 Deployment readiness &
 Limited &
 Research artifact only; SFDA certification would be
-required before any clinical use (Section~\ref{sec:feas-op}). \\
+required before any clinical use (Section~\ref{sec:feas-op}).
+Phase-2.1 ESM-2 integration lifts in-distribution test
+PR-AUC by $+0.031$ ($p<10^{-4}$,
+Section~\ref{sec:res-phase21}) but does not transfer to
+unseen gene families
+($\Delta\text{ROC-AUC}=-0.13$ on \textsc{denovo-db}
+holdout), reinforcing that external generalisation
+remains the binding deployment constraint. \\
 \bottomrule
 \end{tabularx}
 \caption[Critical-discussion verdicts]{\textbf{Critical
@@ -6056,7 +6090,7 @@ weight, are:
 \section{Limitations}
 \label{sec:conc-limits}
 
-Beyond the seven deficiencies listed above, four
+Beyond the seven deficiencies listed above, five
 structural limitations constrain the scope of this work.
 
 \begin{itemize}[leftmargin=1.8em, itemsep=0.2em]
@@ -6115,6 +6149,26 @@ structural limitations constrain the scope of this work.
   cannot serve both clinical ClinVar-adjacent use and
   a $\sim$78\% pathogenic de-novo cohort. Per-cohort
   re-calibration is required for any deployment.
+\item \textbf{OOD ceiling on protein language models at the
+  35\,M-parameter scale.} The Phase-2.1 integration of
+  ESM-2 LLR as a training feature
+  (Section~\ref{sec:res-phase21}) lifts in-distribution
+  test PR-AUC by $+0.031$ ($p<10^{-4}$, paired bootstrap)
+  but the same feature does not transfer to unseen gene
+  families: $\Delta\text{ROC-AUC}=-0.13$ on the
+  \textsc{denovo-db} family-holdout slice
+  (Section~\ref{sec:phase21-denovo}). Part of this
+  regression reflects a constraint-coverage confound
+  (holdout genes have no pre-computed gnomAD constraint
+  values in this worktree), but Spearman correlations
+  show ESM-2 LLR shares moderate signal with conservation
+  ($\rho=-0.31$ vs phyloP100way), suggesting the residual
+  captures \emph{within-distribution} sequence priors
+  rather than transferable pathogenicity logic. This
+  ceiling is documented as the principal motivator for
+  Phase~2.1b (a larger \texttt{esm2\_t33\_650M\_UR50D}
+  checkpoint, $19\times$ parameters) in
+  Section~\ref{sec:conc-future}.
 \end{itemize}
 
 \section{Lessons Learned}
@@ -6199,12 +6253,16 @@ clinical QA.
 \end{enumerate}
 
 \paragraph{Indicative timeline.} Phase~2.1 (full-dataset
-ESM-2 integration) is in active development at the time of
-submission and is expected to complete within 4--6 weeks of
-this thesis's defence, contingent on Colab T4 availability.
-Phase~2.2 (AlphaFold2 structural features) is scoped at $3$
-months given that the pLDDT and DSSP extraction code is
-already wired in. Phase~2.3 (ProteinGym external
+ESM-2 integration) was completed during the final revision
+cycle and is fully reported in Section~\ref{sec:res-phase21}.
+Phase~2.1b (upgrade to \texttt{esm2\_t33\_650M\_UR50D}, the
+$650$\,M-parameter checkpoint, $19\times$ parameters) is the
+immediate next step and is scoped at $4$--$6$ weeks contingent
+on Colab T4 availability, motivated by the in-distribution
+ceiling and OOD regression documented in
+Section~\ref{sec:phase21-limits}. Phase~2.2 (AlphaFold2
+structural features) is scoped at $3$ months given that the
+pLDDT and DSSP extraction code is already wired in. Phase~2.3 (ProteinGym external
 validation) requires implementing a regression-loss
 variant and is scoped at $2$ months. Phase~2.4 (hybrid
 stacking and VEP plug-in) is a $6$-month follow-on.
