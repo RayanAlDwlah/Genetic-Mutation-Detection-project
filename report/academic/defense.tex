@@ -647,7 +647,8 @@
     \centering
     On \textbf{unseen} gene families, ROC jumps from 0.487 (chance)
     to 0.573 --- gene-level priors close \textbf{half} the
-    generalisation gap.
+    generalisation gap (one-sided permutation $p = 0.073$,
+    $10{,}000$ replicates).
   \end{alertblock}
 \end{frame}
 
@@ -1146,9 +1147,10 @@ RESULT: all checks passed. Baseline is leak-free.
 
   \vspace{0.4em}
   \scriptsize
-  \emph{Phase-1 SHAP omitted from this comparison; top Phase-1 features
-  were} \texttt{phyloP100way\_vertebrate}, \texttt{AN}, \texttt{lof\_z}
-  \emph{(in that order).}
+  \emph{Phase-1 top features were} \texttt{phyloP100way\_vertebrate},
+  \texttt{AN}, \texttt{lof\_z} \emph{(ranks 1, 2, 3); after ESM-2,
+  \texttt{lof\_z} drops to rank~5 while \texttt{is\_imputed\_esm2\_llr}
+  + \texttt{esm2\_llr} take ranks 1 and 4.}
 \end{frame}
 
 % ═════════════════ PART 8: COMPARISON ═════════════════
@@ -1168,30 +1170,35 @@ RESULT: all checks passed. Baseline is leak-free.
   (28{,}098 variants).
 
   \vspace{0.6em}
-  \begin{tabular}{@{}l c l c r@{}}
+  \begin{tabular}{@{}l c l c c@{}}
     \toprule
-    \textbf{Method} & \textbf{Year} & \textbf{Approach} &
-    \textbf{Methodology} & \textbf{PR-AUC} \\
+    \textbf{Method} & \textbf{Year} & \textbf{Methodology} &
+    \textbf{Coverage} & \textbf{PR-AUC} \\
     \midrule
-    SIFT                          & 2003 & conservation only             & legacy, no guards    & 0.620 \\
-    PolyPhen-2                    & 2010 & conservation $+$ chemistry    & legacy, no guards    & 0.728 \\
-    AlphaMissense\textsuperscript{*} & 2023 & PLM $+$ AlphaFold           & high ClinVar risk    & 0.890 \\
-    ESM-2 LLR (zero-shot)         & 2023 & PLM, masked-LM (35M)          & no supervision       & 0.604 \\
+    SIFT                          & 2003 & legacy, no guards     & 96\%  & 0.620 \\
+    PolyPhen-2\textsuperscript{$\dagger$} & 2010 & legacy, no guards & 93\% & 0.728 \\
+    AlphaMissense\textsuperscript{*} & 2023 & high ClinVar risk  & 86\%  & 0.890 \\
+    ESM-2 LLR (zero-shot)         & 2023 & no supervision        & 100\% & 0.604 \\
     \midrule
-    XGBoost (ours, baseline)      & 2026 & 39 audited features           & paralog $+$ audit    & 0.827 \\
+    XGBoost (ours, baseline)      & 2026 & paralog $+$ audit     & 100\% & 0.827 \\
     \rowcolor{kkuGoldLight}
     \textbf{XGBoost $+$ ESM-2 LLR (ours)} & \textbf{2026} &
-    \textbf{40 features inc.\ LLR} &
-    \textbf{paralog $+$ audit} & \textbf{0.865} \\
+    \textbf{paralog $+$ audit} & \textbf{100\%} & \textbf{0.865} \\
     \bottomrule
   \end{tabular}
 
-  \vspace{0.5em}
-  \footnotesize
-  \textsuperscript{*}\,AlphaMissense is ClinVar-calibrated; on a
-  ClinVar-derived test set its numbers partly overlap its training
-  signal. REVEL omitted: its 13 base learners are individually trained
-  on ClinVar, creating compound contamination if used as a feature.
+  \vspace{0.4em}
+  \scriptsize
+  \emph{Each row reported on that baseline's own-coverage subset, so
+  rows are NOT directly comparable; matched-coverage analysis in the
+  thesis (Section 5.5) closes most of the AM gap.}\par
+  \vspace{0.2em}
+  \textsuperscript{*}\,AlphaMissense is ClinVar-calibrated; ClinVar-derived
+  test sets overlap its training signal.\;
+  \textsuperscript{$\dagger$}\,PolyPhen-2 was trained on HumDiv/HumVar
+  which overlap ClinVar.\;
+  REVEL omitted: 13 ClinVar-trained base learners $\Rightarrow$ compound
+  contamination.
 \end{frame}
 
 % ───────────── SLIDE 32b -- methodology framing ─────────────
@@ -1214,10 +1221,11 @@ RESULT: all checks passed. Baseline is leak-free.
       \begin{itemize}\setlength{\itemsep}{0.2em}
         \item $+0.245$ PR-AUC over SIFT
         \item $+0.137$ PR-AUC over PolyPhen-2
-        \item $-0.025$ PR-AUC vs.\ AlphaMissense
+        \item AlphaMissense gap narrowed from $-0.063$ (Phase-1
+              baseline) to $\mathbf{-0.025}$ (Phase-2.1 with ESM-2 LLR)
         \item AM trains on ClinVar-derived labels; our test shares that
-              distribution, so the AM gap is likely smaller than reported
-              once methodology is matched.
+              distribution, so the residual gap shrinks further once
+              methodology is fully matched.
       \end{itemize}
     \end{column}
   \end{columns}
@@ -1226,7 +1234,8 @@ RESULT: all checks passed. Baseline is leak-free.
   \begin{exampleblock}{Take-away}
     Under matched methodology our model beats classical tools cleanly
     and trails AlphaMissense by a margin smaller than the bias from
-    AM's ClinVar calibration.
+    AM's ClinVar calibration --- and that residual margin shrinks
+    \emph{another} 60\% once ESM-2 LLR is added at training time.
   \end{exampleblock}
 \end{frame}
 
