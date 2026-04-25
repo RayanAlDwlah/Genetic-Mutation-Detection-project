@@ -177,7 +177,7 @@
   \begin{block}{What we did}
     Built a classifier for 195k missense variants.
     Found three contamination sources in our own pipeline.
-    Removed them. Watched PR-AUC fall from 0.955 to 0.838.
+    Removed them. Watched PR-AUC fall from 0.955 to 0.836.
     Re-scored published baselines under the same rules.
     Validated externally on \textsc{denovo-db}.
   \end{block}
@@ -380,7 +380,7 @@
 \begin{frame}{What we contribute}
   \begin{enumerate}
     \item \textbf{Transparent leakage audit} with
-          before-and-after numbers (PR-AUC $0.955 \rightarrow 0.838$).
+          before-and-after numbers (PR-AUC $0.955 \rightarrow 0.836$).
     \item \textbf{Like-for-like re-scoring} of three published
           baselines on our own paralog-disjoint test.
     \item \textbf{External validation on \textsc{denovo-db}} with
@@ -573,7 +573,7 @@
       \textbf{Metric}              & \textbf{Value (95\% CI)} \\
       \midrule
       ROC-AUC                      & 0.938 $[0.935, 0.941]$ \\
-      PR-AUC (uncalibrated)        & 0.838 $[0.830, 0.846]$ \\
+      PR-AUC (uncalibrated)        & 0.836 $[0.827, 0.843]$ \\
       \rowcolor{kkuGoldLight}
       \textbf{PR-AUC (calibrated)} & \textbf{0.827} $[0.819, 0.835]$ \\
       F1                           & 0.775 \\

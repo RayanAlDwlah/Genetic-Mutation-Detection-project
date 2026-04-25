@@ -5164,22 +5164,27 @@ with the biology: variants whose isoform context defeated the ESM-2
 forward pass tend to live in non-canonical or truncated
 transcripts, and the imputation flag itself is a useful
 ``unusual-context'' feature. Figure~\ref{fig:phase21-feat-compare}
-shows the side-by-side top-15 mean-$|$SHAP$|$ ranking before vs
-after the integration; conservation features remain dominant but
-ESM-2 displaces \texttt{lof\_z} (which moves from rank~3 to
-rank~5) and reorders the lower half.
+shows the post-integration top-15 mean-$|$SHAP$|$ ranking; the
+side-by-side Phase-1 panel was dropped because the Phase-1 SHAP
+artefact was not preserved on disk during the original training run.
+The numerical comparison is still summarised verbally below:
+conservation features remain dominant but ESM-2 displaces
+\texttt{lof\_z} (which moves from rank~3 in Phase-1 to rank~5 in
+Phase-2.1) and reorders the lower half.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.95\linewidth]{figures/phase21_feature_importance_comparison.png}
-\caption[Baseline vs augmented-model SHAP comparison]{\textbf{Top-15
-features by mean-$|$SHAP$|$, baseline vs ESM-2-augmented model.} The
+\includegraphics[width=0.78\linewidth]{figures/shap_phase2_only.png}
+\caption[Augmented-model SHAP ranking (Phase-2.1)]{\textbf{Top-15
+features by mean-$|$SHAP$|$ in the ESM-2-augmented model.} The
 ESM-2 imputation flag and LLR enter the augmented-model ranking at
-positions 1 and~4; conservation features (phyloP, GERP) and
-gnomAD AN remain in the top-3. The reshuffling of the lower
-half is consistent with ESM-2 partly substituting for some
-conservation signal --- see the correlation analysis in
-Section~\ref{sec:phase21-limits}.}
+positions 1 and~4 (highlighted in gold); conservation features
+(phyloP, GERP) and gnomAD AN remain in the top-3. Top Phase-1
+features (without ESM-2) were
+\texttt{phyloP100way\_vertebrate}, \texttt{AN}, and \texttt{lof\_z}
+in that order, so ESM-2 displaces the gnomAD constraint feature
+without overturning the conservation backbone --- see the
+correlation analysis in Section~\ref{sec:phase21-limits}.}
 \label{fig:phase21-feat-compare}
 \end{figure}
 
