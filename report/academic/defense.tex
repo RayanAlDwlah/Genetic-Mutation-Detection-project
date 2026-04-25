@@ -1096,97 +1096,7 @@ RESULT: all checks passed. Baseline is leak-free.
   \end{columns}
 \end{frame}
 
-% ═════════════════ PART 8: COMPARISON ═════════════════
-\section{Comparison}
-
-% ───────────── SLIDE 32 ─────────────
-\begin{frame}{Comparison: our model vs.\ published baselines}
-  \centering
-  {\small\textbf{Identical evaluation: paralog-disjoint test (28{,}098 variants), re-scored by us}}
-  \vspace{0.4em}
-
-  \small
-  \begin{tabular}{@{}l r c c r@{}}
-    \toprule
-    \textbf{Model} & \textbf{Year} & \textbf{ROC-AUC (95\% CI)} &
-                    \textbf{PR-AUC (95\% CI)} & \textbf{Cover.} \\
-    \midrule
-    SIFT                    & 2003 & 0.881 $[0.877, 0.885]$ & 0.620 $[0.610, 0.629]$ & 96\% \\
-    PolyPhen-2              & 2010 & 0.893 $[0.888, 0.898]$ & 0.728 $[0.716, 0.739]$ & 93\% \\
-    \rowcolor{kkuGoldLight}
-    \textbf{XGBoost (ours)} & \textbf{2026} & \textbf{0.938 $[0.935, 0.941]$} &
-                    \textbf{0.838 $[0.830, 0.846]$} & \textbf{100\%} \\
-    AlphaMissense$^{*}$     & 2023 & 0.956 $[0.953, 0.958]$ & 0.890 $[0.882, 0.898]$ & 86\% \\
-    \bottomrule
-  \end{tabular}
-
-  \vspace{0.5em}
-  \footnotesize
-  \begin{columns}[T]
-    \begin{column}{0.48\linewidth}
-      \textbf{Gains vs.\ classical tools}
-      \begin{itemize}\scriptsize
-        \item $+0.057$ ROC-AUC over SIFT
-        \item $+0.045$ ROC-AUC over PolyPhen-2
-        \item $+0.210$ PR-AUC over SIFT
-        \item $+0.110$ PR-AUC over PolyPhen-2
-      \end{itemize}
-    \end{column}
-    \begin{column}{0.5\linewidth}
-      \textbf{Gap vs.\ AlphaMissense}
-      \begin{itemize}\scriptsize
-        \item $-0.018$ ROC-AUC, $-0.052$ PR-AUC
-        \item[$^{*}$] \alert{AlphaMissense was calibrated on ClinVar}
-              $\Rightarrow$ our test overlaps its training signal.
-        \item Honest framing: \emph{strong research baseline under
-              stricter evaluation}.
-      \end{itemize}
-    \end{column}
-  \end{columns}
-\end{frame}
-
-% ───────────── SLIDE 32b ─────────────
-\begin{frame}{Comparison: ESM-2 + rank fusion on our test split}
-  \centering
-  {\small\textbf{Test split, 28{,}098 variants (paralog-disjoint, val-tuned $\alpha$)}}
-  \vspace{0.4em}
-
-  \small
-  \begin{tabular}{@{}l r r l@{}}
-    \toprule
-    \textbf{Model} & \textbf{ROC-AUC} & \textbf{PR-AUC} & \textbf{$\alpha$} \\
-    \midrule
-    XGBoost (calibrated)                    & 0.938 & 0.830 & --- \\
-    ESM-2 LLR (zero-shot, 35M)              & 0.735 & 0.604 & --- \\
-    Rank fusion, uniform                    & 0.895 & 0.784 & 0.50 \\
-    \rowcolor{kkuGoldLight}
-    \textbf{Rank fusion, tuned}             & \textbf{0.941} & \textbf{0.852} & \textbf{0.175} \\
-    \bottomrule
-  \end{tabular}
-
-  \vspace{0.45em}
-  \footnotesize
-  \begin{columns}[T]
-    \begin{column}{0.48\linewidth}
-      \textbf{Val-set gains} (held-out, 28{,}079 variants)
-      \begin{itemize}\scriptsize
-        \item XGBoost (val) $=$ 0.929 ROC, 0.806 PR
-        \item Calibration drops ECE from 0.055 $\to$ 0.0004
-      \end{itemize}
-    \end{column}
-    \begin{column}{0.5\linewidth}
-      \textbf{Test-set gains from fusion}
-      \begin{itemize}\scriptsize
-        \item $+0.003$ ROC-AUC over XGBoost alone
-        \item $+0.021$ PR-AUC over XGBoost alone
-        \item Uniform fusion $\alpha{=}0.5$ is \emph{worse}
-              $\Rightarrow$ PLM signal is weaker but orthogonal.
-      \end{itemize}
-    \end{column}
-  \end{columns}
-\end{frame}
-
-% ───────────── SLIDE: Phase 2.1 ablation ─────────────
+% ───────────── SLIDE: Phase 2.1 ablation (in IMPLEMENTATION section) ─────────────
 \begin{frame}{Phase 2.1: ESM-2 LLR as a training feature}
   \begin{columns}[T]
     \begin{column}{0.55\textwidth}
@@ -1218,7 +1128,7 @@ RESULT: all checks passed. Baseline is leak-free.
   \end{columns}
 \end{frame}
 
-% ───────────── SLIDE: SHAP shift Phase-1 vs Phase-2.1 ─────────────
+% ───────────── SLIDE: SHAP shift Phase-1 vs Phase-2.1 (in IMPLEMENTATION) ─────────────
 \begin{frame}{What ESM-2 changed in SHAP}
   \begin{center}
     \includegraphics[width=0.95\linewidth]{figures/phase21_feature_importance_comparison.png}
@@ -1235,6 +1145,68 @@ RESULT: all checks passed. Baseline is leak-free.
           $\Rightarrow$ in-distribution gain does not transfer to unseen
           gene families at the 35\,M-parameter checkpoint scale.
   \end{itemize}
+\end{frame}
+
+% ═════════════════ PART 8: COMPARISON ═════════════════
+\section{Comparison}
+
+% ───────────── SLIDE 32 -- single consolidated comparison ─────────────
+\begin{frame}{Comparison with published methods}
+  \centering
+  {\scriptsize\textbf{All baselines re-scored on our paralog-disjoint test split (28{,}098 variants); our row uses Phase-2.1.}}
+  \vspace{0.3em}
+
+  \scriptsize
+  \begin{tabular}{@{}l c l c c r@{}}
+    \toprule
+    \textbf{Method} & \textbf{Year} & \textbf{Approach} &
+    \textbf{Paralog} & \textbf{ClinVar} &
+    \textbf{PR-AUC} \\
+                    &      &                                  &
+    \textbf{guard} & \textbf{risk}                       &
+    \textbf{(ours)}                                              \\
+    \midrule
+    SIFT             & 2003 & conservation only            & no  & none    & 0.620 \\
+    PolyPhen-2       & 2010 & conservation $+$ chemistry   & no  & partial & 0.728 \\
+    REVEL            & 2016 & 13-tool stacked random forest & no  & high    & --$^{\dagger}$ \\
+    AlphaMissense    & 2023 & PLM $+$ AlphaFold (ClinVar-cal.) & no & high  & 0.890$^{*}$ \\
+    ESM-2 LLR        & 2023 & PLM zero-shot (35M params)   & --- & ---     & 0.604 \\
+    \midrule
+    Phase-1 (ours)   & 2026 & XGBoost $+$ paralog-aware split & \textbf{yes} & \textbf{audited} & 0.827 \\
+    \rowcolor{kkuGoldLight}
+    \textbf{Phase-2.1 (ours)} & \textbf{2026} &
+    \textbf{XGBoost $+$ ESM-2 LLR feature}        &
+    \textbf{yes (CI)} & \textbf{audited} & \textbf{0.865} \\
+    \bottomrule
+  \end{tabular}
+
+  \vspace{0.5em}
+  \footnotesize
+  \begin{columns}[T]
+    \begin{column}{0.55\linewidth}
+      \textbf{What only \emph{we} report}
+      \begin{itemize}\scriptsize\setlength{\itemsep}{0.05em}
+        \item Paralog-family-disjoint split (CI-enforced gate)
+        \item 3-source leakage audit (filters, banned features, train-only impute)
+        \item External validation on \textsc{denovo-db} + paired bootstrap
+        \item Bootstrap 95\% CI on every metric
+        \item Calibration deep-dive (Murphy decomposition, ECE 0.0056)
+        \item Docker + lock file: byte-identical reproduction
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.42\linewidth}
+      \textbf{Honest framing}
+      \begin{itemize}\scriptsize\setlength{\itemsep}{0.05em}
+        \item $+0.245$ PR-AUC over SIFT
+        \item $+0.137$ PR-AUC over PolyPhen-2
+        \item $-0.025$ PR-AUC vs AlphaMissense$^{*}$
+        \item[$^{*}$] AM is ClinVar-calibrated $\Rightarrow$
+              ClinVar-derived numbers overlap its training signal.
+        \item[$^{\dagger}$] REVEL excluded from feature set
+              (compound ClinVar contamination through 13 base learners).
+      \end{itemize}
+    \end{column}
+  \end{columns}
 \end{frame}
 
 % ═════════════════ PART 9: CONCLUSION ═════════════════
