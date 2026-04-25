@@ -1335,25 +1335,34 @@ RESULT: all checks passed. Baseline is leak-free.
   \end{enumerate}
 \end{frame}
 
-% ───────────── SLIDE 34 ─────────────
+% ───────────── SLIDE 34 -- tightened future work ─────────────
 \begin{frame}{Future work}
-  \begin{enumerate}\setlength{\itemsep}{0.25em}
-    \item \textbf{Training-time ESM-2 LLR integration
-          \emph{(completed)}.} \\
-          Test PR-AUC $0.827 \to 0.865$
-          ($\Delta=+0.031$, $p<10^{-4}$); OOD family-holdout
-          $\Delta\text{ROC} = -0.13$ (ceiling at 35\,M).
-    \item \textbf{Larger-checkpoint ESM-2 extension.} \\
-          Upgrade to \texttt{esm2\_t33\_650M\_UR50D}
-          ($19\times$ parameters); expected to lift the OOD
-          ceiling.
-    \item \textbf{AlphaFold2 structural-feature extension.} \\
-          pLDDT, SASA, DSSP secondary structure, residue depth.
-    \item \textbf{Deep-mutational-scanning external validation.} \\
-          Third external dataset (ProteinGym fitness measurements).
-    \item \textbf{Hybrid stacking $+$ clinical integration.} \\
-          Meta-learner $+$ ACMG-compatible plug-in.
+  \begin{enumerate}\setlength{\itemsep}{0.5em}
+    \item \textbf{Larger-checkpoint ESM-2.}
+          Upgrade to \texttt{esm2\_t33\_650M\_UR50D} ($19\times$
+          parameters). Expected to lift the OOD ceiling; the
+          $\Delta\text{ROC} = -0.13$ on unseen families is the binding
+          constraint of the current work.
+
+    \item \textbf{AlphaFold2 structural features.}
+          pLDDT, SASA, DSSP secondary structure, residue depth ---
+          orthogonal to PLM signal, complementary to conservation.
+
+    \item \textbf{Deep mutational scanning external validation.}
+          ProteinGym fitness measurements as a third external dataset,
+          independent of both ClinVar and \textsc{denovo-db}.
+
+    \item \textbf{Hybrid stacking + ACMG integration.}
+          Meta-learner combining XGBoost + ESM-2 + AlphaMissense,
+          packaged as an ACMG-compatible plug-in for clinical workflows.
   \end{enumerate}
+
+  \vspace{0.6em}
+  \begin{block}{Already completed during this project}
+    Training-time ESM-2 LLR integration:
+    test PR-AUC $0.827 \to 0.865$ ($\Delta = +0.031,\ p < 10^{-4}$);
+    OOD family-holdout ceiling at 35\,M characterised.
+  \end{block}
 \end{frame}
 
 % ───────────── SLIDE 35 ─────────────
