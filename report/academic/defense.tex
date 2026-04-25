@@ -564,6 +564,9 @@
 \begin{frame}{Part 3 -- SHAP interpretability (2/3)}
   \small
   \centering
+  \footnotesize\emph{Highlighted rows: gene-level constraint features
+  added in Phase~2.1.}\par
+  \vspace{0.3em}
   \begin{tabular}{@{} r l r @{}}
     \toprule
     Rank & Feature & mean $|$SHAP$|$ \\
@@ -593,6 +596,9 @@
 \begin{frame}{Part 3 -- External validation: denovo-db (3/3)}
   \small
   \centering
+  \footnotesize\emph{Highlighted rows: holdout from gene families
+  completely unseen in training.}\par
+  \vspace{0.3em}
   \begin{tabular}{@{} l r l l @{}}
     \toprule
     Slice & $n$ & ROC-AUC (95\% CI) & PR-AUC (95\% CI) \\
@@ -910,7 +916,19 @@
 % ───────────── SLIDE 26 ─────────────
 \begin{frame}{Streamlit demo -- scoring a variant}
   \centering
-  \includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{figures/screenshots/07_streamlit_demo.png}
+  \includegraphics[width=0.92\linewidth,height=0.72\textheight,keepaspectratio]{figures/screenshots/07_streamlit_demo.png}
+
+  \vspace{0.4em}
+  \footnotesize
+  \begin{tabular}{@{} r l @{}}
+    \textbf{Input}     & GRCh38 variant key: \texttt{chr:pos:ref:alt} \\
+    \textbf{Output}    & Calibrated probability $+$ raw XGBoost score
+                         $+$ risk band \\
+    \textbf{Explainer} & Top-15 SHAP contributions, color-coded by
+                         direction \\
+    \textbf{Latency}   & $<$ 100\,ms on cache hit, $\sim$ 2\,s on
+                         cache miss (VEP fetch) \\
+  \end{tabular}
 \end{frame}
 
 % ═════════════════ PART 7: IMPLEMENTATION ═════════════════
@@ -1077,10 +1095,12 @@ RESULT: all checks passed. Baseline is leak-free.
       \[
         \small
         \mathrm{LLR}_{\text{ESM-2}}
-        = \log \frac{\mathbb{P}_\theta(a_{\text{alt}} \mid \tilde{s}_{\backslash\pi})}
-                    {\mathbb{P}_\theta(a_{\text{ref}} \mid \tilde{s}_{\backslash\pi})}
+        = \log \frac{\mathbb{P}_\theta(a_{\text{alt}} \mid s_{\backslash\pi})}
+                    {\mathbb{P}_\theta(a_{\text{ref}} \mid s_{\backslash\pi})}
       \]
-      Lower LLR $\Rightarrow$ more pathogenic.
+      \footnotesize where $s_{\backslash\pi}$ is the sequence with
+      position $\pi$ masked.\par
+      \normalsize Lower LLR $\Rightarrow$ more pathogenic.
     \end{column}
   \end{columns}
 \end{frame}
@@ -1132,37 +1152,40 @@ RESULT: all checks passed. Baseline is leak-free.
 % ───────────── SLIDE 31 ─────────────
 \begin{frame}{ESM-2 zero-shot + rank fusion}
   \centering
-  \small
-  \textbf{Test split (28{,}098 variants, paralog-disjoint):}
+  \footnotesize
+  \textbf{Test split (28{,}098 variants, paralog-disjoint)}
+
   \vspace{0.4em}
-  \begin{tabular}{@{}l r r l@{}}
+  \begin{tabular}{@{}l c c c@{}}
     \toprule
     Model & ROC-AUC & PR-AUC & $\alpha$ \\
     \midrule
-    XGBoost (calibrated)           & 0.938 & 0.827 & --- \\
-    ESM-2 LLR (zero-shot)          & 0.735 & 0.604 & --- \\
-    Rank fusion, uniform           & 0.895 & 0.784 & 0.50 \\
+    XGBoost (calibrated)           & 0.938 & 0.827 & ---   \\
+    ESM-2 LLR (zero-shot)          & 0.735 & 0.604 & ---   \\
+    Rank fusion, uniform           & 0.895 & 0.784 & 0.50  \\
     \rowcolor{kkuGoldLight}
-    \textbf{Rank fusion, tuned}    & \textbf{0.941} & \textbf{0.852} & 0.175 \\
+    \textbf{Rank fusion, tuned}    & \textbf{0.941} & \textbf{0.852} & \textbf{0.175} \\
     \bottomrule
   \end{tabular}
-  \vspace{0.4em}
 
+  \vspace{0.8em}
   \begin{columns}[T]
-    \begin{column}{0.48\linewidth}
+    \begin{column}{0.5\textwidth}
       \textbf{External (denovo-db, family-holdout):}
-      \begin{itemize}\small
+      \begin{itemize}
+        \footnotesize
         \item XGBoost: ROC $0.573$
         \item ESM-2 alone: ROC $0.552$
         \item Fusion: ROC $\mathbf{0.588}$ ($+0.015$)
       \end{itemize}
     \end{column}
-    \begin{column}{0.48\linewidth}
-      \begin{alertblock}{Take-away}
-        Two independent signals of
-        \textbf{orthogonality} $\Rightarrow$
-        motivates training-time integration of the LLR.
-      \end{alertblock}
+    \begin{column}{0.5\textwidth}
+      \begin{exampleblock}{Two signals of orthogonality}
+        \footnotesize
+        Fusion improves over either source AND the gain transfers to
+        held-out gene families. Motivates training-time integration of
+        the LLR.
+      \end{exampleblock}
     \end{column}
   \end{columns}
 \end{frame}
