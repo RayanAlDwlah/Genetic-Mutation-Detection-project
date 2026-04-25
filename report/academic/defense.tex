@@ -235,8 +235,9 @@
 
 % ───────────── SLIDE 3 -- consolidated problem framing ─────────────
 \begin{frame}{The problem in one slide}
+  \footnotesize
   \begin{block}{Missense variants at clinical scale}
-    \begin{itemize}
+    \begin{itemize}\setlength{\itemsep}{0.05em}
       \item A point mutation that swaps one amino acid in a protein.
       \item Most common coding variant in the human genome.
       \item Most are benign; a clinically-important minority cause disease.
@@ -245,22 +246,22 @@
     \end{itemize}
   \end{block}
 
-  \vspace{0.3em}
+  \vspace{0.2em}
   \begin{alertblock}{Why prior work overstates performance}
-    \begin{enumerate}
+    \begin{enumerate}\setlength{\itemsep}{0.05em}
       \item \textbf{Definitional circularity} --- features derived from
             the label (e.g.\ \texttt{is\_common}) inflate metrics.
       \item \textbf{Meta-predictor contamination} --- using REVEL/CADD
             as features in a ClinVar benchmark.
       \item \textbf{Paralog leakage} --- KRT1 in train + KRT14 in test
-            $\Rightarrow$ 80\% sequence identity $\Rightarrow$ model has
-            seen most of the test.
+            $\Rightarrow$ 80\% sequence identity $\Rightarrow$ model
+            has seen most of the test.
     \end{enumerate}
-    \vspace{0.4em}
-    \footnotesize
-    Exome sequencing yields $\sim$20{,}000 variants per patient;
-    human curation is $\sim$a few hundred per day. \emph{Scale demands
-    automation; automation demands honest evaluation.}
+    \vspace{0.2em}
+    \scriptsize
+    Exome: $\sim$20{,}000 variants/patient; human curation $\sim$a few
+    hundred/day. \emph{Scale demands automation; automation demands
+    honest evaluation.}
   \end{alertblock}
 \end{frame}
 
@@ -855,18 +856,15 @@
 % ───────────── SLIDE 26 ─────────────
 \begin{frame}{Streamlit demo -- scoring a variant}
   \centering
-  \includegraphics[width=0.92\linewidth,height=0.72\textheight,keepaspectratio]{figures/screenshots/07_streamlit_demo.png}
+  \includegraphics[width=0.92\linewidth,height=0.62\textheight,keepaspectratio]{figures/screenshots/07_streamlit_demo.png}
 
-  \vspace{0.4em}
-  \footnotesize
+  \vspace{0.3em}
+  \scriptsize
   \begin{tabular}{@{} r l @{}}
-    \textbf{Input}     & GRCh38 variant key: \texttt{chr:pos:ref:alt} \\
-    \textbf{Output}    & Calibrated probability $+$ raw XGBoost score
-                         $+$ risk band \\
-    \textbf{Explainer} & Top-15 SHAP contributions, color-coded by
-                         direction \\
-    \textbf{Latency}   & $<$ 100\,ms on cache hit, $\sim$ 2\,s on
-                         cache miss (VEP fetch) \\
+    \textbf{Input}     & GRCh38 variant key \texttt{chr:pos:ref:alt} \\
+    \textbf{Output}    & calibrated $p$ + raw XGBoost + risk band \\
+    \textbf{Explainer} & Top-15 SHAP, color-coded by direction \\
+    \textbf{Latency}   & $<$ 100\,ms cache hit; $\sim$ 2\,s cache miss \\
   \end{tabular}
 \end{frame}
 
@@ -999,12 +997,13 @@ RESULT: all checks passed. Baseline is leak-free.
       \vspace{0.4em}
       \textbf{Log-likelihood ratio:}
       \vspace{-0.3em}
+      {\small
       \[
-        \small
         \mathrm{LLR}_{\text{ESM-2}}
         = \log \frac{\mathbb{P}_\theta(a_{\text{alt}} \mid s_{\backslash\pi})}
                     {\mathbb{P}_\theta(a_{\text{ref}} \mid s_{\backslash\pi})}
       \]
+      }
       \footnotesize where $s_{\backslash\pi}$ is the sequence with
       position $\pi$ masked.\par
       \normalsize Lower LLR $\Rightarrow$ more pathogenic.
@@ -1209,39 +1208,40 @@ RESULT: all checks passed. Baseline is leak-free.
 
 % ───────────── SLIDE 32b -- methodology framing ─────────────
 \begin{frame}{Why our numbers are different}
+  \footnotesize
   \begin{columns}[T]
     \begin{column}{0.5\textwidth}
       \textbf{What only \emph{we} report}
-      \begin{itemize}\setlength{\itemsep}{0.2em}
+      \begin{itemize}\setlength{\itemsep}{0.05em}
         \item Paralog-family-disjoint split (CI-enforced)
-        \item Three-source leakage audit with before/after numbers
+        \item Three-source leakage audit
         \item External validation on \textsc{denovo-db}
-        \item Bootstrap 95\% CIs on every metric, paired bootstrap
-              on ablations
+        \item Bootstrap 95\% CIs $+$ paired bootstrap on ablations
         \item Calibration deep-dive (ECE $= 0.011$)
-        \item Docker $+$ lock file reproduction to six decimals
+        \item Docker $+$ lock file: 6-decimal reproduction
       \end{itemize}
     \end{column}
     \begin{column}{0.5\textwidth}
       \textbf{Honest framing}
-      \begin{itemize}\setlength{\itemsep}{0.2em}
+      \begin{itemize}\setlength{\itemsep}{0.05em}
         \item $+0.245$ PR-AUC over SIFT
         \item $+0.137$ PR-AUC over PolyPhen-2
-        \item AlphaMissense gap narrowed from $-0.063$ (Phase-1
-              baseline) to $\mathbf{-0.025}$ (Phase-2.1 with ESM-2 LLR)
-        \item AM trains on ClinVar-derived labels; our test shares that
-              distribution, so the residual gap shrinks further once
-              methodology is fully matched.
+        \item AM gap: $-0.063$ (Phase-1) $\to \mathbf{-0.025}$
+              (Phase-2.1 with ESM-2 LLR)
+        \item AM trains on ClinVar; our test shares that distribution,
+              so the residual gap shrinks further once methodology is
+              fully matched.
       \end{itemize}
     \end{column}
   \end{columns}
 
-  \vspace{0.6em}
+  \vspace{0.3em}
   \begin{exampleblock}{Take-away}
+    \scriptsize
     Under matched methodology our model beats classical tools cleanly
-    and trails AlphaMissense by a margin smaller than the bias from
-    AM's ClinVar calibration --- and that residual margin shrinks
-    \emph{another} 60\% once ESM-2 LLR is added at training time.
+    and trails AlphaMissense by less than AM's own ClinVar bias ---
+    and that residual margin shrinks \emph{another} 60\% with
+    training-time ESM-2 LLR.
   \end{exampleblock}
 \end{frame}
 
