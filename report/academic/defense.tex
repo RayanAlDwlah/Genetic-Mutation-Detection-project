@@ -728,7 +728,7 @@
     \node[font=\sffamily\tiny\bfseries, blue!60!black] at (0, 2.3) {\texttt{src/data/}};
     \node[font=\sffamily\tiny\bfseries, green!50!black] at (2.7, 2.3) {\texttt{src/models/}};
     \node[font=\sffamily\tiny\bfseries, orange!70!black] at (5.4, 2.3) {\texttt{src/eval/}};
-    \node[font=\sffamily\tiny\bfseries, red!60!black] at (8.1, 2.3) {\texttt{src/interfaces/}};
+    \node[font=\sffamily\tiny\bfseries, red!60!black] at (8.1, 2.3) {\texttt{scripts/}};
 
     \draw[rel] (load) -- (feat);
     \draw[rel] (feat) -- (split);
@@ -1290,7 +1290,7 @@ RESULT: all checks passed. Baseline is leak-free.
     Code, tests, Docker:    & \texttt{github.com/RayanAlDwlah/Genetic-Mutation-Detection-project} \\
     Notebooks:              & \texttt{notebooks/01\_eda} through \texttt{10\_final\_eval} \\
     Reproduce headline:     & \texttt{docker run rayanaldwlah/gmd-defense:v1 make headline} \\
-    Streamlit demo:         & \texttt{streamlit run src/interfaces/app.py} \\
+    Streamlit demo:         & \texttt{streamlit run scripts/streamlit\_app.py} \\
   \end{tabular}
 
   \vspace{2em}
