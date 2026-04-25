@@ -18,9 +18,11 @@ Design notes
 ------------
 * We never call VEP REST on every keystroke — the score pipeline is
   gated behind a single "Score variant" button.
-* The trained model checkpoint (`xgboost_best.ubj`) is loaded once at
-  startup and cached via `@st.cache_resource`. Same for the isotonic
-  calibrator, the dbNSFP cache, and the feature-column manifest.
+* The trained Phase-2.1 checkpoint
+  (`xgboost_phase21_optuna_esm2.ubj`, calibrated PR-AUC 0.865) is
+  loaded once at startup and cached via `@st.cache_resource`. Same for
+  the isotonic calibrator, the dbNSFP cache, and the feature-column
+  manifest.
 * The SHAP explanation uses TreeSHAP on the single featurized row —
   it takes < 100 ms so we recompute on every click.
 * For variants missing from the dbNSFP cache we fall back to the VEP
@@ -45,10 +47,10 @@ sys.path.insert(0, str(REPO))
 from src.external_validation.featurize import featurize_external  # noqa: E402
 from src.external_validation.variant_mapper import to_canonical_key  # noqa: E402
 
-MODEL_PATH = REPO / "results/checkpoints/xgboost_best.ubj"
+MODEL_PATH = REPO / "results/checkpoints/xgboost_phase21_optuna_esm2.ubj"
 DBNSFP_CACHE = REPO / "data/intermediate/dbnsfp_selected_features.parquet"
-PRED_PATH = REPO / "results/metrics/xgboost_predictions.parquet"
-FEATURES_CSV = REPO / "results/metrics/xgboost_feature_columns.csv"
+FEATURES_CSV = REPO / "results/metrics/xgboost_phase21_feature_columns.csv"
+SPLITS_DIR = REPO / "data/splits/phase21"
 
 
 # ─────────────────────────── Cached loaders ──────────────────────────
@@ -65,14 +67,17 @@ def load_model():
 
 @st.cache_resource(show_spinner=False)
 def load_calibrator():
+    """Fit isotonic calibrator on val split predictions. We score the
+    val set once at startup so the calibrator is grounded in the same
+    Phase-2.1 model the app uses for inference."""
     from sklearn.isotonic import IsotonicRegression
 
-    if not PRED_PATH.exists():
-        return None
-    df = pd.read_parquet(PRED_PATH)
-    val = df[df["split"] == "val"]
+    val = pd.read_parquet(SPLITS_DIR / "val.parquet")
+    transformer, num_cols, cat_prefixes = build_column_transformer()
+    x_val = transformer.transform(val[num_cols + cat_prefixes])
+    p_raw = load_model().predict_proba(x_val)[:, 1]
     iso = IsotonicRegression(out_of_bounds="clip", y_min=0.0, y_max=1.0)
-    iso.fit(val["p_raw"].to_numpy(), val["y_true"].to_numpy())
+    iso.fit(p_raw, val["label"].to_numpy())
     return iso
 
 
@@ -95,7 +100,7 @@ def build_column_transformer():
         {c.removeprefix("cat__").rsplit("_", 1)[0] for c in manifest if c.startswith("cat__")}
     )
 
-    train = pd.read_parquet(REPO / "data/splits/train.parquet")
+    train = pd.read_parquet(SPLITS_DIR / "train.parquet")
     transformer = ColumnTransformer(
         transformers=[
             ("num", "passthrough", num_cols),
@@ -120,7 +125,7 @@ def load_splits_index() -> pd.DataFrame:
     fastest path to a fully-featurized row — no merging needed."""
     dfs = []
     for split in ("train", "val", "test"):
-        df = pd.read_parquet(REPO / f"data/splits/{split}.parquet")
+        df = pd.read_parquet(SPLITS_DIR / f"{split}.parquet")
         df["__split"] = split
         dfs.append(df)
     return pd.concat(dfs, ignore_index=True).set_index("variant_key", drop=False)
@@ -256,16 +261,14 @@ def main() -> None:  # pragma: no cover — Streamlit entry point
         )
         st.markdown("### About the demo")
         st.markdown("""
-            - Uses the exact model checkpoint, isotonic calibrator, and
-              ColumnTransformer pinned in the repo (`results/checkpoints/xgboost_best.ubj`).
-            - Features come from the cached dbNSFP parquet; if the variant
-              is outside the cache, VEP REST is queried automatically
-              (~1 s delay per cache miss).
-            - The SHAP plot uses TreeSHAP on the single row — it's exact
-              (not sampled) and takes < 100 ms.
-            - This demo **does not** implement the Phase 2.1 ESM-2 full-
-              training-set integration yet; that runs separately in the
-              Colab notebook.
+            - Phase-2.1 model with ESM-2 LLR feature integrated at
+              training time (`xgboost_phase21_optuna_esm2.ubj`,
+              calibrated PR-AUC 0.865).
+            - Features come from the cached dbNSFP + ESM-2 parquet;
+              if the variant is outside the cache, VEP REST is queried
+              automatically (~1 s delay per cache miss).
+            - The SHAP plot uses TreeSHAP on the single row — it's
+              exact (not sampled) and takes < 100 ms.
             """)
         return
 
