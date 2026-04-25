@@ -109,40 +109,64 @@
       ([yshift=-1.9cm]current page.north east);
   \end{tikzpicture}
 
-  \vspace*{1.4cm}
+  \vspace*{1.35cm}
   \begin{center}
-    {\footnotesize\bfseries\color{kkuGreen}KING KHALID UNIVERSITY%
-      \quad\textcolor{kkuGold}{\textbar}\quad
+    %---------------------------------------------------------------
+    % Institution line (subtle, small, with a gold dot separator).
+    %---------------------------------------------------------------
+    {\footnotesize\color{kkuSubtle}%
+      KING KHALID UNIVERSITY%
+      \;\textcolor{kkuGold}{\rule[0.45ex]{0.4em}{0.4em}}\;%
       College of Computer Science\par}
-    \vspace{0.55cm}
 
-    {\Large\bfseries\color{kkuGreen}Genetic Mutation Detection Using Machine Learning\par}
-    \vspace{0.18cm}
+    \vspace{0.85cm}
+
+    %---------------------------------------------------------------
+    % Title block: big green title + slim gold underline rule + italic subtitle.
+    %---------------------------------------------------------------
+    {\LARGE\bfseries\color{kkuGreen}%
+      Genetic Mutation Detection\\[0.05em]Using Machine Learning\par}
+
+    \vspace{0.25cm}
+    {\color{kkuGold}\rule{2.6cm}{0.7pt}\par}
+    \vspace{0.25cm}
+
     {\footnotesize\itshape\color{kkuInk}%
-      A Rigorous Baseline with Paralog-Aware Evaluation and Gene-Level Constraint Features\par}
+      A Rigorous Baseline with Paralog-Aware Evaluation\\
+      and Gene-Level Constraint Features\par}
 
-    \vspace{0.6cm}
+    \vspace{0.85cm}
 
-    {\footnotesize\color{kkuSubtle}\textsc{Presented by}\par}
-    \vspace{0.18cm}
+    %---------------------------------------------------------------
+    % Team block: small-caps label + 3-row, 2-column name grid.
+    %---------------------------------------------------------------
+    {\scriptsize\color{kkuSubtle}\textsc{Presented by}\par}
+    \vspace{0.2cm}
     {\footnotesize\color{kkuInk}%
-      \renewcommand{\arraystretch}{1.18}%
-      \begin{tabular}{@{}ll@{}}
+      \renewcommand{\arraystretch}{1.25}%
+      \begin{tabular}{@{}l@{\hspace{2.8em}}l@{}}
         Rayan Saleh AlShahrani & Eyad Hassan AlSheri \\
         Zahran Ali AlZahrani   & Khalid Hamdan Zuhair \\
         Saad Saleh Saad        & Abdullah Saeed Ali Asiri \\
       \end{tabular}\par}
 
-    \vspace{0.45cm}
+    \vspace{0.55cm}
 
-    {\footnotesize\color{kkuSubtle}\textsc{Supervised by}\par}
-    \vspace{0.12cm}
+    %---------------------------------------------------------------
+    % Supervisor block.
+    %---------------------------------------------------------------
+    {\scriptsize\color{kkuSubtle}\textsc{Supervised by}\par}
+    \vspace{0.15cm}
     {\small\bfseries\color{kkuGreen}%
       Mr.~Makki Akasha Babiker Al-Bashir\par}
 
     \vfill
-    {\scriptsize\color{kkuSubtle}Academic Year 2025/2026 \textendash{} Semester~2\par}
-    \vspace{0.4cm}
+    %---------------------------------------------------------------
+    % Date footer.
+    %---------------------------------------------------------------
+    {\scriptsize\color{kkuSubtle}%
+      Academic Year 2025/2026\;\textbar\;Semester~2\par}
+    \vspace{0.35cm}
   \end{center}
 \end{frame}
 \endgroup
