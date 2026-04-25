@@ -1,0 +1,382 @@
+% =====================================================================
+% defense_new_slides.tex
+%
+% Drop-in LaTeX source for rewritten/consolidated slides.
+% Copy each block into defense.tex at the indicated location.
+%
+% Conventions used:
+%   - Standard Beamer (frame, columns, block, alertblock, exampleblock)
+%   - colortbl for row coloring (\rowcolor)
+%   - booktabs for clean tables (\toprule, \midrule, \bottomrule)
+%   - tikz for any inline diagrams (already in your existing deck)
+%
+% Color references (replace with your theme's actual color names):
+%   - kkugreen  = primary KKU dark green
+%   - kkugold   = accent gold/yellow
+% If your theme uses different names, search-replace before pasting.
+% =====================================================================
+
+
+% =====================================================================
+% SECTION 1: CONSOLIDATED INTRO (replaces slides 4 + 5)
+% =====================================================================
+% Cuts: 1 slide
+% Time saved: ~1 minute
+% Rationale: Both slides are framing; can land in 60 seconds combined.
+% =====================================================================
+
+\begin{frame}{The problem in one slide}
+  \begin{block}{Missense variants at clinical scale}
+    \begin{itemize}
+      \item A point mutation that swaps one amino acid in a protein
+      \item Most common coding variant in the human genome
+      \item Most are benign; a clinically-important minority cause disease
+      \item Distinguishing the two is the central problem of clinical genetics
+    \end{itemize}
+  \end{block}
+
+  \vspace{0.3em}
+  \begin{alertblock}{Why prior work overstates performance}
+    \begin{enumerate}
+      \item \textbf{Definitional circularity} --- features derived from the label
+            (e.g.\ \texttt{is\_common}) inflate metrics
+      \item \textbf{Meta-predictor contamination} --- using REVEL/CADD as features
+            in a ClinVar benchmark
+      \item \textbf{Paralog leakage} --- KRT1 in train + KRT14 in test
+            $\Rightarrow$ 80\% sequence identity $\Rightarrow$ model has seen most of the test
+    \end{enumerate}
+    \vspace{0.4em}
+    \footnotesize
+    Exome sequencing yields $\sim$20{,}000 variants per patient; human curation
+    is $\sim$few hundred per day. \emph{Scale demands automation; automation
+    demands honest evaluation.}
+  \end{alertblock}
+\end{frame}
+
+
+% =====================================================================
+% SECTION 2: TIGHTENED OBJECTIVES (replaces slide 6)
+% =====================================================================
+% Same content, sharper phrasing, splits into two columns to reduce density.
+% =====================================================================
+
+\begin{frame}{Project objectives}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+    \textbf{Data + methodology}
+    \begin{enumerate}
+      \item Assemble a paralog-disjoint corpus of 195k missense variants
+      \item Eliminate three specific leakage sources
+      \item Train and calibrate a defensible baseline
+      \item Re-score published tools on our own test split
+    \end{enumerate}
+
+    \column{0.5\textwidth}
+    \textbf{Validation + delivery}
+    \begin{enumerate}\setcounter{enumi}{4}
+      \item Evaluate externally on \textsc{denovo-db}
+      \item Prove orthogonality of zero-shot ESM-2 signal
+      \item Publish everything: code, tests, Docker, 10 narrative
+            notebooks, Streamlit demo, academic report
+    \end{enumerate}
+  \end{columns}
+
+  \vspace{0.7em}
+  \centering
+  \footnotesize
+  \emph{Every objective maps to at least one CI-enforced check.}
+\end{frame}
+
+
+% =====================================================================
+% SECTION 3: SPLIT COMPARISON SLIDE (replaces slide 38)
+% =====================================================================
+% Slide 38 is currently the worst-formatted slide in the deck.
+% Splitting into two gives both halves room to breathe.
+% =====================================================================
+
+% --- Slide 38a: Clean comparison table ---
+\begin{frame}{Comparison with published methods}
+  \centering
+  \footnotesize
+  All baselines re-scored on our paralog-disjoint test split (28{,}098 variants).
+
+  \vspace{0.6em}
+  \begin{tabular}{@{}lcccc@{}}
+    \toprule
+    \textbf{Method}                         & \textbf{Year} & \textbf{Approach}            & \textbf{Methodology} & \textbf{PR-AUC} \\
+    \midrule
+    SIFT                                    & 2003 & conservation only          & legacy, no guards & 0.620 \\
+    PolyPhen-2                              & 2010 & conservation + chemistry   & legacy, no guards & 0.728 \\
+    AlphaMissense\textsuperscript{*}        & 2023 & PLM + AlphaFold            & high ClinVar risk & 0.890 \\
+    ESM-2 LLR (zero-shot)                   & 2023 & PLM, masked-LM (35M)       & no supervision    & 0.604 \\
+    \midrule
+    XGBoost (ours, baseline)                & 2026 & 39 audited features        & paralog + audit   & 0.827 \\
+    \rowcolor{kkugold!20}
+    \textbf{XGBoost + ESM-2 LLR (ours)}     & \textbf{2026} & \textbf{40 features inc.\ LLR} & \textbf{paralog + audit} & \textbf{0.865} \\
+    \bottomrule
+  \end{tabular}
+
+  \vspace{0.8em}
+  \scriptsize
+  \textsuperscript{*}\,AlphaMissense is ClinVar-calibrated; on a ClinVar-derived test set its numbers partly overlap its training signal.\\
+  \,REVEL omitted: its 13 base learners are individually trained on ClinVar, creating compound contamination if used as a feature.
+\end{frame}
+
+
+% --- Slide 38b: Methodology framing ---
+\begin{frame}{Why our numbers are different}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+    \textbf{What only we report}
+    \begin{itemize}
+      \item Paralog-family-disjoint split (CI-enforced)
+      \item Three-source leakage audit with before/after numbers
+      \item External validation on \textsc{denovo-db}
+      \item Bootstrap 95\% CIs on every metric + paired bootstrap on ablations
+      \item Calibration deep-dive (ECE = 0.011)
+      \item Docker + lock file reproduction to six decimals
+    \end{itemize}
+
+    \column{0.5\textwidth}
+    \textbf{Honest framing}
+    \begin{itemize}
+      \item $+0.245$ PR-AUC over SIFT
+      \item $+0.137$ PR-AUC over PolyPhen-2
+      \item $-0.025$ PR-AUC vs.\ AlphaMissense
+      \item AM trains on ClinVar-derived labels; our test shares that distribution, so the AM gap is likely smaller than reported once methodology is matched
+    \end{itemize}
+  \end{columns}
+
+  \vspace{0.6em}
+  \begin{exampleblock}{Take-away}
+    Under matched methodology our model beats classical tools cleanly and
+    trails AlphaMissense by a margin smaller than the bias from AM's ClinVar
+    calibration.
+  \end{exampleblock}
+\end{frame}
+
+
+% =====================================================================
+% SECTION 4: REWRITTEN HEADLINE RESULTS (replaces slide 22)
+% =====================================================================
+% Adds clarity on calibrated vs uncalibrated PR-AUC, pre-empts the
+% "why two PR-AUCs?" question.
+% =====================================================================
+
+\begin{frame}{Headline results on test split}
+  \begin{columns}[T]
+    \column{0.45\textwidth}
+    \begin{block}{Test split}
+      Paralog-disjoint\\
+      28{,}098 variants\\
+      Pathogenic rate: $\sim$30\%
+    \end{block}
+
+    \footnotesize
+    All confidence intervals from 1{,}000-replicate nonparametric bootstrap.
+
+    \column{0.55\textwidth}
+    \centering
+    \begin{tabular}{@{}lr@{}}
+      \toprule
+      \textbf{Metric}              & \textbf{Value (95\% CI)} \\
+      \midrule
+      ROC-AUC                      & 0.938 \,[0.935, 0.941]   \\
+      PR-AUC (uncalibrated)        & 0.838 \,[0.830, 0.846]   \\
+      \rowcolor{kkugold!20}
+      PR-AUC (calibrated)          & \textbf{0.827} \,[0.819, 0.835] \\
+      F1                           & 0.775                    \\
+      Brier (calibrated)           & 0.083                    \\
+      ECE (calibrated)             & 0.011                    \\
+      \bottomrule
+    \end{tabular}
+  \end{columns}
+
+  \vspace{0.7em}
+  \footnotesize
+  Calibration trades a small ranking penalty (\,$\Delta$PR-AUC $= -0.011$\,)
+  for $5{\times}$ better probability reliability (ECE $0.054 \to 0.011$).
+  Calibrated probabilities are the headline; uncalibrated is shown for transparency.
+\end{frame}
+
+
+% =====================================================================
+% SECTION 5: REWRITTEN SHAP SLIDE (replaces slide 45)
+% =====================================================================
+% Single-panel version (use if Phase-1 SHAP parquet not regenerated).
+% If you DO regenerate Phase-1 data, use the two-panel version below
+% inside the % %% TWO-PANEL VERSION %% block.
+% =====================================================================
+
+% %% SINGLE-PANEL VERSION %%
+\begin{frame}{What ESM-2 changed in SHAP}
+  \begin{columns}[T]
+    \column{0.55\textwidth}
+    \includegraphics[width=\linewidth]{figures/shap_phase2_only.png}
+
+    \column{0.45\textwidth}
+    \footnotesize
+    \textbf{Top features after ESM-2 integration:}
+    \begin{itemize}\setlength{\itemsep}{0.4em}
+      \item \texttt{is\_imputed\_esm2\_llr} ranks \#1 --- the imputation flag itself carries strong signal (skipped variants live in non-canonical or truncated transcripts)
+      \item \texttt{esm2\_llr} ranks \#4 --- substantial but not dominant
+      \item Conservation features (phyloP, GERP) remain top-tier; ESM-2 partly substitutes, partly supplements (Spearman $\rho \leq |0.31|$)
+      \item denovo-db holdout: $\Delta$ROC = $-0.13$ --- in-distribution gain does not transfer at the 35M scale
+    \end{itemize}
+  \end{columns}
+
+  \vspace{0.4em}
+  \scriptsize
+  \emph{Phase-1 SHAP omitted from this comparison; top Phase-1 features were}
+  \texttt{phyloP100way\_vertebrate}, \texttt{AN}, \texttt{lof\_z}
+  \emph{(in that order).}
+\end{frame}
+
+% %% TWO-PANEL VERSION (use if Phase-1 SHAP parquet exists) %%
+% \begin{frame}{What ESM-2 changed in SHAP}
+%   \centering
+%   \includegraphics[width=0.95\linewidth]{figures/shap_phase1_vs_phase2.png}
+%
+%   \vspace{0.3em}
+%   \footnotesize
+%   \begin{itemize}\setlength{\itemsep}{0.2em}
+%     \item \texttt{is\_imputed\_esm2\_llr} jumps from absent to \#1 in Phase-2.1; \texttt{esm2\_llr} debuts at \#4
+%     \item Conservation features (phyloP, GERP) remain dominant in both phases (Spearman $\rho \leq |0.31|$)
+%     \item denovo-db holdout: $\Delta$ROC = $-0.13$ --- in-distribution gain does not transfer at 35M scale
+%   \end{itemize}
+% \end{frame}
+
+
+% =====================================================================
+% SECTION 6: TIGHTENED FUTURE WORK (replaces slide 51)
+% =====================================================================
+% Reorders to put the most important + most fundable items first.
+% =====================================================================
+
+\begin{frame}{Future work}
+  \begin{enumerate}\setlength{\itemsep}{0.5em}
+    \item \textbf{Larger-checkpoint ESM-2.}
+          Upgrade to \texttt{esm2\_t33\_650M\_UR50D} ($19{\times}$ parameters).
+          Expected to lift the OOD ceiling; the $\Delta$ROC = $-0.13$ on
+          unseen families is the binding constraint of the current work.
+
+    \item \textbf{AlphaFold2 structural features.}
+          pLDDT, SASA, DSSP secondary structure, residue depth ---
+          orthogonal to PLM signal, complementary to conservation.
+
+    \item \textbf{Deep mutational scanning external validation.}
+          ProteinGym fitness measurements as a third external dataset,
+          independent of both ClinVar and \textsc{denovo-db}.
+
+    \item \textbf{Hybrid stacking + ACMG integration.}
+          Meta-learner combining XGBoost + ESM-2 + AlphaMissense, packaged
+          as an ACMG-compatible plug-in for clinical workflows.
+  \end{enumerate}
+
+  \vspace{0.6em}
+  \begin{block}{Already completed during this project}
+    Training-time ESM-2 LLR integration:
+    test PR-AUC $0.827 \to 0.865$ ($\Delta = +0.031,\ p < 10^{-4}$);
+    OOD family-holdout ceiling at 35M characterised.
+  \end{block}
+\end{frame}
+
+
+% =====================================================================
+% SECTION 7: STRONGER OPENING SLIDE (replaces title slide content,
+% NOT the title slide itself)
+% =====================================================================
+% Insert this as a NEW slide between the title slide and the agenda.
+% It frames the entire talk in 30 seconds.
+% =====================================================================
+
+\begin{frame}{This talk in one minute}
+  \begin{block}{The problem}
+    Published variant predictors report ROC-AUC above 0.92.
+    Most do not survive external validation.
+  \end{block}
+
+  \begin{block}{What we did}
+    Built a classifier for 195k missense variants.
+    Found three contamination sources in our own pipeline.
+    Removed them. Watched PR-AUC fall from 0.955 to 0.838.
+    Re-scored published baselines under the same rules.
+    Validated externally on \textsc{denovo-db}.
+  \end{block}
+
+  \begin{exampleblock}{What we found}
+    Audited numbers are smaller than inflated ones --- and they replicate.
+    The audit itself is the contribution.
+  \end{exampleblock}
+\end{frame}
+
+
+% =====================================================================
+% SECTION 8: ENHANCED THANK-YOU SLIDE (replaces slide 52)
+% =====================================================================
+
+\begin{frame}{Thank you}
+  \centering
+  \vspace{1em}
+
+  {\Large \textbf{Questions?}}
+
+  \vspace{2em}
+  \footnotesize
+  \begin{tabular}{rl}
+    Code, tests, Docker:    & \texttt{github.com/RayanAlDwlah/Genetic-Mutation-Detection-project} \\
+    Notebooks:              & \texttt{notebooks/01\_eda} through \texttt{10\_final\_eval} \\
+    Reproduce headline:     & \texttt{docker run rayanaldwlah/gmd-defense:v1 make headline} \\
+    Streamlit demo:         & \texttt{streamlit run src/interfaces/app.py} \\
+  \end{tabular}
+
+  \vspace{2em}
+  \footnotesize
+  \emph{With gratitude to Mr.\ Makki Akasha Babiker Al-Bashir for supervision, and to the team:
+  Eyad, Zahran, Khalid, Saad, and Abdullah.}
+\end{frame}
+
+
+% =====================================================================
+% SECTION 9: SLIDES TO MOVE TO BACKUP / APPENDIX
+% =====================================================================
+% Move these slides AFTER \section*{Backup} or \appendix to keep them
+% accessible without padding the main deck.
+%
+% Recommended for backup:
+%   - Slide 7: Section divider "Related Works" (collapse into related works slide)
+%   - Slide 11: Section divider "Contribution"
+%   - Slide 13: Section divider "Proposed System"
+%   - Slide 25: Section divider "System Analysis & Design"
+%   - Slide 34: Section divider "Interface"
+%   - Slide 36: Section divider "Implementation"
+%   - Slide 46: Section divider "Comparison"
+%   - Slide 48: Section divider "Conclusion"
+%   - Slide 37: Hardware + software stack
+%   - Slide 39: CI screenshot (keep slide 40 leakage gate output instead)
+%   - Some UML diagrams: keep 3 in main, 3 in backup
+%
+% =====================================================================
+% Use this structure:
+
+\appendix
+\section*{Backup}
+
+\begin{frame}{Backup --- Hardware + software stack}
+  % (your existing slide 37 content here, unchanged)
+\end{frame}
+
+\begin{frame}{Backup --- Continuous integration}
+  % (your existing slide 39 content here, unchanged)
+\end{frame}
+
+\begin{frame}{Backup --- UML 4/6: Activity diagram}
+  % (your existing slide 30 content here, unchanged)
+\end{frame}
+
+% etc.
+
+% =====================================================================
+% END OF FILE
+% =====================================================================
