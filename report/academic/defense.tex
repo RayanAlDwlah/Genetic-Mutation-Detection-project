@@ -503,17 +503,25 @@
     \toprule
     Metric & Value (95\% CI) \\
     \midrule
-    ROC-AUC              & 0.938 $[0.935, 0.941]$ \\
-    PR-AUC               & 0.838 $[0.830, 0.846]$ \\
-    F1                   & 0.775 \\
-    Brier (calibrated)   & 0.083 \\
-    ECE (calibrated)     & 0.011 \\
+    ROC-AUC                  & 0.938 $[0.935, 0.941]$ \\
+    PR-AUC (uncalibrated)    & 0.838 $[0.830, 0.846]$ \\
+    \rowcolor{yellow!25}
+    \textbf{PR-AUC (calibrated)} & \textbf{0.827} $[0.819, 0.835]$ \\
+    F1                       & 0.775 \\
+    Brier (calibrated)       & 0.083 \\
+    ECE (calibrated)         & 0.011 \\
     \bottomrule
   \end{tabular}
-  \vspace{0.5em}
-  \begin{block}{}
-    All CIs from $1{,}000$-replicate nonparametric bootstrap.
-  \end{block}
+  \vspace{0.4em}
+
+  \footnotesize
+  Calibrated PR-AUC is the canonical headline; uncalibrated shown for
+  transparency. Calibration trades $\Delta$PR-AUC $= -0.011$ for $5\times$
+  better probability reliability (ECE $0.054 \to 0.011$).
+
+  \vspace{0.2em}
+  \scriptsize
+  All CIs from $1{,}000$-replicate nonparametric bootstrap.
 \end{frame}
 
 % ───────────── SLIDE 19 ─────────────
@@ -1095,7 +1103,7 @@ RESULT: all checks passed. Baseline is leak-free.
     \toprule
     Model & ROC-AUC & PR-AUC & $\alpha$ \\
     \midrule
-    XGBoost (calibrated)           & 0.938 & 0.830 & --- \\
+    XGBoost (calibrated)           & 0.938 & 0.827 & --- \\
     ESM-2 LLR (zero-shot)          & 0.735 & 0.604 & --- \\
     Rank fusion, uniform           & 0.895 & 0.784 & 0.50 \\
     \rowcolor{kkuGoldLight}
