@@ -85,3 +85,14 @@ coverage.xml
 !data/intermediate/esm2/scores_train.parquet
 !data/intermediate/esm2/scores_val.parquet
 !data/intermediate/esm2/scores_test.parquet
+
+# LaTeX build artifacts (created by docker build)
+report/academic/defense.aux
+report/academic/defense.fdb_latexmk
+report/academic/defense.fls
+report/academic/defense.log
+report/academic/defense.out
+report/academic/defense.nav
+report/academic/defense.snm
+report/academic/defense.toc
+report/academic/defense.vrb
