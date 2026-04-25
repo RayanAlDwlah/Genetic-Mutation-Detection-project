@@ -222,14 +222,14 @@ to clinical utility, so we frame the result as a \emph{partial closure
 of the generalisation gap} rather than as a deployable predictor. A
 zero-shot ESM-2 log-likelihood-ratio provides additional, statistically
 tested rank-fusion gain on the test split (Section~\ref{sec:res-esm2}),
-and a Phase-2.1 training-time integration of the same LLR as a numeric
+and a training-time integration of the ESM-2 LLR of the same LLR as a numeric
 feature (Section~\ref{sec:res-phase21}) lifts calibrated test PR-AUC
 from $0.827$ to $0.865$ ($\Delta=+0.0313$, paired $p<10^{-4}$);
 the same feature does \emph{not} transfer to unseen gene families
 ($\Delta\text{ROC-AUC}=-0.13$ on the family-holdout slice, partly
 attributable to a constraint-coverage confound), defining a documented
-ceiling at the 35\,M-parameter scale and motivating Phase-2.1b (a
-larger ESM-2 checkpoint) and Phase-2.2 (AlphaFold2 structural features)
+ceiling at the 35\,M-parameter scale and motivating the 650\,M-parameter ESM-2 extension (a
+larger ESM-2 checkpoint) and the AlphaFold2 structural-feature extension
 as future work (Section~\ref{sec:conc-future}).
 
 The project's code base is published in full with $157$ passing
@@ -552,7 +552,7 @@ features?
 signal from a protein language model (ESM-2) carry
 orthogonal information with respect to the tabular feature
 set, and is it worth integrating as a training-time feature
-in Phase 2?
+in the extension roadmap?
 \end{enumerate}
 
 \section{Project Objectives}
@@ -644,7 +644,7 @@ protein-language-model log-likelihood-ratio is not
 redundant with the tabular feature set
 (Section~\ref{sec:res-esm2}, with statistically tested
 rank-fusion gains on test and \textsc{denovo-db}
-family-holdout), \emph{and} a Phase-2.1 training-time
+family-holdout), \emph{and} an additional training-time
 integration that lifts calibrated test PR-AUC from
 $0.827$ to $0.865$ ($\Delta=+0.0313$, paired bootstrap
 $p<10^{-4}$; Section~\ref{sec:res-phase21}). The same
@@ -679,15 +679,15 @@ design level. Chapter~\ref{ch:analysis} develops the full
 set of system requirements and accompanies them with the
 six standard UML diagrams and the interface design.
 Chapter~\ref{ch:implementation} reports the concrete
-implementation, the Phase-1 baseline results, the like-for-like
-comparison tables, and the Phase-2.1 training-time integration
+implementation, the XGBoost baseline results, the like-for-like
+comparison tables, and the training-time integration of the ESM-2 LLR
 of the ESM-2 LLR (Section~\ref{sec:res-phase21}).
 Chapter~\ref{ch:testing} describes the five-level testing
 strategy, coverage evidence, continuous-integration gates,
 and the deliberate limits of the testing approach.
 Chapter~\ref{ch:conclusion} concludes with a critical
 discussion, failure and deficiency analysis, and the
-Phase-2 roadmap. Three appendices provide extended results
+extension roadmap. Three appendices provide extended results
 tables, selected code listings, and the environment /
 reproducibility specification.
 
@@ -1391,7 +1391,7 @@ sequence; the two embeddings are concatenated with optional dbNSFP
 features before a sigmoid head. Published AUROC is $0.94$ on a
 ClinVar-derived benchmark.
 
-\textbf{Pros.} Architecturally closest in spirit to our Phase-2 plan
+\textbf{Pros.} Architecturally closest in spirit to our planned extensions
 (hybrid sequence + tabular). \textbf{Cons.} Again random-split; the
 hybrid depends on dbNSFP which carries its own contamination risk;
 inference cost is nontrivial.
@@ -1534,7 +1534,7 @@ themselves predictors. \citet{livesey2023benchmark_v2} benchmark 55
 VEPs against deep mutational scanning (DMS) assays and quantify the
 benchmark-inflation effect of \textsc{ClinVar}-only evaluation;
 \citet{notin2023proteingym_v2} publish \textsc{ProteinGym}, a
-large-scale DMS benchmark with 217 assays that our Phase-2 roadmap
+large-scale DMS benchmark with 217 assays that our extension roadmap
 (Section~\ref{sec:conc-future}) targets as the next external-cohort
 validation after \textsc{denovo-db}.
 
@@ -3843,7 +3843,7 @@ tuned on an internal split.}
 laptop with Metal Performance Shaders (MPS) GPU
 acceleration for prototyping the ESM-2 scoring path.
 \item \textbf{Colab compute.} A single free-tier Colab
-T4 GPU session for the Phase-2.1 ESM-2 full-training-
+T4 GPU session for the ESM-2 full-training-
 set scoring.
 \item \textbf{CI runner.} GitHub Actions
 \texttt{ubuntu-22.04} for continuous integration;
@@ -4162,8 +4162,8 @@ rerun is subsumed by deficiency D7 (per-variant XGBoost test
 predictions are required for the paired comparison on
 $\mathcal{S}_{\text{AM}}$, and these were not persisted at
 submission); it is the single most informative numerical
-revision item and is the first entry on the Phase-2 list of
-Section~\ref{sec:conc-future}.
+revision item and is the first entry on the future-work
+list of Section~\ref{sec:conc-future}.
 
 \subsection{Calibration Deep-Dive}
 \label{sec:res-calibration}
@@ -4328,10 +4328,10 @@ $1.00$ & $138{,}921$ & 0.932 & --- & 0.939 & 0.834 \\
 \end{tabular}
 \end{table}
 
-The curve has three implications for the Phase-2 roadmap.
+The curve has three implications for future extensions.
 First, adding \emph{more labelled variants} of the same kind is
 unlikely to raise the baseline materially --- test ROC-AUC has
-plateaued. Second, this means the Phase-2 emphasis should be on new
+plateaued. Second, this means the next emphasis should be on new
 \emph{features} (ESM-2 LLR, AlphaFold-2 structural features) rather
 than on a larger ClinVar harvest. Third, the gap between the
 $75\%$ and $100\%$ points is within the bootstrap CI of the full
@@ -4344,7 +4344,7 @@ meaningful and simply reflects finite-sample variance.
 
 Table~\ref{tab:shap} lists the top-$10$ features
 by mean-$|$SHAP$|$ on a stratified $2{,}000$-variant
-test sample. Two Phase-2.1 additions
+test sample. Two gnomAD constraint additions
 (\texttt{lof\_z} and \texttt{oe\_mis\_upper}) rank
 third and eighth respectively, validating the
 hypothesis that gene-level intolerance priors carry
@@ -4435,10 +4435,11 @@ Section~\ref{sec:res-errors} and Figure~\ref{fig:err-phylop}
 show that confident FN counts dominate at low
 \texttt{phyloP100way\_vertebrate} quintiles ($Q1, Q2$),
 suggesting the model under-uses structural and gene-level
-constraint signal when conservation is weak. Phase-2.2
-(AlphaFold2 structural features, Section~\ref{sec:conc-future})
-and Phase-2.1 (ESM-2 LLR as a training feature) are both
-directly motivated by this failure mode.
+constraint signal when conservation is weak. The
+AlphaFold2 structural-feature extension
+(Section~\ref{sec:conc-future}) and the ESM-2 LLR
+training-feature integration (Section~\ref{sec:res-phase21})
+are both directly motivated by this failure mode.
 
 We therefore frame confident-error asymmetry as a known,
 characterised limitation of the current baseline --- one
@@ -4728,7 +4729,7 @@ regime dependence reported by \citet{brandes2023esm1b} for
 family more broadly. The 35\,M-parameter checkpoint we use here
 (\texttt{esm2\_t12\_35M\_UR50D}) is deliberately the smallest
 deployable \textsc{ESM-2} variant and sits below the 650\,M
-reference in both regimes; the Phase-2.1 full-training-set
+reference in both regimes; the full-training-set
 integration that is currently in flight will quantify the gain
 from the larger checkpoint directly.
 
@@ -4818,7 +4819,7 @@ smaller checkpoint is a documented scope trade-off
 (Section~\ref{sec:feas-sched}).
 
 These three factors collectively account for the gap and
-motivate the Phase-2.1 decision to retrain the tabular
+motivate the decision to retrain the tabular
 baseline with the LLR as a \emph{feature} --- which
 captures orthogonal signal regardless of the LLR's
 absolute magnitude --- rather than to rely on the LLR alone.
@@ -4839,22 +4840,20 @@ Table~\ref{tab:prior-summary} presents the update.
 
 \begin{table}[H]
 \centering
-\footnotesize
 \caption[Prior-work summary on our test split]{\textbf{Methodology and
 performance comparison on our paralog-disjoint test split.} All
-baselines were re-scored under our methodology; our two rows are
-\emph{Phase-1} (XGBoost only) and \emph{Phase-2.1} (XGBoost + ESM-2
-LLR as a training feature, see Section~\ref{sec:res-phase21}). PR-AUC
-columns use each method's own coverage subset (SIFT $96\%$, PP2
-$93\%$, AM $86\%$, ours $100\%$) per Table~\ref{tab:baselines}; a
-strict matched-coverage comparison is deferred to deficiency D7.
-$^{*}$~AlphaMissense was calibrated against \textsc{ClinVar} at
-release time. $^{\dagger}$~REVEL is excluded from the feature set
-in our pipeline because it stacks 13 base learners, several of
-which were trained on \textsc{ClinVar}-overlapping populations,
-producing compound contamination
-(Section~\ref{sec:rw-revel}).}
+baselines were re-scored under our methodology; the bottom two rows
+are our XGBoost baseline and the ESM-2-augmented model (described in
+Section~\ref{sec:res-phase21}). PR-AUC columns use each method's own
+coverage subset (SIFT $96\%$, PP2 $93\%$, AM $86\%$, ours $100\%$)
+per Table~\ref{tab:baselines}; a strict matched-coverage comparison
+is deferred to deficiency D7. $^{*}$~AlphaMissense was calibrated
+against \textsc{ClinVar} at release time. $^{\dagger}$~REVEL is
+excluded from our feature set because it stacks 13 base learners,
+several of which were trained on \textsc{ClinVar}-overlapping
+populations (Section~\ref{sec:rw-revel}).}
 \label{tab:prior-summary}
+\resizebox{\linewidth}{!}{%
 \begin{tabular}{@{}l c l c c c r@{}}
 \toprule
 \textbf{Method}  & \textbf{Year} & \textbf{Approach} &
@@ -4872,59 +4871,64 @@ EVE              & 2021 & per-gene VAE (unsupervised) & --   & no & --  & not re
 AlphaMissense    & 2023 & PLM $+$ AlphaFold (ClinVar-cal.$^{*}$) & no & no  & no & 0.890 \\
 ESM-2 zero-shot  & 2023 & PLM, masked-LM (35M params) & --   & --  & --  & 0.604 \\
 \midrule
-Phase-1 (ours)   & 2026 & XGBoost on 39 audited features & \textbf{yes} & \textbf{yes (3 src)} & \textbf{yes (denovo-db)} & 0.827 \\
+XGBoost (ours)   & 2026 & 39 audited features            & \textbf{yes} & \textbf{yes (3 src)} & \textbf{yes (denovo-db)} & 0.827 \\
 \rowcolor{green!8}
-\textbf{Phase-2.1 (ours)} & \textbf{2026} & \textbf{Phase-1 $+$ ESM-2 LLR feature} &
+\textbf{XGBoost $+$ ESM-2 LLR (ours)} & \textbf{2026} & \textbf{40 features inc.\ ESM-2 LLR} &
 \textbf{yes (CI)} & \textbf{yes (3 src)} & \textbf{yes (denovo-db)} & \textbf{0.865} \\
 \bottomrule
-\end{tabular}
+\end{tabular}}%
 \end{table}
 
-Four observations.
+Four observations follow.
 
-\emph{First,} on the two classical tools (SIFT, PolyPhen-2),
-the leakage-audited Phase-2.1 baseline beats them by $+0.245$
-and $+0.137$ PR-AUC respectively. These are large,
-methodologically defensible margins --- because SIFT and
-PolyPhen-2 pre-date our paralog-splitting infrastructure, no
-paralog-leakage contamination inflates their score.
+\begin{itemize}[leftmargin=1.6em, itemsep=0.4em]
+\item \textbf{Large gains over classical tools.} On the two
+classical tools (SIFT, PolyPhen-2), the leakage-audited
+ESM-2-augmented model beats them by $+0.245$ and $+0.137$
+PR-AUC respectively. These are large, methodologically defensible
+margins because both classical tools pre-date our paralog-aware
+splitting infrastructure --- no paralog-leakage contamination
+inflates their scores in this comparison.
 
-\emph{Second,} against AlphaMissense, the Phase-2.1 own-coverage
-gap is $-0.025$ PR-AUC (down from Phase-1's $-0.063$). The
-remaining gap is structurally explicable:
+\item \textbf{Narrowed gap to AlphaMissense.} The ESM-2-augmented
+model reduces the AlphaMissense own-coverage gap from $-0.063$
+PR-AUC (XGBoost-only baseline) to $-0.025$ PR-AUC.
+The remaining gap is structurally explicable:
 \citet{cheng2023alphamissense} was trained on Google-scale TPU
 resources with AlphaFold structural embeddings and was calibrated
 against \textsc{ClinVar} labels at release. We have neither the
 compute budget nor the same training corpus. The honest
-interpretation is: AlphaMissense is stronger as a
+interpretation is that AlphaMissense is stronger as a
 \textsc{ClinVar}-benchmark predictor, but its generalisation on
 unseen gene families on \textsc{denovo-db} has not been reported
 in the original paper, so the corresponding comparison row is
-empty. Whether the $-0.025$ \textsc{ClinVar} gap closes, widens,
-or inverts on \textsc{denovo-db} is an obvious Phase-2 experiment.
+empty. Whether the gap closes, widens, or inverts on
+\textsc{denovo-db} is an obvious extension experiment.
 
-\emph{Third,} on the in-distribution test split, the marginal
-contribution of training-time PLM integration is statistically
-significant: Phase-2.1 vs Phase-1 paired bootstrap gives
-$\Delta\text{PR-AUC}=+0.0313$ ($p<10^{-4}$, $n=28{,}098$,
+\item \textbf{Significant marginal contribution from PLM integration.}
+On the in-distribution test split, training-time integration of
+the ESM-2 LLR adds a statistically significant $\Delta\text{PR-AUC}
+=+0.0313$ ($p<10^{-4}$, paired bootstrap, $n=28{,}098$;
 Section~\ref{sec:res-phase21}). This exceeds the $+0.014$
 PR-AUC ceiling of post-hoc rank fusion, demonstrating that
 end-to-end feature integration extracts strictly more signal
 than late combination.
 
-\emph{Fourth,} the thesis's unique contribution against every
-row above is not raw benchmark performance --- it is the
-methodological discipline bundle of \textbf{paralog-disjoint
-splitting}, \textbf{three-source leakage audit},
-\textbf{external validation on denovo-db}, \textbf{paired-bootstrap
-inference}, \textbf{Murphy-decomposed calibration}, and
-\textbf{Docker-pinned reproducibility}. None of the eight
-reviewed methods reports all six in a single evaluation; the
-``Paralog guard / Leakage audit / External val.'' columns of the
-table above quantify this gap concretely.
+\item \textbf{Methodological discipline as the headline contribution.}
+The thesis's unique contribution against every row above is not
+raw benchmark performance --- it is the discipline bundle of
+\textbf{paralog-disjoint splitting}, \textbf{three-source
+leakage audit}, \textbf{external validation on denovo-db},
+\textbf{paired-bootstrap inference}, \textbf{Murphy-decomposed
+calibration}, and \textbf{Docker-pinned reproducibility}. None
+of the eight reviewed methods reports all six in a single
+evaluation; the ``Paralog guard / Leakage audit / External val.''
+columns of Table~\ref{tab:prior-summary} quantify this gap
+concretely.
+\end{itemize}
 
 On own-coverage numbers, AlphaMissense reports PR-AUC $0.890$ on
-its $86\%$ coverage subset; our Phase-2.1 model reports
+its $86\%$ coverage subset; our ESM-2-augmented model reports
 calibrated PR-AUC $0.865$ on $100\%$ coverage; PolyPhen-2 reports
 $0.728$ on its $93\%$ subset and SIFT $0.620$ on its $96\%$
 subset. A strict like-for-like subtraction between these rows is
@@ -5031,28 +5035,27 @@ $ mypy src
 Found 107 errors in 28 files (checked 32 source files)
 \end{lstlisting}
 
-\textbf{Note on ESM-2 Colab progress.} The Phase-2.1
+\textbf{Note on ESM-2 Colab progress.} The training-time
 full-training-set ESM-2 scoring completed on a free Google
 Colab T4 session over approximately eight hours, producing
 score parquets for $138{,}721$ training, $28{,}079$
 validation, and $28{,}098$ test variants
-(\texttt{data/intermediate/esm2/}). The Phase-2.1
+(\texttt{data/intermediate/esm2/}). The training-time
 training-time integration described in Section~\ref{sec:res-phase21}
 consumed these parquets directly.
 
-\section{Phase 2.1: ESM-2 LLR as a Training Feature}
+\section{Training-Time Integration of the ESM-2 LLR}
 \label{sec:res-phase21}
 
-This section reports the Phase-2.1 integration of the zero-shot
-ESM-2 LLR as an additive numeric feature in the XGBoost training
-matrix, replacing the post-hoc rank-fusion approach of
-Section~\ref{sec:res-esm2}. The Phase-1 baseline of
-Section~\ref{sec:res-headline} is \emph{frozen}; every Phase-2.1
-result reported below is a NEW row in a comparison table, not
-an overwrite. All artifacts are emitted under a
-\texttt{phase21}/\texttt{\_phase21} namespace
+This section reports the integration of the zero-shot ESM-2 LLR
+as an additive numeric feature in the XGBoost training matrix,
+replacing the post-hoc rank-fusion approach of
+Section~\ref{sec:res-esm2}. The XGBoost baseline of
+Section~\ref{sec:res-headline} is \emph{frozen}; every result
+reported below is a NEW row in a comparison table, not an
+overwrite. All artifacts are emitted under a dedicated namespace
 (\texttt{results/checkpoints/xgboost\_phase21\_esm2.ubj},
-\texttt{results/metrics/phase21/}) so the Phase-1 numbers are
+\texttt{results/metrics/phase21/}) so the baseline numbers are
 byte-for-byte unchanged.
 
 \subsection{Setup, Sign Convention, and Frozen-HP Principle}
@@ -5085,13 +5088,13 @@ companion \texttt{is\_imputed\_esm2\_llr} flag and impute missing
 LLRs with the train-fit median in
 \texttt{src.training.prepare\_split\_features}.
 
-\textbf{Hyperparameters are frozen at the Phase-1 Optuna optimum.}
+\textbf{Hyperparameters are frozen at the baseline Optuna optimum.}
 The scientific claim of this section is ``the marginal effect of
 adding \texttt{esm2\_llr} to the training matrix, holding every
 other hyperparameter fixed.'' Re-tuning Optuna on the new feature
 set would conflate the feature contribution with a tuning
 contribution. We therefore train a single XGBoost with the
-Phase-1 \texttt{xgboost\_best\_params.csv} and
+baseline \texttt{xgboost\_best\_params.csv} and
 \texttt{early\_stopping\_rounds=80}; an Optuna sensitivity check
 is reported in Section~\ref{sec:phase21-optuna} as an appendix
 result.
@@ -5100,21 +5103,21 @@ result.
 \label{sec:phase21-ablation}
 
 Table~\ref{tab:phase21-ablation} reports the headline ablation:
-three XGBoost models trained on the Phase-2.1 splits with the
+three XGBoost models trained on the augmented-feature splits with the
 frozen hyperparameters, varying only the feature set.
-\texttt{full} is the canonical Phase-2.1 model; \texttt{no\_esm2}
-drops the two ESM-2 columns and is the apples-to-apples Phase-1
+\texttt{full} is the canonical augmented model; \texttt{no\_esm2}
+drops the two ESM-2 columns and is the apples-to-apples baseline
 control trained against the same val/test rows; \texttt{esm2\_only}
 keeps only the ESM-2 features and serves as a stand-alone
 discriminator reference.
 
 \begin{table}[H]
 \centering
-\caption[Phase-2.1 ablation]{\textbf{Phase-2.1 ablation on the
+\caption[ESM-2-feature ablation]{\textbf{ESM-2-feature ablation on the
 paralog-disjoint test split, calibrated probabilities,
-$1{,}000$-replicate bootstrap CIs.} Phase-1 numbers are quoted
+$1{,}000$-replicate bootstrap CIs.} baseline numbers are quoted
 verbatim from Table~\ref{tab:headline} for reference. The
-\texttt{full} model is the headline Phase-2.1 result; the paired
+\texttt{full} model is the headline augmented-model result; the paired
 bootstrap of $\Delta$(test PR-AUC) between \texttt{full} and
 \texttt{no\_esm2} appears below the table.}
 \label{tab:phase21-ablation}
@@ -5123,11 +5126,11 @@ bootstrap of $\Delta$(test PR-AUC) between \texttt{full} and
 \toprule
 \textbf{Condition} & \textbf{n features} & \textbf{Test ROC-AUC (95\% CI)} & \textbf{Test PR-AUC (95\% CI)} \\
 \midrule
-Phase-1 baseline (frozen)        & 78 & 0.9376 $[0.9346, 0.9404]$ & 0.8273 $[0.8185, 0.8352]$ \\
-Phase-2.1 \texttt{no\_esm2}      & 78 & 0.9386 $[0.9355, 0.9416]$ & 0.8396 $[0.8311, 0.8474]$ \\
-Phase-2.1 \texttt{esm2\_only}    &  2 & 0.7388 $[0.7314, 0.7458]$ & 0.6099 $[0.5987, 0.6205]$ \\
+XGBoost baseline (frozen)        & 78 & 0.9376 $[0.9346, 0.9404]$ & 0.8273 $[0.8185, 0.8352]$ \\
+Augmented (\texttt{no\_esm2} ablation)      & 78 & 0.9386 $[0.9355, 0.9416]$ & 0.8396 $[0.8311, 0.8474]$ \\
+Augmented (\texttt{esm2\_only} ablation)    &  2 & 0.7388 $[0.7314, 0.7458]$ & 0.6099 $[0.5987, 0.6205]$ \\
 \rowcolor{green!8}
-\textbf{Phase-2.1 \texttt{full}} &\textbf{80} &\textbf{0.9476 $[0.9448, 0.9503]$} &\textbf{0.8647 $[0.8580, 0.8714]$} \\
+\textbf{Augmented \texttt{full}} &\textbf{80} &\textbf{0.9476 $[0.9448, 0.9503]$} &\textbf{0.8647 $[0.8580, 0.8714]$} \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -5169,9 +5172,9 @@ rank~5) and reorders the lower half.
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.95\linewidth]{figures/phase21_feature_importance_comparison.png}
-\caption[Phase-1 vs Phase-2.1 SHAP comparison]{\textbf{Top-15
-features by mean-$|$SHAP$|$, Phase-1 vs Phase-2.1.} The
-ESM-2 imputation flag and LLR enter the Phase-2.1 ranking at
+\caption[Baseline vs augmented-model SHAP comparison]{\textbf{Top-15
+features by mean-$|$SHAP$|$, baseline vs ESM-2-augmented model.} The
+ESM-2 imputation flag and LLR enter the augmented-model ranking at
 positions 1 and~4; conservation features (phyloP, GERP) and
 gnomAD AN remain in the top-3. The reshuffling of the lower
 half is consistent with ESM-2 partly substituting for some
@@ -5183,25 +5186,25 @@ Section~\ref{sec:phase21-limits}.}
 \subsection{External Validation on \textsc{denovo-db}}
 \label{sec:phase21-denovo}
 
-The Phase-2.1 model was scored on the same $642$ \textsc{denovo-db}
-variants (and the $201$ family-holdout slice) as Phase-1.
+The augmented model was scored on the same $642$ \textsc{denovo-db}
+variants (and the $201$ family-holdout slice) as the baseline.
 Table~\ref{tab:phase21-denovo} reports the comparison.
 
 \begin{table}[H]
 \centering
-\caption[Phase-1 vs Phase-2.1 on denovo-db]{\textbf{Phase-1
-versus Phase-2.1 on \textsc{denovo-db}.} Calibrated
+\caption[Baseline vs ESM-2-augmented model on denovo-db]{\textbf{Baseline
+(XGBoost) versus ESM-2-augmented model on \textsc{denovo-db}.} Calibrated
 probabilities; paired bootstrap $\Delta$ uses the same variants
 in both columns, $1{,}000$ replicates, \texttt{seed=42},
-one-sided test of $H_0\!:\,\Delta\le 0$. Phase-1 numbers come
+one-sided test of $H_0\!:\,\Delta\le 0$. baseline numbers come
 from \texttt{external\_denovo\_db\_predictions.parquet}
-(\textit{cf.}~Section~\ref{sec:res-denovo}); Phase-2.1 numbers
+(\textit{cf.}~Section~\ref{sec:res-denovo}); augmented-model numbers
 from \texttt{external\_denovo\_db\_predictions\_phase21.parquet}.}
 \label{tab:phase21-denovo}
 \small
 \begin{tabular}{@{} l r l l c @{}}
 \toprule
-\textbf{Slice / metric} & $n$ & \textbf{Phase-1} & \textbf{Phase-2.1} & \textbf{Paired $\Delta$ (95\% CI), $p$} \\
+\textbf{Slice / metric} & $n$ & \textbf{Baseline} & \textbf{Augmented} & \textbf{Paired $\Delta$ (95\% CI), $p$} \\
 \midrule
 full / ROC-AUC          & 642 & 0.5111 & 0.5095 & $-0.002$ $[-0.059, +0.064]$, $p=0.51$ \\
 full / PR-AUC           & 642 & 0.7896 & 0.7833 & $-0.006$ $[-0.037, +0.028]$, $p=0.62$ \\
@@ -5214,21 +5217,21 @@ holdout / PR-AUC        & 201 & 0.8376 & 0.7850 & $-0.053$ $[-0.103, +0.001]$, $
 The pattern is unambiguous: the in-distribution paired gain on
 the test split (+$0.031$ PR-AUC, Section~\ref{sec:phase21-ablation})
 \emph{does not transfer} to unseen gene families. On the full
-denovo-db slice the Phase-2.1 model is statistically
-indistinguishable from Phase-1 ($p=0.51$/0.62); on the
+denovo-db slice the augmented model is statistically
+indistinguishable from the baseline ($p=0.51$/0.62); on the
 family-holdout slice it is statistically \emph{worse}
 ($\Delta\text{ROC-AUC}=-0.13$ with CI excluding zero).
 
 \textbf{Constraint-coverage confound.} A methodological caveat
 applies to the holdout comparison and is reported here for
-completeness. The canonical Phase-1 evaluation joined denovo-db
+completeness. The canonical baseline evaluation joined denovo-db
 variants against the raw gnomAD-constraint TSV; in this revision
-worktree the raw TSV is unavailable, and the Phase-2.1 scorer
+worktree the raw TSV is unavailable, and the augmented-model scorer
 reconstructs gene-level constraint values from the training
 split (\texttt{train.parquet}) where possible, falling back to
 train-fit medians otherwise. By construction the family-holdout
 genes are absent from training, so they receive imputed constraint
-values for Phase-2.1 even where Phase-1 had real values from the
+values for the augmented model even where the baseline had real values from the
 gnomAD table directly. The holdout $\Delta$ therefore mixes
 ``ESM-2 added'' with ``constraint coverage reduced.'' We report
 the unfavourable comparison without correction (the
@@ -5306,12 +5309,12 @@ Chapter~\ref{ch:conclusion}.
 
 For methodological cleanliness the headline numbers in
 Sections~\ref{sec:phase21-ablation} and~\ref{sec:phase21-denovo}
-are the \emph{frozen-hp} Phase-2.1 model. To confirm the
+are the \emph{frozen-hp} augmented model. To confirm the
 hyperparameter choice does not silently dominate the marginal
 effect, we re-ran Optuna ($40$ trials, \texttt{seed=42}) on the
-Phase-2.1 splits and report the result here only.
+augmented-feature splits and report the result here only.
 
-The Optuna-tuned Phase-2.1 model achieves test PR-AUC
+The Optuna-tuned augmented model achieves test PR-AUC
 $=0.8698$ on the un-calibrated split-metrics
 (\texttt{xgboost\_phase21\_optuna\_split\_metrics.csv})
 versus the frozen-hp $0.8710$ on the same metric; on the
@@ -5322,17 +5325,17 @@ un-calibrated metric is $0.0012$, well below our
 pre-registered $0.005$ threshold for treating the two as
 substantively distinct. Optuna and frozen-hp agree
 within bootstrap noise; the frozen-hp model is therefore the
-canonical Phase-2.1 baseline and is what every other table in
+canonical augmented model and is what every other table in
 this section reports. Numbers from
 \texttt{results/metrics/xgboost\_phase21\_optuna\_split\_metrics.csv}.
 
 \subsection{Calibration}
 \label{sec:phase21-calibration}
 
-Isotonic refit on the Phase-2.1 validation predictions gives
-test ECE $=0.0056$ (versus Phase-1 ECE $=0.0105$), test MCE
-$=0.0256$, and Brier loss $=0.0748$ (versus Phase-1 $=0.0826$).
-Calibration is therefore strictly tighter on Phase-2.1 across
+Isotonic refit on the augmented-model validation predictions gives
+test ECE $=0.0056$ (versus baseline ECE $=0.0105$), test MCE
+$=0.0256$, and Brier loss $=0.0748$ (versus baseline $=0.0826$).
+Calibration is therefore strictly tighter on the augmented model across
 all three measures; no Platt-scaling fallback is needed.
 Numbers from
 \texttt{results/metrics/phase21\_calibration\_comparison.csv},
@@ -5860,7 +5863,7 @@ the \textsc{denovo-db} family-holdout slice, with a
 constraint-coverage confound documented in
 Section~\ref{sec:phase21-denovo}); this defines a
 deployable ceiling at the 35\,M-parameter checkpoint and
-motivates Phase-2.1b in
+motivates the 650\,M-parameter ESM-2 extension in
 Section~\ref{sec:conc-future}.
 \end{itemize}
 
@@ -5900,7 +5903,7 @@ Deployment readiness &
 Limited &
 Research artifact only; SFDA certification would be
 required before any clinical use (Section~\ref{sec:feas-op}).
-Phase-2.1 ESM-2 integration lifts in-distribution test
+training-time ESM-2 LLR integration lifts in-distribution test
 PR-AUC by $+0.031$ ($p<10^{-4}$,
 Section~\ref{sec:res-phase21}) but does not transfer to
 unseen gene families
@@ -6178,7 +6181,7 @@ structural limitations constrain the scope of this work.
   a $\sim$78\% pathogenic de-novo cohort. Per-cohort
   re-calibration is required for any deployment.
 \item \textbf{OOD ceiling on protein language models at the
-  35\,M-parameter scale.} The Phase-2.1 integration of
+  35\,M-parameter scale.} The training-time integration of
   ESM-2 LLR as a training feature
   (Section~\ref{sec:res-phase21}) lifts in-distribution
   test PR-AUC by $+0.031$ ($p<10^{-4}$, paired bootstrap)
@@ -6230,73 +6233,72 @@ decision.
 \section{Future Work}
 \label{sec:conc-future}
 
-The project's Phase-2 roadmap, in decreasing expected
-impact per unit effort, is:
+The extension roadmap, in decreasing expected impact per
+unit effort, is:
 
-\begin{enumerate}[leftmargin=1.8em, itemsep=0.2em]
-\item \textbf{Phase 2.1 -- Full ESM-2 integration
-(completed; see Section~\ref{sec:res-phase21}).}
-Zero-shot LLR was scored on all training, validation,
-and test variants on a Colab T4 GPU; XGBoost was
-retrained with \texttt{esm2\_llr} +
-\texttt{is\_imputed\_esm2\_llr} as features under frozen
-Phase-1 hyperparameters. Internal-test paired bootstrap
-gives $\Delta$PR-AUC $=+0.031$ ($p<10^{-4}$); external
+\begin{enumerate}[leftmargin=1.8em, itemsep=0.3em]
+\item \textbf{Training-time ESM-2 LLR integration --
+\emph{completed}, Section~\ref{sec:res-phase21}.}
+Zero-shot LLR was scored on all training, validation, and
+test variants on a Colab T4 GPU; XGBoost was retrained with
+\texttt{esm2\_llr} and \texttt{is\_imputed\_esm2\_llr} as
+features under frozen baseline hyperparameters.
+Internal-test paired bootstrap gives
+$\Delta$PR-AUC $=+0.031$ ($p<10^{-4}$); external
 \textsc{denovo-db} family-holdout gives
-$\Delta$ROC-AUC $=-0.13$ ($p\!=\!0.98$ one-sided), driven
-in part by a constraint-coverage confound on unseen
-gene families.
-\item \textbf{Phase 2.1b -- Larger ESM-2 checkpoint.}
-The current 35\,M-parameter
+$\Delta$ROC-AUC $=-0.13$ ($p=0.98$ one-sided), driven in
+part by a constraint-coverage confound on unseen gene
+families.
+
+\item \textbf{Larger-checkpoint ESM-2 extension.} The
+current 35\,M-parameter
 \texttt{esm2\_t12\_35M\_UR50D} variant is the smallest
 deployable; \citet{lin2023esm2} report logarithmic
 parameter-count scaling on variant-effect tasks. Re-running
-Phase 2.1 with \texttt{esm2\_t33\_650M\_UR50D}
+the integration with \texttt{esm2\_t33\_650M\_UR50D}
 ($19\times$ parameters) is the next obvious step and
 should both lift the in-distribution gain and probe
 whether the OOD ceiling is a 35\,M artefact.
-\item \textbf{Phase 2.2 -- AlphaFold2 structural
-features.} Extract per-residue pLDDT confidence,
-solvent-accessible surface area, DSSP secondary
-structure, residue depth, and the count of nearby
-$\text{C}\alpha$ atoms for every missense position,
-using the public \textsc{AlphaFold} protein
-structure database \citep{jumper2021alphafold2,
-varadi2022alphafolddb}.
-\item \textbf{Phase 2.3 -- ProteinGym external
-validation.} A third external dataset
-\citep{notin2023proteingym} using deep-mutational-
-scanning fitness measurements rather than clinical
-labels.
-\item \textbf{Phase 2.4 -- Hybrid stacking and
-clinical integration.} A meta-learner on
-(XGBoost, ESM-2 LLR, AlphaFold features), a
-\textsc{VEP} plug-in for clinical pipelines, and
+
+\item \textbf{AlphaFold2 structural-feature extension.}
+Extract per-residue pLDDT confidence, solvent-accessible
+surface area, DSSP secondary structure, residue depth, and
+the count of nearby $\text{C}\alpha$ atoms for every
+missense position, using the public \textsc{AlphaFold}
+protein structure database
+\citep{jumper2021alphafold2, varadi2022alphafolddb}.
+
+\item \textbf{Deep-mutational-scanning external validation.}
+A third external dataset \citep{notin2023proteingym} using
+DMS fitness measurements rather than clinical labels.
+
+\item \textbf{Hybrid stacking and clinical integration.} A
+meta-learner over (XGBoost, ESM-2 LLR, AlphaFold features),
+a \textsc{VEP} plug-in for clinical pipelines, and
 integration with ACMG criteria \citep{richards2015acmg}.
-\item \textbf{Phase 2.5 -- Deployment hardening.}
-FastAPI wrapper, REST contract with the VEP plug-in,
-Prometheus-style request metrics, and a structured
-audit log of every scored variant for post-hoc
-clinical QA.
+
+\item \textbf{Deployment hardening.} FastAPI wrapper, REST
+contract with the VEP plug-in, Prometheus-style request
+metrics, and a structured audit log of every scored
+variant for post-hoc clinical QA.
 \end{enumerate}
 
-\paragraph{Indicative timeline.} Phase~2.1 (full-dataset
-ESM-2 integration) was completed during the final revision
-cycle and is fully reported in Section~\ref{sec:res-phase21}.
-Phase~2.1b (upgrade to \texttt{esm2\_t33\_650M\_UR50D}, the
-$650$\,M-parameter checkpoint, $19\times$ parameters) is the
-immediate next step and is scoped at $4$--$6$ weeks contingent
-on Colab T4 availability, motivated by the in-distribution
-ceiling and OOD regression documented in
-Section~\ref{sec:phase21-limits}. Phase~2.2 (AlphaFold2
-structural features) is scoped at $3$ months given that the
-pLDDT and DSSP extraction code is already wired in. Phase~2.3 (ProteinGym external
-validation) requires implementing a regression-loss
-variant and is scoped at $2$ months. Phase~2.4 (hybrid
-stacking and VEP plug-in) is a $6$-month follow-on.
-Phase~2.5 (deployment hardening) is out of the authors'
-current scope and would require either a continuation by a
-successor team or SFDA engagement.
+\paragraph{Indicative timeline.} The training-time ESM-2 LLR
+integration was completed during the final revision cycle
+and is fully reported in Section~\ref{sec:res-phase21}. The
+larger-checkpoint extension (upgrade to
+\texttt{esm2\_t33\_650M\_UR50D}) is the immediate next step
+and is scoped at $4$--$6$ weeks contingent on Colab T4
+availability, motivated by the in-distribution ceiling and
+OOD regression documented in
+Section~\ref{sec:phase21-limits}. The AlphaFold2 structural
+extension is scoped at $3$ months given that the pLDDT and
+DSSP extraction code is already wired in. DMS external
+validation requires implementing a regression-loss variant
+and is scoped at $2$ months. Hybrid stacking and a VEP
+plug-in are a $6$-month follow-on. Deployment hardening is
+out of the authors' current scope and would require either a
+continuation by a successor team or SFDA engagement.
 
 \section{Closing Statement}
 \label{sec:conc-closing}
