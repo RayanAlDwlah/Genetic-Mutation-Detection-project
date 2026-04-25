@@ -1386,21 +1386,27 @@ RESULT: all checks passed. Baseline is leak-free.
   \end{block}
 \end{frame}
 
-% ───────────── SLIDE 35 ─────────────
-\begin{frame}[plain]{}
-  \vspace{1.4cm}
+% ───────────── SLIDE 35 -- thank you + reproduction pointers ─────────────
+\begin{frame}{Thank you}
   \centering
-  \huge Thank you.
-  \vspace{0.8em}
+  \vspace{1em}
 
-  \Large Questions?
-  \vspace{1.4cm}
+  {\Large \textbf{Questions?}}
 
-  \normalsize
-  \begin{tabular}{@{} l @{}}
-    Code, tests, Docker, notebooks, report, slides: \\[0.4em]
-    \small \url{github.com/RayanAlDwlah/Genetic-Mutation-Detection-project}
+  \vspace{2em}
+  \footnotesize
+  \begin{tabular}{r l}
+    Code, tests, Docker:    & \texttt{github.com/RayanAlDwlah/Genetic-Mutation-Detection-project} \\
+    Notebooks:              & \texttt{notebooks/01\_eda} through \texttt{10\_final\_eval} \\
+    Reproduce headline:     & \texttt{docker run rayanaldwlah/gmd-defense:v1 make headline} \\
+    Streamlit demo:         & \texttt{streamlit run src/interfaces/app.py} \\
   \end{tabular}
+
+  \vspace{2em}
+  \footnotesize
+  \emph{With gratitude to Mr.~Makki Akasha Babiker Al-Bashir for
+  supervision, and to the team: Eyad, Zahran, Khalid, Saad, and
+  Abdullah.}
 \end{frame}
 
 \end{document}
