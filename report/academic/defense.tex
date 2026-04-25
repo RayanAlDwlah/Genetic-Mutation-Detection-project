@@ -93,24 +93,23 @@
 \begingroup
 \setbeamertemplate{frame footer}{}
 \begin{frame}[plain,noframenumbering]
-  % Anchor the green ribbon to the actual page so the logo lands at
-  % the true horizontal centre regardless of frame text-margin settings.
+  % Anchor the green ribbon flush with the top edge of the page.
   \begin{tikzpicture}[remember picture, overlay]
     \fill[kkuGreen, rounded corners=2pt]
-      ([yshift=-0.6cm]current page.north west) rectangle
-      ([yshift=-2.5cm]current page.north east);
+      (current page.north west) rectangle
+      ([yshift=-1.9cm]current page.north east);
     \fill[white, rounded corners=5pt]
-      ([xshift=-1.2cm,yshift=-0.75cm]current page.north) rectangle
-      ([xshift=1.2cm,yshift=-2.35cm]current page.north);
+      ([xshift=-1.2cm,yshift=-0.15cm]current page.north) rectangle
+      ([xshift=1.2cm,yshift=-1.75cm]current page.north);
     \node[anchor=center]
-      at ([yshift=-1.55cm]current page.north)
+      at ([yshift=-0.95cm]current page.north)
       {\includegraphics[height=1.15cm]{figures/misc/kku-logo.png}};
     \fill[kkuGold]
-      ([yshift=-2.54cm]current page.north west) rectangle
-      ([yshift=-2.5cm]current page.north east);
+      ([yshift=-1.94cm]current page.north west) rectangle
+      ([yshift=-1.9cm]current page.north east);
   \end{tikzpicture}
 
-  \vspace*{1.55cm}
+  \vspace*{0.9cm}
   \begin{center}
     {\scriptsize\bfseries\color{kkuGreen}KING KHALID UNIVERSITY \textbar{} College of Computer Science\par}
     \vspace{0.35cm}
