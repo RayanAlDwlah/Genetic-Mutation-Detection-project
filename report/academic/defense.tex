@@ -1175,7 +1175,7 @@ RESULT: all checks passed. Baseline is leak-free.
     \midrule
     SIFT                          & 2003 & conservation only             & legacy, no guards    & 0.620 \\
     PolyPhen-2                    & 2010 & conservation $+$ chemistry    & legacy, no guards    & 0.728 \\
-    AlphaMissense$^{*}$           & 2023 & PLM $+$ AlphaFold             & high ClinVar risk    & 0.890 \\
+    AlphaMissense\textsuperscript{*} & 2023 & PLM $+$ AlphaFold           & high ClinVar risk    & 0.890 \\
     ESM-2 LLR (zero-shot)         & 2023 & PLM, masked-LM (35M)          & no supervision       & 0.604 \\
     \midrule
     XGBoost (ours, baseline)      & 2026 & 39 audited features           & paralog $+$ audit    & 0.827 \\
@@ -1186,12 +1186,12 @@ RESULT: all checks passed. Baseline is leak-free.
     \bottomrule
   \end{tabular}
 
-  \vspace{0.8em}
-  \scriptsize
-  $^{*}$\,AlphaMissense is ClinVar-calibrated; on a ClinVar-derived test
-  set its numbers partly overlap its training signal. \\
-  REVEL omitted: its 13 base learners are individually trained on
-  ClinVar, creating compound contamination if used as a feature.
+  \vspace{0.5em}
+  \footnotesize
+  \textsuperscript{*}\,AlphaMissense is ClinVar-calibrated; on a
+  ClinVar-derived test set its numbers partly overlap its training
+  signal. REVEL omitted: its 13 base learners are individually trained
+  on ClinVar, creating compound contamination if used as a feature.
 \end{frame}
 
 % ───────────── SLIDE 32b -- methodology framing ─────────────
