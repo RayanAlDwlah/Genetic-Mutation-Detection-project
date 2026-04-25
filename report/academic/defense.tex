@@ -378,19 +378,25 @@
 
 % ───────────── SLIDE 9 ─────────────
 \begin{frame}{What we contribute}
-  \begin{enumerate}
+  \begin{enumerate}\setlength{\itemsep}{0.15em}
     \item \textbf{Transparent leakage audit} with
           before-and-after numbers (PR-AUC $0.955 \rightarrow 0.836$).
     \item \textbf{Like-for-like re-scoring} of three published
           baselines on our own paralog-disjoint test.
     \item \textbf{External validation on \textsc{denovo-db}} with
           pre/post gnomAD-constraint decomposition.
-    \item \textbf{Zero-shot ESM-2 proof-of-concept} under rank-fusion.
-    \item \textbf{Fully reproducible code base}: $157$ tests
-          ($59\%$ coverage), CI-enforced leakage gate, pinned
-          deps, Docker, Streamlit demo, LaTeX report.
+    \item \textbf{Two-pass ESM-2 integration} ---
+          Phase-1 zero-shot rank-fusion ($\Delta$ROC $+0.003$ test,
+          $+0.015$ external) plus Phase-2.1 training-time LLR feature
+          ($\Delta$PR-AUC $+0.031$, $p<10^{-4}$).
+    \item \textbf{Auditable methodological package}: 95\% bootstrap
+          CI on every metric, Murphy-decomposed calibration,
+          paired bootstrap on ablations.
+    \item \textbf{Engineering artifacts}: $157$ tests, CI-enforced
+          leakage gate, Docker, Streamlit demo, LaTeX report.
   \end{enumerate}
-  \vspace{0.5em}
+
+  \vspace{0.3em}
   \centering
   \small \url{github.com/RayanAlDwlah/Genetic-Mutation-Detection-project}
 \end{frame}
