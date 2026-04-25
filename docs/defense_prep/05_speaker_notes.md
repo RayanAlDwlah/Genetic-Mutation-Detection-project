@@ -26,7 +26,7 @@
 ### Slide 2: This talk in one minute [40 seconds]
 *(NEW SLIDE — see 02_new_slides.tex Section 7)*
 
-> "Before I dive in, here's the talk in one minute. Published variant predictors report ROC-AUC above 0.92, but most don't survive external validation. We built a classifier for 195,000 missense variants, found three contamination sources in our own pipeline, removed them, and watched our PR-AUC fall from 0.955 to 0.838. Then we re-scored published baselines under the same rules and validated externally. The audit itself is the contribution."
+> "Before I dive in, here's the talk in one minute. Published variant predictors report ROC-AUC above 0.92, but most don't survive external validation. We built a classifier for 195,000 missense variants, found three contamination sources in our own pipeline, removed them, and watched our PR-AUC fall from 0.955 to 0.836. Then we re-scored published baselines under the same rules and validated externally. The audit itself is the contribution."
 
 > *"With that framing in mind, let me walk you through how we got there."*
 
@@ -64,7 +64,7 @@
 ### Slide 10: Section divider — Contribution [skip]
 
 ### Slide 11: What we contribute [60 seconds]
-> "Five contributions. First, a transparent leakage audit with before-and-after numbers — we'll see this drop from 0.955 to 0.838 in detail. Second, like-for-like re-scoring of three published baselines on our paralog-disjoint test. Third, external validation on denovo-db with pre and post gnomAD-constraint decomposition. Fourth, a zero-shot ESM-2 proof-of-concept under rank fusion. Fifth, a fully reproducible code base — 157 tests, CI-enforced leakage gate, Docker, Streamlit demo."
+> "Five contributions. First, a transparent leakage audit with before-and-after numbers — we'll see this drop from 0.955 to 0.836 in detail. Second, like-for-like re-scoring of three published baselines on our paralog-disjoint test. Third, external validation on denovo-db with pre and post gnomAD-constraint decomposition. Fourth, a zero-shot ESM-2 proof-of-concept under rank fusion. Fifth, a fully reproducible code base — 157 tests, CI-enforced leakage gate, Docker, Streamlit demo."
 
 > *"Everything is on GitHub at the address shown. Let me walk through the pipeline."*
 
@@ -121,7 +121,7 @@
 ### Slide 21: Headline results [70 seconds]
 *(MODIFIED — see 02_new_slides.tex Section 4)*
 
-> "Test split — paralog-disjoint, 28,098 variants, ~30% pathogenic prevalence. ROC-AUC 0.938 with a tight confidence interval. PR-AUC: I report two numbers transparently. Uncalibrated 0.838, calibrated 0.827. The calibrated number is the headline because calibration is part of our deployment pipeline; the uncalibrated is shown for transparency."
+> "Test split — paralog-disjoint, 28,098 variants, ~30% pathogenic prevalence. ROC-AUC 0.938 with a tight confidence interval. PR-AUC: I report two numbers transparently. Uncalibrated 0.836, calibrated 0.827. The calibrated number is the headline because calibration is part of our deployment pipeline; the uncalibrated is shown for transparency."
 
 > "Calibration trades 11 PR-AUC points for a 5-fold improvement in probability reliability. F1 of 0.775 at our chosen threshold. ECE of 0.011 means a predicted probability of 0.7 corresponds to ~70% empirical pathogenicity rate. All confidence intervals from 1,000-replicate nonparametric bootstrap."
 

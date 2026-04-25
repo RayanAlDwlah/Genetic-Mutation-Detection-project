@@ -64,7 +64,7 @@ answer, not the wording. Self-quiz aloud:
 - [ ] Q1 (denovo-db close to chance — almost-certain to be asked)
 - [ ] Q2 (PR-AUC of 0.865 means what clinically)
 - [ ] Q3 (XGBoost vs deep NN)
-- [ ] Q4 (drop from 0.955 to 0.838 — does that mean worse?)
+- [ ] Q4 (drop from 0.955 to 0.836 raw / 0.827 calibrated — does that mean worse?)
 - [ ] Q5 (paralog split — how do you know it's disjoint?)
 - [ ] Q6 (why only 35M ESM-2)
 - [ ] Q7 (excluded REVEL/CADD but compare AlphaMissense?)
