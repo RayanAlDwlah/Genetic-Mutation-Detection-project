@@ -226,20 +226,23 @@ def render_triptych(
     """3-panel reliability diagram on test: raw / Platt / Isotonic."""
     import matplotlib.pyplot as plt
 
+    # Color discipline: red signals miscalibration, orange intermediate,
+    # green good. Lets the eye read the triptych as a progression even
+    # before noticing the ECE values.
     panels = [
-        ("Raw", p_test_raw),
-        ("Platt scaling", p_test_platt),
-        ("Isotonic regression", p_test_iso),
+        ("Raw", p_test_raw, "#c0392b"),                  # red
+        ("Platt scaling", p_test_platt, "#e67e22"),      # orange
+        ("Isotonic regression", p_test_iso, "#1B5E3F"),  # KKU-green
     ]
     fig, axes = plt.subplots(1, 3, figsize=(14, 4.5), sharey=True)
-    for ax, (title, p) in zip(axes, panels, strict=True):
+    for ax, (title, p, line_color) in zip(axes, panels, strict=True):
         curve = reliability_curve(y_test, p, n_bins=n_bins, strategy="quantile")
         ax.plot([0, 1], [0, 1], ls="--", color="gray", lw=1, alpha=0.7, label="perfect")
         ax.plot(
             curve["mean_predicted_prob"],
             curve["fraction_positive"],
             "o-",
-            color="#2c3e50",
+            color=line_color,
             label=f"n={len(p):,}",
         )
         ax.set_xlim(0, 1)
