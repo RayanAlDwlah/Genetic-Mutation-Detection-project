@@ -1,0 +1,118 @@
+fe49737  2026-04-25  Defense: tighten comparison-table footnotes (Tweak 5 follow-through)
+ae3c758  2026-04-25  Defense: relocate 5 slides to appendix backup section
+70bdeff  2026-04-25  Defense: add 9 narrative section dividers (replace metropolis auto-progressbar)
+e56c2ac  2026-04-25  Defense: slim page-number footer (scriptsize + subtle gray)
+ee661a3  2026-04-25  Calibration triptych: differentiate panel colors (red/orange/green)
+1c00395  2026-04-25  Defense: archive prep package + reusable SHAP regen script
+c21626e  2026-04-25  Defense: polish pass (table legends, LLR notation, ESM-2 + Streamlit slides)
+76ca522  2026-04-25  Defense: enhance thank-you slide (reproduction pointers + team credit)
+62c58f9  2026-04-25  Defense: add 'This talk in one minute' slide between title + agenda
+57dbd18  2026-04-25  Defense: reorder future work (most fundable items first, completed in block)
+6afd139  2026-04-25  Defense: consolidate intro + tighten objectives + redesign headline
+9d04ae6  2026-04-25  Defense: split overcrowded comparison slide into two
+0cc2e09  2026-04-25  Defense: regenerate SHAP figure + redesign slide (kill 'parquet missing' panel)
+2415805  2026-04-25  Defense: unify PR-AUC numbers (0.827 calibrated canonical)
+372b619  2026-04-25  Defense: fix UML numbering (1/3,2/3,3/3 -> 1/6,2/6,3/6)
+48db22b  2026-04-25  Defense cover: tighten all vspaces + remove vfill so supervisor name + date stay on slide
+899b820  2026-04-25  Defense cover: remove subtitle, single-line title, vspace 2.05cm to clear ribbon properly
+7b1abe4  2026-04-25  Defense cover redesign: 2-line title, gold rule divider, small-caps section labels, balanced spacing
+cc83351  2026-04-25  Defense cover: better breathing room + cleaner typography on the cover
+f2b749f  2026-04-25  Defense cover: ribbon flush with top edge (yshift -0.6cm -> 0cm); reduce post-ribbon vspace 1.55cm -> 0.9cm
+1952f5a  2026-04-25  Defense cover: reduce post-ribbon vspace 2.4cm -> 1.55cm so the Academic Year line fits on the slide
+4f323d3  2026-04-25  Defense cover: anchor KKU ribbon to current page (was off-centre due to frame margins)
+79d9b3a  2026-04-25  Defense cover slide: lower the KKU ribbon (-0.9cm vspace was pulling it off the top edge)
+1ec493e  2026-04-25  Polish pass: remove 'Phase 2.x' jargon + fix table widths + slide overflow
+fc70e88  2026-04-25  Restructure Comparison: Phase-2.1 best vs published methods (report + defense)
+a046eff  2026-04-25  Remove stale .claude/worktrees/ecstatic-goodall index entry (.claude/ is gitignored)
+82f31de  2026-04-25  WIP on develop: febd315 Refresh src pipeline outputs
+d78f39e  2026-04-25  index on develop: febd315 Refresh src pipeline outputs
+0de421c  2026-04-25  untracked files on develop: febd315 Refresh src pipeline outputs
+e912591  2026-04-25  Professor-grade review pass: thread Phase 2.1 through abstract, conclusion, defense
+bda62a8  2026-04-25  Phase 2.1: integrate ESM-2 LLR as a training feature
+6a37ec0  2026-04-25  ESM-2 two-regime explanation in §5.6.7 (P0-3b)
+bfea94e  2026-04-25  Intersection-subset baseline comparison (P0-2)
+8616e92  2026-04-25  Thesis text edits: CI-below-chance paragraph + RQ3 update (P0-3a, P0-3c)
+1a5dd96  2026-04-24  Thesis edits: complete defense-readiness pass (48 items)
+edeb456  2026-04-24  Thesis review P1-5: 10 new related-work papers + Table 2.1 expansion
+4fd3a77  2026-04-24  Thesis review: paralog positioning + calibration-transfer limitation
+8a8461f  2026-04-24  Thesis review P1-6: 'why 39 features and not more?' justification paragraph
+be0a24a  2026-04-24  Thesis review P1-4: calibration transfer to denovo-db (transfer fails!)
+8359234  2026-04-24  Thesis review P1-3: stratified error analysis (family + AA class + phyloP)
+6d973e4  2026-04-24  Thesis review P1-2: learning curve shows model is saturated at ~25% corpus
+dcb08b7  2026-04-24  Thesis review P1-1: feature-group ablation (6 groups) + figure
+98815d2  2026-04-24  Thesis review audit: P0-3 figure caveat + P0-4 table p-value col + narrative
+588965e  2026-04-24  Thesis review P0-2: ESM-2 sanity test suite (CLS, sign, published corr)
+c57f62b  2026-04-24  Thesis review P0-4: paired DeLong + bootstrap tests on every close comparison
+b2bad3b  2026-04-24  Thesis review P0-3: label own-coverage baseline numbers; add D7
+f367bfa  2026-04-24  Thesis review P0-{1,5,6,7}: honest denovo-db significance + Phase-2 rescope
+b3d0191  2026-04-24  Defense: shrink activity diagram + clean comparison tables (vs forest plot)
+62b92ea  2026-04-24  Defense: fix title page logo visibility + broken test-slide labels + screenshots
+37a34ce  2026-04-24  Defense: port all thesis TikZ diagrams + new ESM-2 architecture slide
+64b8350  2026-04-24  Honest test metrics + replace illegible terminal screenshots with lstlisting
+56d2e54  2026-04-24  Defense: replace ESM-2 screenshot slide with rank-fusion results table
+3dfc040  2026-04-24  Thesis: redesign diagrams to fit natively + add rank-fusion test results
+0dcdd18  2026-04-24  Regenerate defense.pdf with updated testing strategy + critical-discussion slides
+33fabb3  2026-04-24  Thesis: fix overflow + add algorithm boxes + feature-groups diagram
+fdc952b  2026-04-24  Expand thesis Chapters 3-7 with professional TikZ diagrams
+7eda1ee  2026-04-23  Expand thesis Chapter 2 (Related Works) with per-paper TikZ diagrams
+1a518f9  2026-04-23  Expand thesis Chapter 1 + correct supervisor name
+618d89a  2026-04-23  Clean covers + apply KKU theme to presentation
+7ea262d  2026-04-23  Add rank-fusion proof-of-concept: XGBoost × ESM-2 LLR on test
+b2ca55e  2026-04-23  Fix: symlink-safe mkdir for Colab/Drive cache directories
+7e2b95d  2026-04-23  Fix: make ESM-2 VEP retries resilient against transient REST failures
+74fd70a  2026-04-22  Rewrite AlphaFold Colab notebook for CPU-only runtime
+d77e8da  2026-04-22  Make Colab notebook robust against silent symlink/code-version failures
+ffa6f1a  2026-04-22  Add AlphaFold2 structural feature extraction pipeline
+519ee32  2026-04-22  Academic thesis + defense presentation — KKU CS graduation
+78a9c21  2026-04-22  Fix: checkpoint VEP cache every 10 batches to survive Colab disconnects
+a2bc311  2026-04-21  Stage 4.3: Beamer defense presentation (~20 slides)
+ce38933  2026-04-21  Stage 4.2: LaTeX technical report (10 sections, 22 citations)
+746e347  2026-04-21  Stage 4.1: Streamlit demo + tests
+49b2fa7  2026-04-21  Rewrite notebooks as 10-chapter narrative
+6141152  2026-04-21  Portfolio: update README with Stage 1/3 tables + SHAP + current numbers
+dc0127c  2026-04-21  Stage 3 + 2.4: Brier decomposition + SHAP interpretability + error analysis
+ef611db  2026-04-21  Fix CI: switch requirements-lock.txt → requirements.txt + add swig
+8cdfa43  2026-04-21  Fix missing incremental checkpoints in esm2_scorer
+02d4077  2026-04-21  Portfolio Stage 1: baseline comparison + GRCh38 build correction
+9858f40  2026-04-21  Portfolio Stage 0: production-grade foundations (tests, CI, Docker)
+22924ec  2026-04-20  Phase 2 step 2: ESM-2 35M zero-shot proof-of-concept on denovo-db
+b2fd3d0  2026-04-20  Add gnomAD gene-level constraint features (pLI / LOEUF / mis_z / oe_mis_upper / lof_z)
+3afa6dd  2026-04-20  Phase D v1: external validation on denovo-db (ROC~0.47, PR~0.76 at base rate)
+09c7d5d  2026-04-20  Phase 1 Lockdown: leakage gate, manifest, figures, stale-notebook banners
+b12bdce  2026-04-17  Rewrite README as professional project showcase
+f8ab464  2026-04-17  Harden XGBoost baseline: fix leakage, add bootstrap CIs and calibration
+febd315  2026-03-30  Refresh src pipeline outputs
+42cb88e  2026-03-30  Merge remote-tracking branch 'origin/main' into develop
+7cfe5e9  2026-03-30  Run full notebook pipeline and publish results
+fc0913e  2026-03-30  Track runnable datasets and document GitHub quick start
+5eb387c  2026-03-28  new change
+5a21e92  2026-03-28  Add PROJECT_GUIDE.html — comprehensive team onboarding guide
+5b13af1  2026-03-28  Polish codebase: professional comments, logic fixes, README overhaul
+92756ee  2026-03-28  Add SHAP analysis and ablation studies to XGBoost notebook
+4c8b7b4  2026-03-28  Fix gaps: OOM bug, slow apply, missing figure save
+3bfc041  2026-03-28  Fix notebooks: replace inline duplicates with src imports
+717c5f7  2026-03-28  Add comprehensive EDA notebook with 9 figures
+4cfc15e  2026-03-26  Fix audit issues: remove dead code, fix matplotlib, update config
+f347705  2026-03-25  Code cleanup: utils consolidation, import fixes, git hygiene
+7c83d09  2026-03-25  Save all current work: notebooks, src updates, XGBoost baseline (ROC-AUC 0.955)
+f5e6938  2026-02-15  Reorganize notebooks in correct pipeline order
+78d1911  2026-02-15  Remove JSON metadata files, document everything in notebooks
+074f974  2026-02-15  Add clean gene-level splitting notebook
+4970759  2026-02-15  Add clean feature analysis notebook
+1a230ff  2026-02-15  Add clean data validation notebook
+95051c3  2026-02-15  Add clean feature engineering and merging notebook
+31917e5  2026-02-15  Add clean ClinVar cleaning notebook
+26726d7  2026-02-15  Add clean data download verification notebook
+fbb6edb  2026-02-15  Add gene-level data splitting with overlap validation
+0597054  2026-02-15  Add feature analysis, correlation filtering, and dataset versioning
+5662e22  2026-02-15  Add post-merge data validation with comprehensive checks
+ae4f035  2026-02-14  Add data merge pipeline with sanity checks
+87afaad  2026-02-14  Add dbNSFP feature extraction with circularity protection
+de2bf99  2026-02-14  Add gnomAD allele frequency extraction
+792644a  2026-02-14  Add ClinVar cleaning and labeling pipeline
+82f3a4a  2026-02-14  docs+data: define core data sources and loading policy
+1b1e8bd  2026-02-14  chore: restructure project scaffold for mutation detection
+530c57e  2026-02-12  Merge branch 'main' into develop
+f0a8ea5  2026-02-12  fix: keep src/models tracked while ignoring root artifacts
+eb95b73  2026-02-12  fix: keep src/models tracked while ignoring root artifacts
+8ef441b  2026-02-12  chore: initialize team collaboration structure
