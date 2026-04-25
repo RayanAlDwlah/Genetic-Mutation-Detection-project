@@ -244,8 +244,12 @@ def main() -> None:  # pragma: no cover — Streamlit entry point
     with col1:
         vk = st.text_input(
             "Variant key (GRCh38: chr:pos:ref:alt)",
-            value="17:43099878:C:T",
-            help="Example: 17:43099878:C:T (a BRCA1 missense variant).",
+            value="2:166051955:G:T",
+            help=(
+                "Default: 2:166051955:G:T — an SCN1A missense variant "
+                "(Dravet syndrome). Calibrated P(pathogenic) ≈ 1.00. "
+                "More demo keys in docs/defense_prep/DEMO_VARIANTS.md."
+            ),
         )
     with col2:
         score_btn = st.button("Score variant", type="primary", use_container_width=True)
