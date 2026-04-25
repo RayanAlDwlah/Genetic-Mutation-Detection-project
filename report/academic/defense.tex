@@ -1165,19 +1165,31 @@ RESULT: all checks passed. Baseline is leak-free.
 
 % ───────────── SLIDE: SHAP shift baseline vs augmented (Implementation) ─────────────
 \begin{frame}{What ESM-2 changed in SHAP}
-  \begin{center}
-    \includegraphics[width=0.78\linewidth]{figures/phase21_feature_importance_comparison.png}
-  \end{center}
-  \begin{itemize}\scriptsize\setlength{\itemsep}{0.1em}
-    \item \texttt{is\_imputed\_esm2\_llr} ranks 1, \texttt{esm2\_llr}
-          ranks 4 -- the imputation flag itself is a strong signal
-          (skipped variants live in non-canonical/truncated transcripts).
-    \item Conservation features (phyloP, GERP) remain dominant; ESM-2
-          partly substitutes for, partly supplements them
-          (Spearman $\rho \le |0.31|$).
-    \item denovo-db holdout: $\Delta\text{ROC-AUC}=-0.13$ ---
-          in-distribution gain does not transfer at the 35\,M scale.
-  \end{itemize}
+  \begin{columns}[T]
+    \column{0.55\textwidth}
+    \includegraphics[width=\linewidth]{figures/shap_phase2_only.png}
+
+    \column{0.45\textwidth}
+    \footnotesize
+    \textbf{Top features after ESM-2 integration:}
+    \begin{itemize}\setlength{\itemsep}{0.4em}
+      \item \texttt{is\_imputed\_esm2\_llr} ranks \#1 --- the imputation flag
+            itself carries strong signal (skipped variants live in
+            non-canonical or truncated transcripts).
+      \item \texttt{esm2\_llr} ranks \#4 --- substantial but not dominant.
+      \item Conservation features (phyloP, GERP) remain top-tier; ESM-2
+            partly substitutes, partly supplements
+            (Spearman $\rho \le |0.31|$).
+      \item denovo-db holdout: $\Delta\text{ROC} = -0.13$ ---
+            in-distribution gain does not transfer at the 35\,M scale.
+    \end{itemize}
+  \end{columns}
+
+  \vspace{0.4em}
+  \scriptsize
+  \emph{Phase-1 SHAP omitted from this comparison; top Phase-1 features
+  were} \texttt{phyloP100way\_vertebrate}, \texttt{AN}, \texttt{lof\_z}
+  \emph{(in that order).}
 \end{frame}
 
 % ═════════════════ PART 8: COMPARISON ═════════════════
