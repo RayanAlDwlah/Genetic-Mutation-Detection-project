@@ -46,11 +46,55 @@ sys.path.insert(0, str(REPO))
 
 from src.external_validation.featurize import featurize_external  # noqa: E402
 from src.external_validation.variant_mapper import to_canonical_key  # noqa: E402
+from src.external_validation.vep_featurize import (  # noqa: E402
+    VEPFetchConfig,
+    fetch_vep_features,
+)
+from src.gnomad_constraint import (  # noqa: E402
+    CONSTRAINT_COLS,
+    load_constraint_table,
+    merge_constraint,
+)
 
 MODEL_PATH = REPO / "results/checkpoints/xgboost_phase21_optuna_esm2.ubj"
 DBNSFP_CACHE = REPO / "data/intermediate/dbnsfp_selected_features.parquet"
 FEATURES_CSV = REPO / "results/metrics/xgboost_phase21_feature_columns.csv"
 SPLITS_DIR = REPO / "data/splits/phase21"
+VEP_CACHE_DIR = REPO / "data/intermediate/vep_streamlit"
+CONSTRAINT_TABLE = REPO / "data/raw/gnomad_constraint/gnomad.v2.1.1.lof_metrics.by_gene.txt.bgz"
+CONSTRAINT_MEDIANS = REPO / "results/metrics/gnomad_constraint_medians.csv"
+
+
+def _load_constraint_medians() -> dict[str, float]:
+    return {
+        k: float(v)
+        for k, v in pd.read_csv(CONSTRAINT_MEDIANS, index_col=0)["value"].items()
+    }
+
+
+def _attach_constraint_for_demo(featurized: pd.DataFrame) -> pd.DataFrame:
+    """gnomAD constraint merge for the live demo. Mirrors
+    `scripts.evaluate_external.attach_gnomad_constraint` but degrades
+    gracefully to medians-only imputation when the raw constraint table
+    is not bundled (it's a 5 MB external download, not always present)."""
+    medians = _load_constraint_medians()
+    overlap = [
+        c for c in CONSTRAINT_COLS + ["is_imputed_gnomad_constraint"]
+        if c in featurized.columns
+    ]
+    if overlap:
+        featurized = featurized.drop(columns=overlap)
+    if CONSTRAINT_TABLE.exists():
+        constraint = load_constraint_table(CONSTRAINT_TABLE)
+        merged, _ = merge_constraint(
+            featurized, constraint=constraint, impute_medians=medians
+        )
+        return merged
+    out = featurized.copy()
+    for col, val in medians.items():
+        out[col] = val
+    out["is_imputed_gnomad_constraint"] = 1
+    return out
 
 
 # ─────────────────────────── Cached loaders ──────────────────────────
@@ -131,9 +175,14 @@ def load_splits_index() -> pd.DataFrame:
     return pd.concat(dfs, ignore_index=True).set_index("variant_key", drop=False)
 
 
-def score_variant(variant_key: str) -> dict:
+def score_variant(variant_key: str, *, use_vep: bool = False) -> dict:
     """Featurize + score a single variant. Returns a dict with
-    `p_raw, p_calibrated, shap_values, features, coverage_note`."""
+    `p_raw, p_calibrated, shap_values, features, coverage_note`.
+
+    When `use_vep=True`, variants missing from the dbNSFP cache fall
+    through to the live Ensembl VEP REST + gnomAD constraint merge
+    path used by `scripts/evaluate_external.py`.
+    """
     # 1. canonicalize
     parts = variant_key.split(":")
     if len(parts) != 4:
@@ -166,19 +215,49 @@ def score_variant(variant_key: str) -> dict:
             ]
         )
         res = featurize_external(ext, dbnsfp_cache=DBNSFP_CACHE)
-        if len(res.featurized) == 0:
+        if len(res.featurized) > 0:
+            featurized = res.featurized
+            featurized = _attach_constraint_for_demo(featurized)
+            row = featurized.iloc[0]
+            source_note = "Found in dbNSFP cache (not in splits)."
+        elif use_vep:
+            # 4. Live VEP REST fallback — same path used by
+            # `scripts/evaluate_external.py` for denovo-db scoring.
+            vep_rows = fetch_vep_features(
+                ext, cfg=VEPFetchConfig(cache_dir=VEP_CACHE_DIR), progress=False
+            )
+            if len(vep_rows) == 0:
+                return {
+                    "error": (
+                        f"Live VEP REST returned no features for "
+                        f"`{canonical.key}`. The variant may not be a valid "
+                        "missense in the canonical transcript, or VEP is "
+                        "currently unreachable."
+                    )
+                }
+            featurized = ext.merge(vep_rows, on="variant_key", how="inner")
+            featurized = _attach_constraint_for_demo(featurized)
+            # ESM-2 LLR is precomputed offline; for live VEP variants we
+            # impute (NaN + flag=1) so the model treats it the same way it
+            # treats the 1,192 imputed-LLR rows in train.
+            if "esm2_llr" not in featurized.columns:
+                featurized["esm2_llr"] = np.nan
+            if "is_imputed_esm2_llr" not in featurized.columns:
+                featurized["is_imputed_esm2_llr"] = 1
+            row = featurized.iloc[0]
+            source_note = (
+                "Live VEP REST + gnomAD constraint merge "
+                "(ESM-2 LLR imputed for live variants)."
+            )
+        else:
             return {
                 "error": (
-                    f"Variant `{canonical.key}` is not in the committed train/val/test "
-                    "splits and not in the cached dbNSFP feature extract. Scoring this "
-                    "variant would require running VEP REST + gnomAD constraint merge "
-                    "live (implemented in `scripts/evaluate_external.py`; not wired "
-                    "into the demo yet to keep it snappy)."
+                    f"Variant `{canonical.key}` is not in the committed "
+                    "train/val/test splits and not in the cached dbNSFP "
+                    "feature extract. Tick **Live VEP REST fallback** above "
+                    "to score it via Ensembl VEP REST (~1 s round-trip)."
                 )
             }
-        featurized = res.featurized
-        row = featurized.iloc[0]
-        source_note = "Found in dbNSFP cache (not in splits)."
 
     # 4. encode + predict
     transformer, num_cols, cat_cols = build_column_transformer()
@@ -251,6 +330,15 @@ def main() -> None:  # pragma: no cover — Streamlit entry point
                 "More demo keys in docs/defense_prep/DEMO_VARIANTS.md."
             ),
         )
+        use_vep = st.checkbox(
+            "Live VEP REST fallback (~1 s) — needed for variants outside the dbNSFP cache",
+            value=False,
+            help=(
+                "Routes missing variants through the same Ensembl VEP REST "
+                "+ gnomAD constraint merge path used by "
+                "`scripts/evaluate_external.py` for denovo-db scoring."
+            ),
+        )
     with col2:
         score_btn = st.button("Score variant", type="primary", use_container_width=True)
 
@@ -276,8 +364,11 @@ def main() -> None:  # pragma: no cover — Streamlit entry point
             """)
         return
 
-    with st.spinner("Featurizing + scoring…"):
-        out = score_variant(vk.strip())
+    spinner_msg = (
+        "Calling Ensembl VEP REST + scoring…" if use_vep else "Featurizing + scoring…"
+    )
+    with st.spinner(spinner_msg):
+        out = score_variant(vk.strip(), use_vep=use_vep)
 
     if "error" in out:
         st.error(out["error"])
