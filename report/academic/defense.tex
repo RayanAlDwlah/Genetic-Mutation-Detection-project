@@ -201,58 +201,64 @@
 % ═════════════════ PART 1: INTRODUCTION ═════════════════
 \section{Introduction}
 
-% ───────────── SLIDE 3 ─────────────
-\begin{frame}{What is a missense variant?}
-  \begin{itemize}
-    \item A point mutation that changes one amino acid in a protein.
-    \item \alert{Most common} coding variant in the human genome.
-    \item A clinically-important minority cause disease; the majority
-          are benign.
-    \item Distinguishing the two is the central problem of
-          \emph{clinical genetics}.
-  \end{itemize}
-  \vspace{0.8em}
-  \begin{block}{The scale problem}
-    \centering
-    \large Exome sequencing generates $\sim$\textbf{20{,}000} variants per
-    patient \\ Human curation bandwidth: $\sim$a few hundred per day
+% ───────────── SLIDE 3 -- consolidated problem framing ─────────────
+\begin{frame}{The problem in one slide}
+  \begin{block}{Missense variants at clinical scale}
+    \begin{itemize}
+      \item A point mutation that swaps one amino acid in a protein.
+      \item Most common coding variant in the human genome.
+      \item Most are benign; a clinically-important minority cause disease.
+      \item Distinguishing the two is the central problem of clinical
+            genetics.
+    \end{itemize}
   \end{block}
-\end{frame}
 
-% ───────────── SLIDE 4 ─────────────
-\begin{frame}{Why it's hard}
-  Three well-known failure modes in prior work:
-  \vspace{0.4em}
-  \begin{enumerate}
-    \item \textcolor{alert}{Definitional circularity}\\
-          Features derived from the label (e.g.\ \texttt{is\_common})
-          inflate metrics.
-    \item \textcolor{alert}{Meta-predictor contamination}\\
-          Using REVEL/CADD as features in a ClinVar benchmark.
-    \item \textcolor{alert}{Paralog leakage}\\
-          KRT1 in train + KRT14 in test $\Rightarrow$ 80\% sequence
-          identity $\Rightarrow$ model ``saw'' most of the test.
-  \end{enumerate}
-  \vspace{0.4em}
-  \begin{alertblock}{Consequence}
-    High benchmark numbers do not survive \textbf{external validation}.
+  \vspace{0.3em}
+  \begin{alertblock}{Why prior work overstates performance}
+    \begin{enumerate}
+      \item \textbf{Definitional circularity} --- features derived from
+            the label (e.g.\ \texttt{is\_common}) inflate metrics.
+      \item \textbf{Meta-predictor contamination} --- using REVEL/CADD
+            as features in a ClinVar benchmark.
+      \item \textbf{Paralog leakage} --- KRT1 in train + KRT14 in test
+            $\Rightarrow$ 80\% sequence identity $\Rightarrow$ model has
+            seen most of the test.
+    \end{enumerate}
+    \vspace{0.4em}
+    \footnotesize
+    Exome sequencing yields $\sim$20{,}000 variants per patient;
+    human curation is $\sim$a few hundred per day. \emph{Scale demands
+    automation; automation demands honest evaluation.}
   \end{alertblock}
 \end{frame}
 
-% ───────────── SLIDE 5 ─────────────
+% ───────────── SLIDE 4 -- tightened objectives ─────────────
 \begin{frame}{Project objectives}
-  \begin{enumerate}
-    \item Assemble a clean, paralog-disjoint corpus of $195$k missense
-          variants.
-    \item Eliminate three specific leakage sources.
-    \item Train and calibrate a defensible baseline.
-    \item Re-score published tools on our test split.
-    \item Evaluate externally on \textsc{denovo-db}.
-    \item Prove orthogonality of protein-language-model signal
-          (zero-shot ESM-2).
-    \item Publish everything: code, tests, Docker, $10$ narrative
-          notebooks, Streamlit demo, academic report.
-  \end{enumerate}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+    \textbf{Data + methodology}
+    \begin{enumerate}
+      \item Assemble a paralog-disjoint corpus of 195k missense
+            variants.
+      \item Eliminate three specific leakage sources.
+      \item Train and calibrate a defensible baseline.
+      \item Re-score published tools on our own test split.
+    \end{enumerate}
+
+    \column{0.5\textwidth}
+    \textbf{Validation + delivery}
+    \begin{enumerate}\setcounter{enumi}{4}
+      \item Evaluate externally on \textsc{denovo-db}.
+      \item Prove orthogonality of zero-shot ESM-2 signal.
+      \item Publish everything: code, tests, Docker, 10 narrative
+            notebooks, Streamlit demo, academic report.
+    \end{enumerate}
+  \end{columns}
+
+  \vspace{0.7em}
+  \centering
+  \footnotesize
+  \emph{Every objective maps to at least one CI-enforced check.}
 \end{frame}
 
 % ═════════════════ PART 2: RELATED WORKS ═════════════════
@@ -494,34 +500,43 @@
   \includegraphics[width=\linewidth,height=0.8\textheight,keepaspectratio]{figures/scientific/calibration_triptych.png}
 \end{frame}
 
-% ───────────── SLIDE 18 ─────────────
-\begin{frame}{Part 3 -- Headline results on test (1/3)}
-  \centering
-  \textbf{Test split (paralog-disjoint), 28{,}098 variants}
-  \vspace{0.5em}
-  \begin{tabular}{@{} l r @{}}
-    \toprule
-    Metric & Value (95\% CI) \\
-    \midrule
-    ROC-AUC                  & 0.938 $[0.935, 0.941]$ \\
-    PR-AUC (uncalibrated)    & 0.838 $[0.830, 0.846]$ \\
-    \rowcolor{yellow!25}
-    \textbf{PR-AUC (calibrated)} & \textbf{0.827} $[0.819, 0.835]$ \\
-    F1                       & 0.775 \\
-    Brier (calibrated)       & 0.083 \\
-    ECE (calibrated)         & 0.011 \\
-    \bottomrule
-  \end{tabular}
-  \vspace{0.4em}
+% ───────────── SLIDE 18 -- headline results (2-column) ─────────────
+\begin{frame}{Headline results --- paralog-disjoint test}
+  \begin{columns}[T]
+    \column{0.45\textwidth}
+    \begin{block}{Test split}
+      Paralog-disjoint\\
+      28{,}098 variants\\
+      Pathogenic rate: $\sim$30\%
+    \end{block}
 
+    \footnotesize
+    All confidence intervals from 1{,}000-replicate nonparametric
+    bootstrap.
+
+    \column{0.55\textwidth}
+    \centering
+    \begin{tabular}{@{}l r@{}}
+      \toprule
+      \textbf{Metric}              & \textbf{Value (95\% CI)} \\
+      \midrule
+      ROC-AUC                      & 0.938 $[0.935, 0.941]$ \\
+      PR-AUC (uncalibrated)        & 0.838 $[0.830, 0.846]$ \\
+      \rowcolor{kkuGoldLight}
+      \textbf{PR-AUC (calibrated)} & \textbf{0.827} $[0.819, 0.835]$ \\
+      F1                           & 0.775 \\
+      Brier (calibrated)           & 0.083 \\
+      ECE (calibrated)             & 0.011 \\
+      \bottomrule
+    \end{tabular}
+  \end{columns}
+
+  \vspace{0.7em}
   \footnotesize
-  Calibrated PR-AUC is the canonical headline; uncalibrated shown for
-  transparency. Calibration trades $\Delta$PR-AUC $= -0.011$ for $5\times$
-  better probability reliability (ECE $0.054 \to 0.011$).
-
-  \vspace{0.2em}
-  \scriptsize
-  All CIs from $1{,}000$-replicate nonparametric bootstrap.
+  Calibration trades a small ranking penalty ($\Delta$PR-AUC $= -0.011$)
+  for $5\times$ better probability reliability (ECE $0.054 \to 0.011$).
+  Calibrated probabilities are the headline; uncalibrated is shown for
+  transparency.
 \end{frame}
 
 % ───────────── SLIDE 19 ─────────────
