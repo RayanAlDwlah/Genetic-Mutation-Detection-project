@@ -1127,89 +1127,96 @@
 % ═════════════════ SECTION 10 — CONCLUSION + FUTURE WORK ═════════════════
 \section{Conclusion}
 
-% ───────────── SLIDE 23 — Conclusion + take-home + F1–F5 (C3) ─────────────
-\begin{frame}{Conclusion + take-home messages}
-  \scriptsize
-  \begin{columns}[T]
-    \column{0.55\textwidth}
-    \textbf{\textcolor{kkuGreen}{Take-home messages}}
-    \begin{enumerate}\setlength{\itemsep}{0.15em}
-      \item \textbf{Audited numbers beat inflated ones.}
-            Calibrated PR-AUC $0.827$ has no known contamination;
-            the pre-audit $0.955$ had three.
-      \item \textbf{Like-for-like baselines change the conversation.}
-            On the same test split we beat classical tools cleanly
-            and sit just below AlphaMissense under stricter methodology.
-      \item \textbf{Training-time PLM integration adds significant
-            in-distribution signal.} ESM-2-augmented model lifts test
-            PR-AUC $0.827 \to 0.865$ ($\Delta=+0.031$, $p<10^{-4}$).
-      \item \textbf{External validation is the real benchmark.}
-            Partial closure on denovo-db; the ESM-2 gain does not
-            transfer to unseen families ($\Delta\text{ROC}=-0.13$).
-    \end{enumerate}
-
-    \column{0.45\textwidth}
-    \textbf{\textcolor{kkuGreen}{Failures resolved (F1–F5, C3)}}
-    \begin{description}[leftmargin=1em, itemsep=0.05em]
-      \item[F1] random split $\Rightarrow$ $+0.081$ AUROC inflation\par
-        \emph{Fix:} \texttt{GroupShuffleSplit} on paralog families.
-      \item[F2] REVEL/CADD/ClinPred meta-predictor circularity\par
-        \emph{Fix:} ban-list in \texttt{verify\_no\_leakage.py}.
-      \item[F3] gnomAD imputation on full data\par
-        \emph{Fix:} train-only medians.
-      \item[F4] Colab crash at 85\% (30K variants lost)\par
-        \emph{Fix:} 500-variant chunked checkpoint resume.
-      \item[F5] CNN-BiLSTM 4$\times$ over budget\par
-        \emph{Fix:} scope $\to$ XGBoost + zero-shot ESM-2; CNN deferred.
-    \end{description}
-  \end{columns}
+% ───────────── SLIDE 22 — Conclusion + take-home messages (single column) ─────────────
+\begin{frame}{Conclusion --- take-home messages}
+  \footnotesize
+  \begin{enumerate}\setlength{\itemsep}{0.6em}
+    \item \textbf{Audited numbers beat inflated ones.}
+          Calibrated PR-AUC $0.827$ has no known contamination;
+          the pre-audit $0.955$ had three.
+    \item \textbf{Like-for-like baselines change the conversation.}
+          On the same paralog-disjoint test we beat classical tools
+          cleanly (SIFT $0.620$, PolyPhen-2 $0.728$) and sit just
+          below AlphaMissense ($-0.025$ PR-AUC) under stricter
+          methodology.
+    \item \textbf{Training-time PLM integration adds significant
+          in-distribution signal.} The ESM-2-augmented model lifts
+          test PR-AUC $0.827 \to 0.865$
+          ($\Delta=+0.031$, $p<10^{-4}$, paired bootstrap on
+          $n=28{,}098$).
+    \item \textbf{External validation is the real benchmark.}
+          Partial closure on \textsc{denovo-db} (paired
+          $\Delta\text{ROC}=+0.076$, CI still covers chance at
+          $n=201$); the in-distribution ESM-2 gain does \emph{not}
+          transfer to unseen gene families
+          ($\Delta\text{ROC}=-0.13$, motivates a larger PLM
+          checkpoint).
+  \end{enumerate}
 \end{frame}
 
-% ───────────── SLIDE 24 — Future work + D1–D8 deficiencies (C3) + Q&A ─────────────
-\begin{frame}{Future work + deficiencies + Q\&A}
-  \scriptsize
+% ───────────── SLIDE 23 — Future work + Deficiencies (D1–D8, C3) ─────────────
+\begin{frame}{Future work + deficiencies}
+  \footnotesize
   \begin{columns}[T]
     \column{0.5\textwidth}
     \textbf{\textcolor{kkuGreen}{Future work}}
-    \begin{enumerate}\setlength{\itemsep}{0.1em}
+    \begin{enumerate}\setlength{\itemsep}{0.2em}
       \item \textbf{Larger-checkpoint ESM-2.}
-            Upgrade to \texttt{esm2\_t33\_650M\_UR50D} ($19\times$
-            parameters); expected to lift the OOD ceiling.
+            Upgrade to \texttt{esm2\_t33\_650M\_UR50D}
+            ($19\times$ parameters); expected to lift the OOD
+            ceiling.
       \item \textbf{AlphaFold-2 structural features.}
             pLDDT, SASA, DSSP, residue depth --- orthogonal to PLM.
       \item \textbf{ProteinGym DMS external validation.}
-            Third dataset independent of ClinVar + \textsc{denovo-db}.
+            Third dataset independent of ClinVar +
+            \textsc{denovo-db}.
       \item \textbf{Hybrid stacking + ACMG integration.}
             Meta-learner of XGBoost + ESM-2 + AM as ACMG plug-in.
     \end{enumerate}
 
     \column{0.5\textwidth}
-    \textbf{\textcolor{kkuGreen}{Deficiencies (D1–D8, C3)}}
-    \begin{description}[leftmargin=1em, itemsep=0.04em]
+    \textbf{\textcolor{kkuGreen}{Deficiencies (D1--D8)}}
+    \begin{description}[leftmargin=1em, itemsep=0.1em]
       \item[D1] external ROC $0.573$, CI covers chance ($n=201$)
       \item[D2] ClinVar-only training (no DMS labels)
       \item[D3] isotonic-only calibration (no per-gene)
-      \item[D4] ESM-2 zero-shot only \,---\, \textcolor{kkuGreen}{\textbf{shipped}} (Phase 2.1)
+      \item[D4] ESM-2 zero-shot only \,---\,
+                \textcolor{kkuGreen}{\textbf{shipped}} (Phase 2.1)
       \item[D5] no AlphaFold-2 structural features yet
       \item[D6] Streamlit-only (no REST API, no VEP plug-in)
       \item[D7] own-coverage baselines (no matched-coverage rerun)
-      \item[D8] pre-constraint preds not persisted \,---\, \textcolor{kkuGreen}{\textbf{recovered}} (\texttt{f8ab464})
+      \item[D8] pre-constraint preds not persisted \,---\,
+                \textcolor{kkuGreen}{\textbf{recovered}}
+                (\texttt{f8ab464})
     \end{description}
   \end{columns}
+\end{frame}
 
-  \vspace{0.7em}
+% ───────────── SLIDE 24 — Thank you / Q&A (dedicated) ─────────────
+\begin{frame}{Thank you --- Questions?}
   \centering
-  \rule{0.5\linewidth}{0.4pt}\par
-  \vspace{0.4em}
-  {\large\textbf{Thank you --- Questions?}}\par
-  \vspace{0.4em}
-  \scriptsize
-  Code + thesis + slides:
-  \texttt{github.com/RayanAlDwlah/Genetic-Mutation-Detection-project}\par
-  Reproduce: \texttt{docker run --rm missense-classifier make reproduce-headline}\par
-  \vspace{0.4em}
-  \emph{With gratitude to Mr.~Makki Akasha Babiker Al-Bashir, and to
-  the team: Eyad, Zahran, Khalid, Saad, Abdullah.}
+  \vspace{1.2em}
+
+  {\Huge\bfseries\color{kkuGreen}Thank you}
+
+  \vspace{0.6em}
+  {\Large Questions?}
+
+  \vspace{2em}
+  \footnotesize
+  \begin{tabular}{r l}
+    Code + thesis + slides
+      & \texttt{github.com/RayanAlDwlah/Genetic-Mutation-Detection-project} \\[0.4em]
+    Reproduce headline
+      & \texttt{docker run --rm missense-classifier make reproduce-headline} \\[0.4em]
+    Streamlit demo
+      & \texttt{streamlit run scripts/streamlit\_app.py} \\
+  \end{tabular}
+
+  \vspace{2em}
+  \footnotesize
+  \emph{With gratitude to Mr.~Makki Akasha Babiker Al-Bashir for
+  supervision, and to the team: Eyad, Zahran, Khalid, Saad, Abdullah.}
 \end{frame}
 
 
