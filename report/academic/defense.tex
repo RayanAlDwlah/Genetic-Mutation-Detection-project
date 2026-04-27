@@ -231,73 +231,104 @@
   \emph{Every objective maps to at least one CI-enforced check.}
 \end{frame}
 
-% ═════════════════ PART 2: RELATED WORKS ═════════════════
-\section{Related Works}
+% ═════════════════ SECTION 2 — RELATED WORK ═════════════════
+\section{Related Work}
 
-% ───────────── SLIDE 6 ─────────────
-\begin{frame}{Classical tools (2003--2010)}
-  \small
-  \centering
-  \begin{tabular}{@{} l r l p{4cm} @{}}
+% ───────────── SLIDE 4 — Classical tools ─────────────
+\begin{frame}{Classical tools (2003--2010): conservation-based predictors}
+  \footnotesize
+  \begin{tabular}{@{} p{1.7cm} p{2.7cm} p{2.9cm} p{2.9cm} @{}}
     \toprule
-    Tool & Year & Approach & Limitation \\
+    \textbf{Tool (year)} & \textbf{Algorithm} & \textbf{\textcolor{green!40!black}{Pros}} & \textbf{\textcolor{red!70!black}{Cons}} \\
     \midrule
-    SIFT          & 2003 & conservation only              & no AA chemistry \\
-    PolyPhen-2    & 2010 & conservation + chemistry + struct. & HumDiv overlaps ClinVar \\
+    \textbf{SIFT} (2003) &
+    Conservation only --- PSSM from PSI-BLAST &
+    Instant via VEP REST; baseline of $>$95\% clinical tools &
+    No AA chemistry; arbitrary 0.05 threshold; weak on slow-evolving sites \\
+    \midrule
+    \textbf{PolyPhen-2} (2010) &
+    Naïve Bayes on conservation + chemistry + 3D struct.\ (HumDiv) &
+    Biochemical context (Grantham, BLOSUM); standard in clinical reports &
+    \alert{HumDiv overlaps ClinVar} $\Rightarrow$ contamination on ClinVar benchmarks \\
     \bottomrule
   \end{tabular}
-  \vspace{0.8em}
-  \begin{itemize}
-    \item Access: Ensembl VEP REST, instant.
-    \item Coverage: $\sim$93--96\% of our test variants.
-    \item \alert{Threshold design:} SIFT picks 0.05 arbitrarily.
-  \end{itemize}
+
+  \vspace{0.6em}
+  \begin{exampleblock}{Where we re-score them}
+    On our paralog-disjoint test (own-coverage):
+    SIFT $= 0.620$ PR-AUC (96\,\% cov.), PolyPhen-2 $= 0.728$ (93\,\% cov.). See Section~9.
+  \end{exampleblock}
 \end{frame}
 
-% ───────────── SLIDE 7 ─────────────
-\begin{frame}{Gradient-boosted ensembles (2016--2024)}
-  \small
-  \centering
-  \begin{tabular}{@{} l r l p{4.3cm} @{}}
+% ───────────── SLIDE 5 — Gradient-boosted ensembles ─────────────
+\begin{frame}{Gradient-boosted ensembles (2016--2024): supervised meta-predictors}
+  \scriptsize
+  \begin{tabular}{@{} p{1.5cm} p{2.6cm} p{3cm} p{3cm} @{}}
     \toprule
-    Tool    & Year & Approach & Limitation \\
+    \textbf{Tool (year)} & \textbf{Algorithm} & \textbf{\textcolor{green!40!black}{Pros}} & \textbf{\textcolor{red!70!black}{Cons}} \\
     \midrule
-    REVEL   & 2016 & RF ensemble of 13 tools     & input tools ClinVar-trained \\
-    CADD    & 2019 & logistic/RF simulated null   & scores not calibrated \\
-    VARITY  & 2021 & XGBoost + noise weighting    & gene-level split only \\
-    MAGPIE  & 2024 & gradient boosting            & paralog status undocumented \\
+    \textbf{REVEL} (2016) &
+    Random forest ensemble of 13 prediction tools &
+    Very high reported AUC ($\sim$0.95); widely adopted &
+    \alert{Inputs ClinVar-trained} $\Rightarrow$ circular when benchmarked on ClinVar \\
+    \midrule
+    \textbf{CADD} (2019) &
+    Logistic/RF on simulated negatives + observed positives &
+    Single model for all variant types (incl.\ non-coding) &
+    Scores uncalibrated; training labels are simulated \\
+    \midrule
+    \textbf{VARITY} (2021) &
+    XGBoost with noise-weighted training &
+    Handles label noise explicitly &
+    \alert{Gene-level split only} (no paralog protection) \\
+    \midrule
+    \textbf{MAGPIE} (2024) &
+    Gradient boosting on multi-omics features &
+    Recent, multi-modal feature space &
+    Paralog-split status undocumented in the publication \\
     \bottomrule
   \end{tabular}
-  \vspace{0.8em}
-  \begin{itemize}
-    \item All sit above 0.92 ROC-AUC on their own benchmarks.
-    \item None report a \emph{like-for-like} external test.
-    \item None publish bootstrap CIs on every metric.
-  \end{itemize}
+
+  \vspace{0.4em}
+  \begin{exampleblock}{Why we ban these as features}
+    \texttt{verify\_no\_leakage.py} excludes REVEL, CADD, ClinPred, M-CAP, MetaSVM ---
+    using meta-predictors trained on ClinVar would inflate PR-AUC by $\sim$0.07.
+  \end{exampleblock}
 \end{frame}
 
-% ───────────── SLIDE 8 ─────────────
-\begin{frame}{Protein language models (2021--2023)}
-  \small
-  \centering
-  \begin{tabular}{@{} l r p{7cm} @{}}
+% ───────────── SLIDE 6 — Protein language models ─────────────
+\begin{frame}{Protein language models (2021--2023): unsupervised representations}
+  \footnotesize
+  \begin{tabular}{@{} p{1.7cm} p{2.7cm} p{2.9cm} p{2.9cm} @{}}
     \toprule
-    Tool           & Year & Core idea \\
+    \textbf{Tool (year)} & \textbf{Algorithm} & \textbf{\textcolor{green!40!black}{Pros}} & \textbf{\textcolor{red!70!black}{Cons}} \\
     \midrule
-    EVE            & 2021 & Variational auto-encoder per gene ($\sim$3k genes) \\
-    ESM-1b / 2 (zero-shot) & 2023 & Masked-AA log-likelihood ratio from 250M sequences \\
-    AlphaMissense  & 2023 & Structural PLM calibrated on ClinVar \\
+    \textbf{EVE} (2021) &
+    Variational auto-encoder, one per gene ($\sim$3{,}000 genes) &
+    Gene-specific deep model; captures epistasis &
+    Limited gene coverage; slow per-gene training \\
+    \midrule
+    \textbf{ESM-1b / ESM-2} (2023, zero-shot) &
+    Masked-AA log-likelihood ratio from 250M-sequence corpus &
+    \textbf{Fully unsupervised} $\Rightarrow$ uncontaminated by ClinVar &
+    Lower AUC at small scale (we use \texttt{esm2\_t12\_35M}) \\
+    \midrule
+    \textbf{AlphaMissense} (2023) &
+    Structural PLM calibrated against ClinVar at release &
+    SOTA reported AUC ($\sim$0.96 on own benchmark) &
+    \alert{Calibrated on ClinVar} $\Rightarrow$ comparison contamination on ClinVar tests \\
     \bottomrule
   \end{tabular}
-  \vspace{0.8em}
-  \begin{block}{Why the PLM wave matters}
-    ESM-2 is fully unsupervised $\Rightarrow$ provably
-    \textbf{uncontaminated} by ClinVar.
-    Our Phase~2.1 integrates it as a training-time feature.
-  \end{block}
+
+  \vspace{0.4em}
+  \begin{exampleblock}{The PLM choice in our pipeline}
+    ESM-2 is the only one provably unsupervised $\Rightarrow$ we integrate its LLR
+    as a Phase-2.1 feature (Section~8). Lift on internal test:
+    $\Delta$PR-AUC $=+0.0313$, $p<10^{-4}$.
+  \end{exampleblock}
 \end{frame}
 
-% ═════════════════ PART 3: CONTRIBUTION ═════════════════
+% ═════════════════ SECTION 3 — CONTRIBUTION ═════════════════
 \section{Contribution}
 
 % ───────────── SLIDE 9 ─────────────
