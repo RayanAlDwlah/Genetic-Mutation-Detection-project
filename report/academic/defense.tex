@@ -909,22 +909,37 @@
   State + Component $\rightarrow$ appendix.}
 \end{frame}
 
-% ═════════════════ PART 6: INTERFACE ═════════════════
+% ═════════════════ SECTION 6 — INTERFACE ═════════════════
 \section{Interface}
 
-% ───────────── SLIDE 26 ─────────────
-\begin{frame}{Streamlit demo -- scoring a variant}
+% ───────────── SLIDE 16 — Interface (Streamlit demo + CLI) ─────────────
+\begin{frame}{Interface --- Streamlit demo + Typer CLI}
   \centering
-  \includegraphics[width=0.92\linewidth,height=0.62\textheight,keepaspectratio]{figures/screenshots/07_streamlit_demo.png}
+  \includegraphics[width=0.92\linewidth,height=0.58\textheight,keepaspectratio]{figures/screenshots/07_streamlit_demo.png}
 
   \vspace{0.3em}
-  \scriptsize
-  \begin{tabular}{@{} r l @{}}
-    \textbf{Input}     & GRCh38 variant key \texttt{chr:pos:ref:alt} \\
-    \textbf{Output}    & calibrated $p$ + raw XGBoost + risk band \\
-    \textbf{Explainer} & Top-15 SHAP, color-coded by direction \\
-    \textbf{Latency}   & $<$ 100\,ms cache hit; $\sim$ 2\,s cache miss \\
-  \end{tabular}
+  \footnotesize
+  \begin{columns}[T]
+    \column{0.55\textwidth}
+    \textbf{\textcolor{kkuGreen}{Streamlit web demo}}
+    \scriptsize
+    \begin{tabular}{@{} r l @{}}
+      \textbf{Input}     & GRCh38 variant key \texttt{chr:pos:ref:alt} \\
+      \textbf{Output}    & calibrated $p$ + raw XGBoost + risk band \\
+      \textbf{Explainer} & Top-15 SHAP, colour-coded by direction \\
+      \textbf{Latency}   & $<$100\,ms cache hit; $\sim$2\,s cache miss \\
+    \end{tabular}
+
+    \column{0.45\textwidth}
+    \textbf{\textcolor{kkuGreen}{Typer CLI}}
+    \scriptsize
+    \begin{tabular}{@{} r l @{}}
+      \textbf{Single}    & \texttt{score chr:pos:ref:alt} \\
+      \textbf{Batch}     & \texttt{score-batch <vcf|csv>} \\
+      \textbf{Explain}   & \texttt{explain --top 15 <variant>} \\
+      \textbf{Re-train}  & \texttt{make train} (Optuna 40 trials) \\
+    \end{tabular}
+  \end{columns}
 \end{frame}
 
 % ═════════════════ PART 7: IMPLEMENTATION ═════════════════
