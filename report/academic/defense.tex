@@ -167,67 +167,11 @@
 \end{frame}
 \endgroup
 
-% ───────────────────────────── SLIDE 2 ─────────────────────────────
-\begin{frame}{This talk in one minute}
-  \begin{block}{The problem}
-    Published variant predictors report ROC-AUC above 0.92.
-    Most do not survive external validation.
-  \end{block}
-
-  \begin{block}{What we did}
-    Built a classifier for 195k missense variants.
-    Found three contamination sources in our own pipeline.
-    Removed them. Watched PR-AUC fall from 0.955 to 0.836.
-    Re-scored published baselines under the same rules.
-    Validated externally on \textsc{denovo-db}.
-  \end{block}
-
-  \begin{exampleblock}{What we found}
-    Audited numbers are smaller than inflated ones --- and they
-    replicate. The audit itself is the contribution.
-  \end{exampleblock}
-\end{frame}
-
-% ───────────────────────────── SLIDE 3 ─────────────────────────────
-\begin{frame}{Agenda}
-  \begin{columns}[t]
-    \column{0.5\linewidth}
-    \textbf{Part I -- The problem}
-    \begin{enumerate}
-      \item Introduction (2 slides)
-      \item Related works (3 slides)
-      \item Contribution (1 slide)
-    \end{enumerate}
-
-    \textbf{Part II -- The pipeline}
-    \begin{enumerate}\setcounter{enumi}{3}
-      \item Proposed system flowchart
-      \item Part~1: Preprocessing
-      \item Part~2: Training + leakage audit
-      \item Part~3: Evaluation + external validation
-    \end{enumerate}
-
-    \column{0.5\linewidth}
-    \textbf{Part III -- System Analysis}
-    \begin{enumerate}\setcounter{enumi}{7}
-      \item Requirements + 6 UML diagrams
-      \item Interface
-      \item Implementation (stack, code, CI)
-    \end{enumerate}
-
-    \textbf{Part IV -- Results}
-    \begin{enumerate}\setcounter{enumi}{10}
-      \item Comparison with prior work
-      \item Conclusion + future work
-    \end{enumerate}
-  \end{columns}
-\end{frame}
-
-% ═════════════════ PART 1: INTRODUCTION ═════════════════
+% ═════════════════ SECTION 1 — INTRODUCTION ═════════════════
 \section{Introduction}
 
-% ───────────── SLIDE 3 -- consolidated problem framing ─────────────
-\begin{frame}{The problem in one slide}
+% ───────────── SLIDE 2 — Problem statement ─────────────
+\begin{frame}{Problem statement: missense variants at clinical scale}
   \footnotesize
   \begin{block}{Missense variants at clinical scale}
     \begin{itemize}\setlength{\itemsep}{0.05em}
@@ -258,8 +202,8 @@
   \end{alertblock}
 \end{frame}
 
-% ───────────── SLIDE 4 -- tightened objectives ─────────────
-\begin{frame}{Project objectives}
+% ───────────── SLIDE 3 — Research objectives + scope ─────────────
+\begin{frame}{Research objectives + scope}
   \begin{columns}[T]
     \column{0.5\textwidth}
     \textbf{Data + methodology}
