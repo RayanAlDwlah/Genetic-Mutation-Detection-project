@@ -850,21 +850,20 @@
 % ───────────── SLIDE 15 — Activity diagram (6 leakage checks, P1 caption) ─────────────
 \begin{frame}{Activity diagram --- training + evaluation workflow}
   \centering
-  \resizebox{0.95\linewidth}{!}{%
   \begin{tikzpicture}[
-    font=\sffamily\tiny,
+    font=\sffamily\tiny, scale=0.7, transform shape,
     start/.style={circle, fill=black, minimum size=0.22cm, inner sep=0pt},
     stop/.style={circle, draw=black, double, minimum size=0.3cm, inner sep=0pt, fill=black!15},
     act/.style={draw, rounded corners=4pt, minimum width=1.55cm,
       minimum height=0.4cm, align=center, thick, fill=blue!8, font=\sffamily\tiny},
-    actsm/.style={draw, rounded corners=3pt, minimum width=1.35cm,
+    actsm/.style={draw, rounded corners=3pt, minimum width=1.3cm,
       minimum height=0.36cm, align=center, thick, fill=blue!8, font=\sffamily\tiny},
     dec/.style={diamond, draw, minimum width=0.7cm, minimum height=0.5cm,
       inner sep=0pt, fill=orange!10, thick, font=\sffamily\tiny, align=center},
     fork/.style={rectangle, draw=black, fill=black, minimum height=0.09cm,
-      minimum width=10.5cm, inner sep=0pt},
+      minimum width=10.0cm, inner sep=0pt},
     fork5/.style={rectangle, draw=black, fill=black, minimum height=0.09cm,
-      minimum width=9.0cm, inner sep=0pt},
+      minimum width=8.5cm, inner sep=0pt},
     arrow/.style={-{Latex[length=3pt]}, thick},
   ]
     \node[start] (s) at (0, 0) {};
@@ -901,7 +900,7 @@
     \draw[arrow] (opt) -- (thr); \draw[arrow] (thr) -- (cal); \draw[arrow] (cal) -- (f2);
     \foreach \t in {ta, tb, tc, td, te} {\draw[arrow] (f2) -- (\t); \draw[arrow] (\t) -- (j2);}
     \draw[arrow] (j2) -- (rep); \draw[arrow] (rep) -- (endn);
-  \end{tikzpicture}}
+  \end{tikzpicture}
 
   \vspace{0.2em}
   \scriptsize
