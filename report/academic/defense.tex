@@ -780,14 +780,14 @@
     \node[font=\sffamily\tiny\bfseries, red!60!black] at (8.1, 2.4)
          {\texttt{scripts/}};
 
-    % Associations
-    \draw[rel] (load) -- (feat);
-    \draw[rel] (feat) -- (split);
-    \draw[rel] (xgb) -- (cal);
-    \draw[rel] (svc) -- (xgb);
+    % Associations — within-package only, kept minimal for clarity
+    \draw[rel] (load)  -- (feat);
+    \draw[rel] (feat)  -- (split);
+    \draw[rel] (split) -- (cal);
     \draw[rel] (web) -- (svc);
     \draw[rel] (cli) -- (svc);
-    \draw[comp] (gate.west) -- ++(-0.3, 0);
+    % Single cross-package arrow: ScoreService consumes the trained model.
+    \draw[rel, dashed, gray!70] (svc) to[bend left=10] (xgb);
   \end{tikzpicture}
 
   \vspace{0.2em}
