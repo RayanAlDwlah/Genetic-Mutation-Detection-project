@@ -394,8 +394,8 @@
 % ═════════════════ SECTION 4 — PROPOSED SYSTEM ═════════════════
 \section{Proposed System}
 
-% ───────────── SLIDE 10 ─────────────
-\begin{frame}{Pipeline -- three parts}
+% ───────────── SLIDE 8 — Pipeline overview ─────────────
+\begin{frame}{Pipeline overview --- three parts, three lanes}
   \centering
   \begin{tikzpicture}[
     font=\sffamily\scriptsize,
@@ -439,107 +439,130 @@
     \draw[arrow, dashed, red!70] (art1.south) -- ++(0,-0.2) -| (gate.north);
     \draw[arrow, dashed, red!70] (art2.south) -- ++(0,-0.2) -| (boot.north);
   \end{tikzpicture}
-\end{frame}
 
-% ───────────── SLIDE 11 ─────────────
-\begin{frame}{Part 1 -- Data preprocessing (1/3)}
-  \textbf{Sources:}
-  \begin{itemize}
-    \item \textsc{ClinVar} -- pathogenic / benign labels (review star $\geq 2$)
-    \item \textsc{gnomAD} v2.1 + v4 -- allele frequency, AC, AN
-    \item \textsc{dbNSFP} 5.3 -- conservation + AA chemistry + Pfam
-    \item \textsc{gnomAD} v2.1.1 -- gene-level constraint (pLI, LOEUF, mis\_z)
-  \end{itemize}
-  \vspace{0.4em}
-  \textbf{Join key:} canonical \texttt{chr:pos:ref:alt} on \textsc{GRCh38}.
-\end{frame}
-
-% ───────────── SLIDE 12 ─────────────
-\begin{frame}{Part 1 -- Data preprocessing (2/3)}
-  \textbf{The critical filter}
   \vspace{0.3em}
-  \begin{block}{Missense-only}
-    \centering Drop every row with null \texttt{ref\_aa} OR null
-    \texttt{alt\_aa} $\Rightarrow$ \textbf{remove $\sim$88{,}000
-    non-missense rows.}
-  \end{block}
-  \vspace{0.3em}
-  \begin{itemize}
-    \item Pre-audit: 64\% of pathogenic rows had null AA fields!
-    \item Model was learning ``null AA $\Rightarrow$ pathogenic''
-    \item Fix alone drops PR-AUC $0.955 \rightarrow 0.819$
-          (the single biggest audit finding)
-  \end{itemize}
+  \footnotesize
+  \emph{Dashed red arrows = inter-part hand-offs (Part~1 splits feed Part~2;
+  Part~2 model feeds Part~3).}
 \end{frame}
 
-% ───────────── SLIDE 13 ─────────────
-\begin{frame}{Part 1 -- Data preprocessing (3/3): paralog-aware split}
-  \begin{itemize}
-    \item Plain gene-level split: 52\% of prefix families (ZNF*, SLC*,
-          KRT*, TMEM*) shared between train and test.
-    \item Fix: \textbf{family-level} split via
-          \texttt{assign\_gene\_family} (16 regex patterns +
-          trailing-digit fallback).
-    \item Result: 15{,}479 genes $\to$ 7{,}851 families, \textbf{zero}
-          shared across splits, enforced by CI.
-  \end{itemize}
+% ───────────── SLIDE 9 — Part 1: Preprocessing (merged) ─────────────
+\begin{frame}{Part 1 --- Data preprocessing}
+  \footnotesize
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+    \textbf{\textcolor{kkuGreen}{Sources}} (joined on GRCh38 \texttt{chr:pos:ref:alt})
+    \begin{itemize}\setlength{\itemsep}{0.1em}
+      \item \textsc{ClinVar} --- labels (review star $\geq 2$)
+      \item \textsc{gnomAD} v2.1 + v4 --- AF, AC, AN
+      \item \textsc{dbNSFP} 5.3 --- conservation, AA chemistry, Pfam
+      \item \textsc{gnomAD} v2.1.1 --- gene-level constraint (pLI, LOEUF, mis\_z)
+    \end{itemize}
+
+    \vspace{0.4em}
+    \textbf{\textcolor{kkuGreen}{Output}} 195{,}098 missense variants $\rightarrow$
+    Part~2 as \texttt{splits/\{train,val,test\}.parquet}.
+
+    \column{0.52\textwidth}
+    \textbf{\textcolor{kkuGreen}{Two critical filters}}
+
+    \begin{block}{Missense-only}
+      Drop rows with null \texttt{ref\_aa} OR null \texttt{alt\_aa}
+      $\Rightarrow$ remove \textbf{$\sim$88K non-missense rows}.
+      Pre-audit: 64\% of pathogenic rows had null AA $\Rightarrow$
+      model learned ``null $\Rightarrow$ pathogenic''.
+      \alert{Fix alone drops PR-AUC $0.955 \rightarrow 0.819$.}
+    \end{block}
+
+    \begin{block}{Paralog-aware split}
+      Family-level via \texttt{assign\_gene\_family}
+      (16 regex + trailing-digit fallback).
+      \textbf{15{,}479 genes $\rightarrow$ 7{,}851 families},
+      zero shared across train/val/test (CI-enforced).
+    \end{block}
+  \end{columns}
 \end{frame}
 
-% ───────────── SLIDE 14 ─────────────
-\begin{frame}{Part 2 -- Leakage audit (1/4)}
-  \begin{block}{Four CI-enforced invariants}
-    \vspace{0.3em}
-    \begin{enumerate}
-      \item No banned features (\texttt{is\_common, chr, ref, alt}) in
-            the training matrix.
-      \item 100\% missense-only rows in training split.
-      \item Zero shared gene families across train/val/test.
-      \item Pathogenic-rate gap $<$ 0.08 across splits.
+% ───────────── SLIDE 10 — Part 2: Training + leakage + calibration ─────────────
+\begin{frame}{Part 2 --- Training, leakage audit, calibration}
+  \scriptsize
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+    \textbf{\textcolor{kkuGreen}{Leakage gate (6 CI-enforced invariants)}}
+    \begin{enumerate}\setlength{\itemsep}{0.04em}
+      \item No banned features (\texttt{is\_common, chr, ref, alt})
+      \item 100\,\% missense-only rows in training
+      \item Zero shared gene families (gene + family disjoint)
+      \item Pathogenic-rate gap $< 0.08$ across splits
+      \item Phase-2.1 ESM-2 features pass banned-upstream-meta check
+      \item ESM-2 split integrity (no test/val overlap in score parquet)
     \end{enumerate}
-  \end{block}
-  \vspace{0.4em}
-  \textbf{Every push to \texttt{main} runs the four checks.} \\
-  A failure blocks the merge.
+    \emph{Every push to \texttt{main} runs all six;
+    failure blocks the merge.}
+
+    \vspace{0.6em}
+    \textbf{\textcolor{kkuGreen}{Five-stage leakage journey}} (raw PR-AUC)
+    $0.955 \rightarrow 0.819 \rightarrow 0.816 \rightarrow 0.835 \rightarrow 0.836$.
+    Calibrated headline: $0.827$.
+
+    \column{0.5\textwidth}
+    \textbf{\textcolor{kkuGreen}{Model}}
+    XGBoost + Optuna TPE (multivariate grouping), 40 trials,
+    PR-AUC objective, median pruner after 200 rounds.
+
+    \vspace{0.4em}
+    \textbf{\textcolor{kkuGreen}{Calibration}} Isotonic on validation;
+    Murphy: $\text{Brier} = \text{Rel} - \text{Res} + \text{Unc}$.
+    \begin{tabular}{@{} l r r r @{}}
+      \toprule
+      & Brier & Rel.\ & ECE \\
+      \midrule
+      Raw      & 0.088 & 0.0054 & 0.054 \\
+      Platt    & 0.083 & 0.0011 & 0.029 \\
+      \textbf{Isotonic} & \textbf{0.083} & \textbf{0.0002} & \textbf{0.011} \\
+      \bottomrule
+    \end{tabular}
+    \emph{Reliability drops 23$\times$; resolution unchanged
+    $\Rightarrow$ discrimination preserved.}
+  \end{columns}
 \end{frame}
 
-% ───────────── SLIDE 15 ─────────────
-\begin{frame}{Part 2 -- Five-stage leakage journey (2/4)}
-  \centering
-  \includegraphics[width=\linewidth,height=0.78\textheight,keepaspectratio]{figures/scientific/leakage_journey.png}
-\end{frame}
+% ───────────── SLIDE 11 — Part 3: Evaluation framework ─────────────
+\begin{frame}{Part 3 --- Evaluation framework}
+  \footnotesize
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+    \textbf{\textcolor{kkuGreen}{Internal evaluation}}
+    \begin{itemize}\setlength{\itemsep}{0.12em}
+      \item Paralog-disjoint test split — \textbf{28{,}098 variants}.
+      \item 95\,\% bootstrap CI on every metric (1{,}000 reps, seed 42):
+            ROC-AUC, PR-AUC, F1, MCC, Brier.
+      \item Murphy decomposition for calibration
+            (Reliability, Resolution, Uncertainty).
+      \item \textbf{Paired bootstrap on $\Delta$} for ablations
+            (n = 28{,}098, same resampled indices for both models).
+    \end{itemize}
 
-% ───────────── SLIDE 16 ─────────────
-\begin{frame}{Part 2 -- Model + calibration (3/4)}
-  \textbf{Model}: XGBoost, Optuna TPE with multivariate grouping, $40$
-  trials, PR-AUC objective, median pruner after 200 rounds.
-
-  \textbf{Calibration}: isotonic regression fit on validation,
-  evaluated via Murphy's Brier decomposition:
-  $$\text{Brier} = \text{Reliability} - \text{Resolution} + \text{Uncertainty}$$
+    \column{0.5\textwidth}
+    \textbf{\textcolor{kkuGreen}{External evaluation}}
+    \begin{itemize}\setlength{\itemsep}{0.12em}
+      \item \textsc{denovo-db} family-holdout — \textbf{n = 201}
+            unseen gene families.
+      \item Pre- vs.\ post-constraint paired bootstrap
+            (recovered checkpoint at \texttt{f8ab464}).
+      \item Permutation test for $\text{AUC} > 0.5$
+            (10{,}000 reps, seed 42).
+      \item Calibration transfer audit: does isotonic from
+            ClinVar val transfer to denovo-db?
+    \end{itemize}
+  \end{columns}
 
   \vspace{0.5em}
-  \small
-  \centering
-  \begin{tabular}{@{} l r r r r @{}}
-    \toprule
-    & Brier & Reliability & Resolution & ECE \\
-    \midrule
-    Raw      & 0.0876 & 0.00543 & 0.1055 & 0.054 \\
-    Platt    & 0.0834 & 0.00114 & 0.1055 & 0.029 \\
-    \textbf{Isotonic} & \textbf{0.0826} & \textbf{0.00024} & 0.1053 & \textbf{0.011} \\
-    \bottomrule
-  \end{tabular}
-  \vspace{0.3em}
-  \begin{itemize}
-    \item Resolution constant $\Rightarrow$ discrimination unchanged.
-    \item Reliability drops $23\times$ $\Rightarrow$ calibration works.
-  \end{itemize}
-\end{frame}
-
-% ───────────── SLIDE 17 ─────────────
-\begin{frame}{Part 2 -- Reliability triptych (4/4)}
-  \centering
-  \includegraphics[width=\linewidth,height=0.8\textheight,keepaspectratio]{figures/scientific/calibration_triptych.png}
+  \begin{exampleblock}{Why this framework}
+    Internal CIs guard against single-split optimism;
+    paired tests guard against unfair $\Delta$ comparisons;
+    external denovo-db guards against ClinVar-shaped overfit.
+  \end{exampleblock}
 \end{frame}
 
 % ───────────── SLIDE 17 -- headline results (2-column) ─────────────
