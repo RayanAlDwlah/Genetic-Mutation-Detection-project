@@ -667,117 +667,137 @@
   \end{alertblock}
 \end{frame}
 
-% ═════════════════ PART 5: SYSTEM ANALYSIS & DESIGN ═════════════════
+% ═════════════════ SECTION 5 — SYSTEM ANALYSIS & DESIGN ═════════════════
 \section{System Analysis \& Design}
 
-% ───────────── SLIDE 21 ─────────────
-\begin{frame}{Functional + non-functional requirements}
-  \textbf{Functional ($\times 8$):} ingestion, feature assembly,
-  scoring, risk categorisation, feature attribution, batch mode,
-  external reproduction, report regeneration.
+% ───────────── SLIDE 12 — Use Case + functional/non-functional ─────────────
+\begin{frame}{Use case diagram + requirements summary}
+  \begin{columns}[T]
+    \column{0.62\textwidth}
+    \centering
+    \begin{tikzpicture}[
+      font=\sffamily\scriptsize,
+      actor/.style={font=\sffamily\tiny, align=center},
+      uc/.style={draw, ellipse, minimum width=1.9cm, minimum height=0.65cm,
+        align=center, thick, fill=yellow!15, font=\sffamily\tiny},
+      sys/.style={draw, rounded corners=3pt, thick, inner sep=0.22cm,
+        fill=blue!3, dashed},
+      rel/.style={-{Latex[length=4pt]}, thick},
+      inc/.style={-{Latex[length=4pt]}, dashed, gray!70},
+    ]
+      \node[actor] (g) at (-3.0, 1.5)  {\actorstick{}\\[2pt]Clinical\\Geneticist};
+      \node[actor] (r) at (-3.0, -1.5) {\actorstick{}\\[2pt]Research\\Scientist};
+      \node[actor] (v) at (5.5, 1.5)   {\actorstick{}\\[2pt]VEP REST\\Service};
+      \node[actor] (c) at (5.5, -1.5)  {\actorstick{}\\[2pt]CI/CD\\System};
 
-  \vspace{0.5em}
-  \textbf{Non-functional ($\times 7$):} performance ($<$100\,ms
-  cache hit), reliability (seed-reproducible to $10^{-3}$),
-  scalability ($10^{6}$ variants), usability (non-ML end user),
-  maintainability (CI enforced), security (no PHI), reproducibility
-  (Docker-replayable).
+      \begin{scope}[on background layer]
+        \node[sys, fit={(-1.3, 2.2) (4.0, -2.0)}] (bnd) {};
+        \node[font=\sffamily\scriptsize\bfseries, anchor=north east] at (bnd.north east) {Missense Predictor};
+      \end{scope}
 
-  \vspace{0.6em}
-  \textbf{Traceability:} every requirement maps to at least one
-  \texttt{src/} module and at least one pytest test case.
+      \node[uc] (u1) at (0,    1.5)  {UC1 Score};
+      \node[uc] (u2) at (2.3,  1.5)  {UC2 Annotate};
+      \node[uc] (u3) at (0,    0.5)  {UC3 Calibrate};
+      \node[uc] (u4) at (2.3,  0.5)  {UC4 Explain};
+      \node[uc] (u5) at (0,   -0.5)  {UC5 Risk band};
+      \node[uc] (u6) at (2.3, -0.5)  {UC6 Batch};
+      \node[uc] (u7) at (0,   -1.5)  {UC7 Re-train};
+      \node[uc] (u8) at (2.3, -1.5)  {UC8 Leakage};
+
+      \foreach \a/\b in {g/u1, g/u3, g/u4, g/u5, r/u6, r/u7, v/u2, c/u8}
+        \draw[rel] (\a) -- (\b);
+      \draw[inc] (u1) -- (u2);
+      \draw[inc] (u1) -- (u3);
+      \draw[inc] (u6) -- (u1);
+      \draw[inc] (u7) -- (u8);
+    \end{tikzpicture}
+
+    \column{0.38\textwidth}
+    \scriptsize
+    \textbf{\textcolor{kkuGreen}{Functional ($\times 8$)}}\par
+    Ingestion, feature assembly, scoring, risk categorisation, feature
+    attribution, batch mode, external reproduction, report regeneration.
+
+    \vspace{0.4em}
+    \textbf{\textcolor{kkuGreen}{Non-functional ($\times 7$)}}\par
+    Performance ($<$100\,ms cache hit), reliability ($10^{-3}$
+    seed-reproducible), scalability ($10^{6}$ variants), usability
+    (non-ML user), maintainability (CI), security (no PHI),
+    reproducibility (Docker).
+
+    \vspace{0.4em}
+    \textbf{\textcolor{kkuGreen}{Traceability}}\par
+    Every requirement maps to $\geq 1$ \texttt{src/} module +
+    $\geq 1$ pytest test case.
+  \end{columns}
 \end{frame}
 
-% ───────────── SLIDE 22 ─────────────
-\begin{frame}{UML 1/6: Use case diagram}
-  \centering
-  \begin{tikzpicture}[
-    font=\sffamily\scriptsize,
-    actor/.style={font=\sffamily\tiny, align=center},
-    uc/.style={draw, ellipse, minimum width=2.0cm, minimum height=0.7cm,
-      align=center, thick, fill=yellow!15, font=\sffamily\tiny},
-    sys/.style={draw, rounded corners=3pt, thick, inner sep=0.25cm,
-      fill=blue!3, dashed},
-    rel/.style={-{Latex[length=4pt]}, thick},
-    inc/.style={-{Latex[length=4pt]}, dashed, gray!70},
-    ext/.style={-{Latex[length=4pt]}, dotted, gray!70},
-  ]
-    \node[actor] (g) at (-3.2, 1.6)  {\actorstick{}\\[2pt]Clinical\\Geneticist};
-    \node[actor] (r) at (-3.2, -1.6) {\actorstick{}\\[2pt]Research\\Scientist};
-    \node[actor] (v) at (6.0, 1.6)   {\actorstick{}\\[2pt]VEP REST\\Service};
-    \node[actor] (c) at (6.0, -1.6)  {\actorstick{}\\[2pt]CI/CD\\System};
-
-    \begin{scope}[on background layer]
-      \node[sys, fit={(-1.4, 2.4) (4.4, -2.2)}] (bnd) {};
-      \node[font=\sffamily\scriptsize\bfseries, anchor=north east] at (bnd.north east) {Missense Predictor};
-    \end{scope}
-
-    \node[uc] (u1) at (0,    1.6)  {UC1 Score};
-    \node[uc] (u2) at (2.4,  1.6)  {UC2 Annotate};
-    \node[uc] (u3) at (0,    0.6)  {UC3 Calibrate};
-    \node[uc] (u4) at (2.4,  0.6)  {UC4 Explain};
-    \node[uc] (u5) at (0,   -0.4)  {UC5 Risk band};
-    \node[uc] (u6) at (2.4, -0.4)  {UC6 Batch};
-    \node[uc] (u7) at (0,   -1.4)  {UC7 Re-train};
-    \node[uc] (u8) at (2.4, -1.4)  {UC8 Leakage};
-
-    \foreach \a/\b in {g/u1, g/u3, g/u4, g/u5, r/u6, r/u7, v/u2, c/u8}
-      \draw[rel] (\a) -- (\b);
-    \draw[inc] (u1) -- (u2);
-    \draw[inc] (u1) -- (u3);
-    \draw[inc] (u6) -- (u1);
-    \draw[inc] (u7) -- (u8);
-  \end{tikzpicture}
-\end{frame}
-
-% ───────────── SLIDE 23 ─────────────
-\begin{frame}{UML 2/6: Class diagram (grouped by package)}
+% ───────────── SLIDE 13 — Class diagram (UML P0-1 fix) ─────────────
+\begin{frame}{Class diagram --- four \emph{real} packages from \texttt{src/}}
   \centering
   \begin{tikzpicture}[
     font=\sffamily\tiny,
     cls/.style={draw, rectangle split, rectangle split parts=2,
-      thick, align=left, text width=2.1cm, inner sep=1pt, fill=white},
-    data/.style={cls, fill=blue!6},
+      thick, align=left, text width=2.0cm, inner sep=1pt, fill=white},
+    main/.style={cls, fill=blue!6},
     model/.style={cls, fill=green!8},
     eval/.style={cls, fill=orange!10},
     iface/.style={cls, fill=red!8},
     rel/.style={-{Latex[length=3.5pt]}, thick},
     comp/.style={-{Diamond[length=5pt, width=5pt, fill=black]}, thick},
   ]
-    \node[data] (load)  at (0,    1.5) {\textbf{VariantLoader}\nodepart{second}+load()};
-    \node[data] (feat)  at (0,    0)   {\textbf{FeatureAssembler}\nodepart{second}+assemble()};
-    \node[data] (split) at (0,   -1.5) {\textbf{ParalogSplitter}\nodepart{second}+split()};
+    % src/ (root, flat .py modules)
+    \node[main] (load)  at (0,    1.5) {\textbf{VariantLoader}\nodepart{second}+load()};
+    \node[main] (feat)  at (0,    0.3) {\textbf{Feature\-Assembler}\nodepart{second}+assemble()};
+    \node[main] (split) at (0,   -0.9) {\textbf{ParalogSplitter}\nodepart{second}+split()};
+    \node[main] (cal)   at (0,   -2.1) {\textbf{Isotonic\-Calibrator}\nodepart{second}+transform(p)};
 
-    \node[model] (xgb) at (2.7,  1.5) {\textbf{XGBoostTrainer}\nodepart{second}+fit() +predict()};
-    \node[model] (cal) at (2.7,  0)   {\textbf{Isotonic\-Calibrator}\nodepart{second}+transform(p)};
-    \node[model] (esm) at (2.7, -1.5) {\textbf{ESM2Scorer}\nodepart{second}+score(q)};
+    % src/models/
+    \node[model] (xgb)  at (2.7,  1.5) {\textbf{XGBoost\-Trainer}\nodepart{second}+fit() +predict()};
+    \node[model] (esm)  at (2.7,  0.3) {\textbf{ESM2Scorer}\nodepart{second}+score(q)};
+    \node[model] (cnn)  at (2.7, -0.9) {\textit{SimpleMutationCNN}\nodepart{second}\textit{(F5 stub)}};
 
-    \node[eval]  (boot) at (5.4,  1.5) {\textbf{Bootstrap\-Metrics}\nodepart{second}+compute()};
-    \node[eval]  (shap) at (5.4,  0)   {\textbf{SHAPExplainer}\nodepart{second}+explain()};
-    \node[eval]  (gate) at (5.4, -1.5) {\textbf{LeakageGate}\nodepart{second}+run\_all()};
+    % src/baselines/ + src/external_validation/ (combined)
+    \node[eval] (base)  at (5.4,  1.5) {\textbf{Baseline\-Scorer}\nodepart{second}SIFT/PP2/AM};
+    \node[eval] (deno)  at (5.4,  0.3) {\textbf{DeNovoLoader}\nodepart{second}+load()};
+    \node[eval] (boot)  at (5.4, -0.9) {\textbf{Bootstrap\-Metrics}\nodepart{second}+compute()};
+    \node[eval] (gate)  at (5.4, -2.1) {\textbf{LeakageGate}\nodepart{second}+run\_all() \textbf{(6 checks)}};
 
-    \node[iface] (app)  at (8.1,  1.5) {\textbf{ScoreService}\nodepart{second}+score\_variant()};
-    \node[iface] (web)  at (8.1,  0)   {\textbf{StreamlitApp}\nodepart{second}+render()};
-    \node[iface] (cli)  at (8.1, -1.5) {\textbf{TyperCLI}\nodepart{second}+batch\_score()};
+    % scripts/
+    \node[iface] (web)  at (8.1,  1.5) {\textbf{StreamlitApp}\nodepart{second}+render()};
+    \node[iface] (cli)  at (8.1,  0.3) {\textbf{ScoreCLI}\nodepart{second}+batch\_score()};
+    \node[iface] (svc)  at (8.1, -0.9) {\textbf{ScoreService}\nodepart{second}+score\_variant()};
+    \node[iface] (shap) at (8.1, -2.1) {\textbf{SHAPExplainer}\nodepart{second}+explain()};
 
-    \node[font=\sffamily\tiny\bfseries, blue!60!black] at (0, 2.3) {\texttt{src/data/}};
-    \node[font=\sffamily\tiny\bfseries, green!50!black] at (2.7, 2.3) {\texttt{src/models/}};
-    \node[font=\sffamily\tiny\bfseries, orange!70!black] at (5.4, 2.3) {\texttt{src/eval/}};
-    \node[font=\sffamily\tiny\bfseries, red!60!black] at (8.1, 2.3) {\texttt{scripts/}};
+    % Package labels (REAL paths — UML P0-1 fix)
+    \node[font=\sffamily\tiny\bfseries, blue!60!black] at (0, 2.4)
+         {\texttt{src/} (root)};
+    \node[font=\sffamily\tiny\bfseries, green!50!black] at (2.7, 2.4)
+         {\texttt{src/models/}};
+    \node[font=\sffamily\tiny\bfseries, orange!70!black, align=center] at (5.4, 2.4)
+         {\texttt{src/baselines/} +\\\texttt{src/external\_validation/}};
+    \node[font=\sffamily\tiny\bfseries, red!60!black] at (8.1, 2.4)
+         {\texttt{scripts/}};
 
+    % Associations
     \draw[rel] (load) -- (feat);
     \draw[rel] (feat) -- (split);
     \draw[rel] (xgb) -- (cal);
-    \draw[rel] (cal) -- (esm);
-    \draw[rel] (boot) -- (shap);
-    \draw[rel] (web) -- (app);
-    \draw[rel] (cli) -- (app);
+    \draw[rel] (svc) -- (xgb);
+    \draw[rel] (web) -- (svc);
+    \draw[rel] (cli) -- (svc);
     \draw[comp] (gate.west) -- ++(-0.3, 0);
   \end{tikzpicture}
+
+  \vspace{0.2em}
+  \scriptsize
+  \emph{Conceptual blueprint. Production code uses module-level functions
+  in \texttt{src/}* rather than the named classes shown here, following
+  Python convention for ML pipelines.}
 \end{frame}
 
-% ───────────── SLIDE 24 ─────────────
-\begin{frame}{UML 3/6: Sequence diagram (scoring request)}
+% ───────────── SLIDE 14 — Sequence diagram (P1 caption) ─────────────
+\begin{frame}{Sequence diagram --- single scoring request}
   \centering
   \begin{tikzpicture}[
     font=\sffamily\scriptsize,
@@ -817,32 +837,76 @@
     \draw[msg] ($(s.south)+(0.05,-4.2)$) -- ($(e.south)+(-0.05,-4.2)$) node[mlab] {explain};
     \draw[ret] ($(s.south)+(-0.05,-4.7)$) -- ($(a.south)+(0.05,-4.7)$) node[mlab] {\{p, band, shap\}};
   \end{tikzpicture}
+
+  \vspace{0.2em}
+  \scriptsize
+  \emph{Conceptual blueprint. \texttt{ScoreSvc}, \texttt{Cache},
+  \texttt{XGBoost}, \texttt{SHAP} map to module-level functions in
+  \texttt{scripts/streamlit\_app.py} + Pickle/Parquet I/O, not concrete
+  classes.}
 \end{frame}
 
-% NOTE: UML 4/6, 5/6, 6/6 (Activity, State, Component diagrams) moved to
-% the appendix to keep the main deck under presentation pressure. Use
-% the navigation bar or click-through to access them on demand.
-
-% ───────────── SLIDE 28 ─────────────
-\begin{frame}{System architecture (6-layer)}
+% ───────────── SLIDE 15 — Activity diagram (6 leakage checks, P1 caption) ─────────────
+\begin{frame}{Activity diagram --- training + evaluation workflow}
   \centering
   \begin{tikzpicture}[
-    font=\sffamily\scriptsize,
-    layer/.style={draw, rounded corners=3pt, minimum width=8.0cm,
-      minimum height=0.7cm, align=center, thick, font=\sffamily\scriptsize},
-    cross/.style={draw, rounded corners=3pt, minimum width=1.7cm,
-      minimum height=2.7cm, align=center, thick, font=\sffamily\tiny},
+    font=\sffamily\tiny, scale=0.85, transform shape,
+    start/.style={circle, fill=black, minimum size=0.22cm, inner sep=0pt},
+    stop/.style={circle, draw=black, double, minimum size=0.3cm, inner sep=0pt, fill=black!15},
+    act/.style={draw, rounded corners=4pt, minimum width=1.55cm,
+      minimum height=0.4cm, align=center, thick, fill=blue!8, font=\sffamily\tiny},
+    actsm/.style={draw, rounded corners=3pt, minimum width=1.35cm,
+      minimum height=0.36cm, align=center, thick, fill=blue!8, font=\sffamily\tiny},
+    dec/.style={diamond, draw, minimum width=0.7cm, minimum height=0.5cm,
+      inner sep=0pt, fill=orange!10, thick, font=\sffamily\tiny, align=center},
+    fork/.style={rectangle, draw=black, fill=black, minimum height=0.09cm,
+      minimum width=10.5cm, inner sep=0pt},
+    fork5/.style={rectangle, draw=black, fill=black, minimum height=0.09cm,
+      minimum width=9.0cm, inner sep=0pt},
+    arrow/.style={-{Latex[length=3pt]}, thick},
   ]
-    \node[layer, fill=red!10]     (l6) at (0,  2.5) {\textbf{L6~~Presentation} -- Streamlit \textbullet\ Typer CLI \textbullet\ Python API};
-    \node[layer, fill=orange!12]  (l5) at (0,  1.75){\textbf{L5~~Application} -- validation \textbullet\ cache \textbullet\ payload};
-    \node[layer, fill=yellow!20]  (l4) at (0,  1.0) {\textbf{L4~~Service} -- score\_variant() \textbullet\ explain() \textbullet\ batch\_score()};
-    \node[layer, fill=green!12]   (l3) at (0,  0.25){\textbf{L3~~ML core} -- XGBoost \textbullet\ isotonic \textbullet\ SHAP \textbullet\ ESM-2 LLR};
-    \node[layer, fill=blue!10]    (l2) at (0, -0.5) {\textbf{L2~~Data access} -- pyarrow \textbullet\ paralog splitter \textbullet\ assembler};
-    \node[layer, fill=black!6]    (l1) at (0, -1.25){\textbf{L1~~Data} -- ClinVar \textbullet\ gnomAD \textbullet\ dbNSFP \textbullet\ denovo-db \textbullet\ UniProt};
+    \node[start] (s) at (0, 0) {};
+    \node[act, below=0.2cm of s] (load) {Load paralog-disjoint splits};
+    \node[fork, below=0.25cm of load] (f1) {};
+    % Six leakage checks (UML P0-2 fix: 4 → 6)
+    \node[actsm, below=0.32cm of f1, xshift=-4.5cm] (ch1) {Banned features};
+    \node[actsm, below=0.32cm of f1, xshift=-2.7cm] (ch2) {100\% missense};
+    \node[actsm, below=0.32cm of f1, xshift=-0.9cm] (ch3) {No paralog};
+    \node[actsm, below=0.32cm of f1, xshift=0.9cm]  (ch4) {Rate gap};
+    \node[actsm, below=0.32cm of f1, xshift=2.7cm]  (ch5) {ESM-2 banned};
+    \node[actsm, below=0.32cm of f1, xshift=4.5cm]  (ch6) {ESM-2 split};
+    \node[fork, below=1.0cm of f1] (j1) {};
+    \node[dec, below=0.25cm of j1] (d1) {Pass?};
+    \node[act, right=0.7cm of d1, fill=red!12] (halt) {Halt + report};
+    \node[act, below=0.25cm of d1] (opt) {Optuna HPO (40 trials)};
+    \node[act, below=0.15cm of opt] (thr) {Threshold sweep};
+    \node[act, below=0.15cm of thr] (cal) {Isotonic calibration};
+    \node[fork5, below=0.25cm of cal] (f2) {};
+    \node[actsm, below=0.32cm of f2, xshift=-3.7cm] (ta) {Bootstrap CIs};
+    \node[actsm, below=0.32cm of f2, xshift=-1.85cm] (tb) {SHAP};
+    \node[actsm, below=0.32cm of f2, xshift=0cm]    (tc) {Baselines};
+    \node[actsm, below=0.32cm of f2, xshift=1.85cm] (td) {denovo-db};
+    \node[actsm, below=0.32cm of f2, xshift=3.7cm]  (te) {ESM-2 LLR};
+    \node[fork5, below=1.0cm of f2] (j2) {};
+    \node[act, below=0.25cm of j2] (rep) {Write \texttt{results/metrics/*.csv}};
+    \node[stop, below=0.2cm of rep] (endn) {};
 
-    \node[cross, fill=red!6]   at (-5.3,  0.62) {\textbf{Quality}\\gates\\[2pt]\texttt{ruff}\\\texttt{mypy}\\\texttt{pytest}\\leakage\\CI};
-    \node[cross, fill=teal!12] at ( 5.3,  0.62) {\textbf{Repro-}\\ducibility\\[2pt]Docker\\\texttt{uv.lock}\\fixed seed\\snapshots};
+    \draw[arrow] (s) -- (load); \draw[arrow] (load) -- (f1);
+    \foreach \c in {ch1, ch2, ch3, ch4, ch5, ch6} {\draw[arrow] (f1) -- (\c); \draw[arrow] (\c) -- (j1);}
+    \draw[arrow] (j1) -- (d1);
+    \draw[arrow] (d1) -- (halt) node[midway, above, font=\sffamily\tiny]{no};
+    \draw[arrow] (d1) -- (opt) node[midway, right, font=\sffamily\tiny]{yes};
+    \draw[arrow] (opt) -- (thr); \draw[arrow] (thr) -- (cal); \draw[arrow] (cal) -- (f2);
+    \foreach \t in {ta, tb, tc, td, te} {\draw[arrow] (f2) -- (\t); \draw[arrow] (\t) -- (j2);}
+    \draw[arrow] (j2) -- (rep); \draw[arrow] (rep) -- (endn);
   \end{tikzpicture}
+
+  \vspace{0.1em}
+  \scriptsize
+  \emph{Fork-1 runs all six leakage checks; Fork-2 runs five evaluation
+  tracks. Conceptual blueprint --- production uses sequential script
+  invocation, not a true parallel orchestrator. State and Component
+  diagrams are in the appendix.}
 \end{frame}
 
 % ═════════════════ PART 6: INTERFACE ═════════════════
