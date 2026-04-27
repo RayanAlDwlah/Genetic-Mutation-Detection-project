@@ -565,107 +565,7 @@
   \end{exampleblock}
 \end{frame}
 
-% ───────────── SLIDE 17 -- headline results (2-column) ─────────────
-\begin{frame}{Part 3 -- Headline results: paralog-disjoint test (1/3)}
-  \begin{columns}[T]
-    \column{0.45\textwidth}
-    \begin{block}{Test split}
-      Paralog-disjoint\\
-      28{,}098 variants\\
-      Pathogenic rate: $\sim$30\%
-    \end{block}
-
-    \footnotesize
-    All confidence intervals from 1{,}000-replicate nonparametric
-    bootstrap.
-
-    \column{0.55\textwidth}
-    \centering
-    \begin{tabular}{@{}l r@{}}
-      \toprule
-      \textbf{Metric}              & \textbf{Value (95\% CI)} \\
-      \midrule
-      ROC-AUC                      & 0.938 $[0.935, 0.941]$ \\
-      PR-AUC (uncalibrated)        & 0.836 $[0.827, 0.843]$ \\
-      \rowcolor{kkuGoldLight}
-      \textbf{PR-AUC (calibrated)} & \textbf{0.827} $[0.819, 0.835]$ \\
-      F1                           & 0.775 \\
-      Brier (calibrated)           & 0.083 \\
-      ECE (calibrated)             & 0.011 \\
-      \bottomrule
-    \end{tabular}
-  \end{columns}
-
-  \vspace{0.7em}
-  \footnotesize
-  Calibration trades a small ranking penalty
-  ($\Delta$PR-AUC $= -0.008$, $0.8355 \to 0.8273$) for $\sim$$5\times$
-  better probability reliability (ECE $0.054 \to 0.011$).
-  Calibrated probabilities are the headline; uncalibrated is shown for
-  transparency.
-\end{frame}
-
-% ───────────── SLIDE 19 ─────────────
-\begin{frame}{Part 3 -- SHAP interpretability (2/3)}
-  \small
-  \centering
-  \footnotesize\emph{Highlighted rows: gene-level constraint features
-  added in Phase~2.1.}\par
-  \vspace{0.3em}
-  \begin{tabular}{@{} r l r @{}}
-    \toprule
-    Rank & Feature & mean $|$SHAP$|$ \\
-    \midrule
-    1 & phyloP100way\_vertebrate & 0.809 \\
-    2 & AN (gnomAD allele number) & 0.532 \\
-    \rowcolor{yellow!25}
-    3 & \textbf{lof\_z (gnomAD constraint)} & 0.342 \\
-    4 & alt\_aa\_P (Proline) & 0.304 \\
-    5 & pfam\_domain & 0.284 \\
-    \rowcolor{yellow!25}
-    8 & \textbf{oe\_mis\_upper (gnomAD constraint)} & 0.189 \\
-    \bottomrule
-  \end{tabular}
-  \vspace{0.5em}
-  \begin{itemize}
-    \item Two Phase~2.1 features at \#3 and \#8 $\Rightarrow$
-          gene-level priors carry \textbf{orthogonal signal}.
-    \item $326$ of $2{,}000$ test variants are confident errors
-          ($16.3\%$).
-    \item FN $= 264$, FP $= 62$ $\Rightarrow$ model misses hard
-          pathogenic cases in low-conservation regions.
-  \end{itemize}
-\end{frame}
-
-% ───────────── SLIDE 20 ─────────────
-\begin{frame}{Part 3 -- External validation: denovo-db (3/3)}
-  \small
-  \centering
-  \footnotesize\emph{Highlighted rows: holdout from gene families
-  completely unseen in training.}\par
-  \vspace{0.3em}
-  \begin{tabular}{@{} l r l l @{}}
-    \toprule
-    Slice & $n$ & ROC-AUC (95\% CI) & PR-AUC (95\% CI) \\
-    \midrule
-    full (pre-constraint)      & 642 & 0.468 $[0.42, 0.52]$ & 0.761 \\
-    full (post-constraint)     & 642 & \textbf{0.511} $[0.46, 0.56]$ & \textbf{0.790} \\
-    \rowcolor{yellow!25}
-    holdout (pre-constraint)   & 201 & 0.487 $[0.38, 0.58]$ & 0.789 \\
-    \rowcolor{yellow!25}
-    \textbf{holdout (post-constraint)} & 201 & \textbf{0.573} $[0.48, 0.67]$ & \textbf{0.838} \\
-    \bottomrule
-  \end{tabular}
-  \vspace{0.6em}
-  \begin{alertblock}{The headline}
-    \centering
-    On the family-holdout slice ($n=201$): paired bootstrap
-    $\Delta\text{ROC} = +0.076$ $[-0.021, +0.172]$, one-sided
-    $p = 0.073$. Lower bound below zero --- we frame this as
-    \textbf{partial closure} of the generalisation gap, not a
-    deployable predictor.
-  \end{alertblock}
-\end{frame}
+% NOTE: 3 displaced "Part 3" slides moved (and updated) to Section 8 Results.
 
 % ═════════════════ SECTION 5 — SYSTEM ANALYSIS & DESIGN ═════════════════
 \section{System Analysis \& Design}
@@ -989,22 +889,179 @@
   \end{exampleblock}
 \end{frame}
 
-% ═════════════════ SECTION 8 — RESULTS (placeholder, built in D8) ═════════════════
+% ═════════════════ SECTION 8 — RESULTS ═════════════════
 \section{Results}
 
-% NOTE: 4 Results slides (Headline / External / ESM-2 zero-shot+rank-fusion /
-% Phase-2.1+SHAP) will be built in D8 from canonical-numbers.md.
-% In D7 we left a single placeholder so Section 8 has a frame.
+% ───────────── SLIDE 18 — Headline results ─────────────
+\begin{frame}{Headline results --- paralog-disjoint test split}
+  \begin{columns}[T]
+    \column{0.45\textwidth}
+    \begin{block}{Test split}
+      Paralog-disjoint\\
+      28{,}098 variants\\
+      Pathogenic rate $\sim$30\%
+    \end{block}
 
-% ───────────── SLIDE PLACEHOLDER (to be filled in D8) ─────────────
-\begin{frame}{[D8] Section 8 Results --- placeholder}
-  \centering
-  \large
-  \emph{This slide will be replaced in D8 with the four Results slides.}
-  \par
-  \vspace{1em}
+    \footnotesize
+    All 95\,\% CIs from 1{,}000-replicate nonparametric bootstrap
+    (seed = 42).
+
+    \column{0.55\textwidth}
+    \centering
+    \begin{tabular}{@{}l r@{}}
+      \toprule
+      \textbf{Metric}              & \textbf{Value (95\,\% CI)} \\
+      \midrule
+      ROC-AUC                      & 0.938 $[0.935, 0.941]$ \\
+      PR-AUC (uncalibrated)        & 0.836 $[0.827, 0.843]$ \\
+      \rowcolor{kkuGoldLight}
+      \textbf{PR-AUC (calibrated)} & \textbf{0.827} $[0.819, 0.835]$ \\
+      F1                           & 0.775 \\
+      Brier (calibrated)           & 0.083 \\
+      ECE (calibrated)             & 0.011 \\
+      \bottomrule
+    \end{tabular}
+  \end{columns}
+
+  \vspace{0.7em}
   \footnotesize
-  Results section is rebuilt from \texttt{canonical-numbers.md}.
+  Calibration trades a small ranking penalty
+  ($\Delta$PR-AUC $= -0.008$, $0.8355 \to 0.8273$) for $\sim$$5\times$
+  better probability reliability (ECE $0.054 \to 0.011$).
+  Calibrated probabilities are the headline; uncalibrated is shown for
+  transparency.
+\end{frame}
+
+% ───────────── SLIDE 19 — External validation (denovo-db) + C1 caveat ─────────────
+\begin{frame}{External validation --- \textsc{denovo-db}}
+  \footnotesize
+  \centering
+  \emph{Highlighted rows: holdout from gene families completely unseen in training.}
+  \vspace{0.3em}
+  \begin{tabular}{@{} l r l l @{}}
+    \toprule
+    Slice & $n$ & ROC-AUC (95\,\% CI) & PR-AUC (95\,\% CI) \\
+    \midrule
+    full (pre-constraint)      & 642 & 0.468 $[0.42, 0.52]$ & 0.761 \\
+    full (post-constraint)     & 642 & \textbf{0.511} $[0.46, 0.56]$ & \textbf{0.790} \\
+    \rowcolor{yellow!25}
+    holdout (pre-constraint)   & 201 & 0.487 $[0.38, 0.58]$ & 0.789 \\
+    \rowcolor{yellow!25}
+    \textbf{holdout (post-constraint)} & 201 & \textbf{0.573} $[0.48, 0.67]$ & \textbf{0.838} \\
+    \bottomrule
+  \end{tabular}
+
+  \vspace{0.5em}
+  \begin{columns}[T]
+    \column{0.55\textwidth}
+    \begin{alertblock}{The headline}
+      \scriptsize
+      On family-holdout ($n=201$): paired bootstrap
+      $\Delta\text{ROC} = +0.076$ $[-0.021, +0.172]$, one-sided
+      $p = 0.073$. \textbf{Partial closure} of the generalisation gap,
+      not a deployable predictor.
+    \end{alertblock}
+
+    \column{0.45\textwidth}
+    \begin{block}{C1 --- near-base-rate caveat}
+      \scriptsize
+      Holdout class balance is \textbf{80\,\% positive}. Constant-positive
+      baseline PR-AUC $\approx 0.80$. \textbf{Meaningful PR-AUC lift is only
+      $+0.037$}, so ROC-AUC is the primary metric for this cohort.
+    \end{block}
+  \end{columns}
+\end{frame}
+
+% ───────────── SLIDE 20 — ESM-2 zero-shot + rank fusion ─────────────
+\begin{frame}{ESM-2 zero-shot + rank fusion}
+  \footnotesize
+  \centering
+  \textbf{Test split (28{,}098 variants, paralog-disjoint)}
+  \vspace{0.3em}
+  \begin{tabular}{@{}l c c c@{}}
+    \toprule
+    Model & ROC-AUC & PR-AUC & $\alpha$ \\
+    \midrule
+    XGBoost (calibrated)           & 0.938 & 0.827 & ---   \\
+    ESM-2 LLR (zero-shot)          & 0.735 & 0.604 & ---   \\
+    Rank fusion, uniform           & 0.895 & 0.784 & 0.50  \\
+    \rowcolor{kkuGoldLight}
+    \textbf{Rank fusion, tuned}    & \textbf{0.941} & \textbf{0.852} & \textbf{0.175} \\
+    \bottomrule
+  \end{tabular}
+
+  \vspace{0.5em}
+  \scriptsize
+  \[
+    s_i^{\text{fused}} \;=\; (1 - \alpha) \cdot \frac{r_i^{\text{XGB}}}{n}
+                            \;+\; \alpha \cdot \frac{r_i^{\text{ESM}}}{n},
+    \qquad \alpha^{*} = 0.175
+  \]
+
+  \vspace{0.4em}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+    \textbf{\textcolor{kkuGreen}{Why fusion works}}
+    \scriptsize\par
+    Tuned $\alpha = 0.175$ down-weights the weaker PLM signal.
+    Uniform $\alpha = 0.5$ is \emph{worse} than XGBoost alone.
+    Tuned mix beats XGBoost on internal test (paired DeLong on
+    denovo-db: n.s.\ at the 5\,\% level).
+
+    \column{0.5\textwidth}
+    \begin{exampleblock}{Phase 1 takeaway}
+      \scriptsize
+      ESM-2 zero-shot LLR is fully unsupervised --- provably uncontaminated
+      by ClinVar. Fusion gives $+0.025$ PR-AUC lift over XGBoost, motivating
+      training-time integration (Slide 21).
+    \end{exampleblock}
+  \end{columns}
+\end{frame}
+
+% ───────────── SLIDE 21 — Phase 2.1 ablation + SHAP shift + C2 caveat ─────────────
+\begin{frame}{Phase 2.1 --- training-time ESM-2 integration + SHAP shift}
+  \scriptsize
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+    \textbf{\textcolor{kkuGreen}{Ablation (paralog-disjoint test, $n=28{,}098$)}}
+    \begin{tabular}{@{}l r r@{}}
+      \toprule
+      Model & ROC & PR \\
+      \midrule
+      Phase-1 baseline                & 0.938 & 0.827 \\
+      Augmented \texttt{no\_esm2}     & 0.939 & 0.840 \\
+      Augmented \texttt{esm2\_only}   & 0.739 & 0.610 \\
+      \rowcolor{green!10}
+      \textbf{Augmented \texttt{full}} & \textbf{0.948} & \textbf{0.865} \\
+      \bottomrule
+    \end{tabular}
+    \vspace{0.3em}\par
+    Paired bootstrap full vs.\ no\_esm2:\par
+    $\Delta\text{PR-AUC} = +0.0313$ $[+0.0266, +0.0361]$, $p<10^{-4}$.\par
+    $\Delta\text{ROC-AUC} = +0.0093$ $[+0.0082, +0.0103]$, $p<10^{-4}$.
+
+    \column{0.5\textwidth}
+    \textbf{\textcolor{kkuGreen}{SHAP shift after ESM-2 added}}
+    \begin{itemize}\setlength{\itemsep}{0.05em}
+      \item \texttt{is\_imputed\_esm2\_llr} ranks \#1 (mean $|$SHAP$|=1.05$)
+      \item \texttt{esm2\_llr} ranks \#4 ($=0.42$)
+      \item Conservation features (phyloP, GERP) remain top-tier;
+            ESM-2 partly substitutes (Spearman $\rho \le |0.31|$),
+            partly supplements.
+      \item \texttt{lof\_z} drops from rank 3 (Phase-1) to rank 5.
+    \end{itemize}
+  \end{columns}
+
+  \vspace{0.4em}
+  \begin{alertblock}{denovo-db holdout: $\Delta\text{ROC} = -0.13$ + C2 constraint-coverage caveat}
+    \scriptsize
+    The in-distribution gain ($+0.031$ PR-AUC) does \emph{not} transfer to unseen
+    families.\enspace
+    \textbf{Partly a coverage artefact (C2):} held-out family genes receive
+    \emph{imputed} constraint values for the augmented model where the baseline
+    had real gnomAD values. Full slice (preserved coverage) shows no degradation
+    --- supporting the artefact interpretation, not a pure ESM-2 effect.
+  \end{alertblock}
 \end{frame}
 
 % ═════════════════ SECTION 9 — COMPARISON ═════════════════
