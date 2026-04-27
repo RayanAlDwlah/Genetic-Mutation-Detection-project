@@ -3051,24 +3051,40 @@ UC1 makes it explicit that every score call passes through
 calibration and feature-attribution steps. Solid lines are
 associations; dashed lines are
 $\langle\!\langle include\rangle\!\rangle$ relationships;
-dotted lines are $\langle\!\langle extend\rangle\!\rangle$.}
+dotted lines are $\langle\!\langle extend\rangle\!\rangle$.
+\textbf{The use cases map to capabilities realised across
+multiple modules in \texttt{src/} and \texttt{scripts/}};
+UC2 (Fetch annotation), UC3 (Calibrate), and UC4 (Explain)
+are not implemented as separate subsystems but as
+functions distributed within the production code.}
 \label{fig:uc}
 \end{figure}
 
 \subsection{Class Diagram}
 \label{sec:uml-class}
 
-Figure~\ref{fig:class} reveals the static structure of the
-\texttt{src/} package. Classes are grouped into four
-coloured \emph{packages} corresponding directly to the
-\texttt{src/} sub-directories
-\citep{martin2017cleanarch}. Each class is rendered as a
-three-compartment rectangle: the class name on top, the
-key attributes in the middle, and the principal methods at
-the bottom. Associations carry multiplicities; the
-\texttt{LeakageGate} class has a \emph{composition} (filled
-diamond) with each of its four invariant checkers because
-the gate does not exist meaningfully without them.
+Figure~\ref{fig:class} shows a conceptual class diagram of
+the \texttt{src/} package. Classes are grouped into four
+coloured \emph{packages} corresponding to the actual
+sub-directory structure: \texttt{src/} (root, where the
+flat data-pipeline modules live), \texttt{src/models/},
+\texttt{src/baselines/} combined with
+\texttt{src/external\_validation/} (eval extensions), and
+\texttt{scripts/} \citep{martin2017cleanarch}. Each class
+is rendered as a three-compartment rectangle: the class
+name on top, the key attributes in the middle, and the
+principal methods at the bottom. Associations carry
+multiplicities; the \texttt{LeakageGate} class has a
+\emph{composition} (filled diamond) with each of its
+\textbf{six} invariant checkers (banned features, missense
+filter, paralog (gene + family) disjointness, label-rate
+gap, Phase-2.1 ESM-2 banned-upstream, and ESM-2 split
+integrity) because the gate does not exist meaningfully
+without them. \textbf{Production code uses module-level
+functions in \texttt{src/}* rather than the named classes
+shown here}; the diagram is a logical blueprint of the
+architectural relationships, not an implementation map,
+following Python convention for ML pipelines.
 
 \begin{figure}[htbp]
 \centering
@@ -3130,10 +3146,11 @@ the gate does not exist meaningfully without them.
         \nodepart{second}\scriptsize service: ScoreService
         \nodepart{third}\scriptsize +batch\_score(path)};
 
-  % Package labels
-  \node[font=\sffamily\footnotesize\bfseries, blue!60!black, above=0.15cm of load] {\texttt{src/data/}};
+  % Package labels (real paths from src/, P0-1 fix)
+  \node[font=\sffamily\footnotesize\bfseries, blue!60!black, above=0.15cm of load] {\texttt{src/} (root)};
   \node[font=\sffamily\footnotesize\bfseries, green!50!black, above=0.15cm of xgb] {\texttt{src/models/}};
-  \node[font=\sffamily\footnotesize\bfseries, orange!70!black, above=0.15cm of shap] {\texttt{src/eval/}};
+  \node[font=\sffamily\footnotesize\bfseries, orange!70!black, above=0.15cm of shap, align=center]
+       {\texttt{src/baselines/} +\\\texttt{src/external\_validation/}};
   \node[font=\sffamily\footnotesize\bfseries, red!60!black, above=0.15cm of web] {\texttt{scripts/}};
 
   % Associations (solid arrows)
@@ -3151,12 +3168,18 @@ the gate does not exist meaningfully without them.
   % Composition diamond: LeakageGate owns invariant checks
   \draw[comp] (gate.west) -- ++(-0.35, 0);
 \end{tikzpicture}
-\caption[Class diagram]{\textbf{Class diagram.} Four
-packages align one-to-one with \texttt{src/}
-sub-directories. A filled diamond denotes composition:
-\texttt{LeakageGate} owns the life of its invariant checks.
-Open arrows are directed associations with the
-\emph{uses/produces} roles labelled inline.}
+\caption[Class diagram]{\textbf{Class diagram (conceptual).}
+Four coloured packages align with the actual \texttt{src/}
+sub-directory structure: \texttt{src/} (root, flat data
+modules), \texttt{src/models/} (XGBoost, ESM-2),
+\texttt{src/baselines/} + \texttt{src/external\_validation/}
+(eval extensions), and \texttt{scripts/} (UI surfaces). A
+filled diamond denotes composition: \texttt{LeakageGate}
+owns the life of its \textbf{six} invariant checks. Open
+arrows are directed associations with the \emph{uses /
+produces} roles labelled inline. \textbf{Production code
+uses module-level functions rather than the named classes
+shown here}, following Python convention for ML pipelines.}
 \label{fig:class}
 \end{figure}
 
@@ -3244,7 +3267,12 @@ which is a pure in-memory transform.
 single scoring request.} Orange bars are activation
 frames; the red frame is an \texttt{opt} fragment for the
 cache-miss branch (adds $\sim$1--2~s). Self-loop on
-\texttt{ScoreService} denotes isotonic calibration.}
+\texttt{ScoreService} denotes isotonic calibration.
+\textbf{Conceptual blueprint --- the named participants
+(\texttt{ScoreService}, \texttt{FeatureCache}, etc.)\ map
+to module-level functions in
+\texttt{scripts/streamlit\_app.py} plus Pickle/Parquet
+on-disk caching}, not concrete classes.}
 \label{fig:seq}
 \end{figure}
 
@@ -3255,8 +3283,11 @@ Figure~\ref{fig:act} models the \emph{training and
 evaluation} workflow as an activity diagram with explicit
 \emph{fork} and \emph{join} pseudo-nodes. The two fork/join
 pairs capture the two independent parallelisations in the
-pipeline: the leakage gate runs four checks concurrently
-(fork-1 / join-1) and the evaluation step runs five
+pipeline: the leakage gate runs \textbf{six checks}
+concurrently (fork-1 / join-1) --- banned features, missense
+filter, paralog (gene + family) disjointness, label-rate
+gap, Phase-2.1 ESM-2 banned-upstream, and ESM-2 split
+integrity --- and the evaluation step runs five
 independent scoring tracks concurrently (fork-2 / join-2).
 
 \begin{figure}[htbp]
@@ -3279,12 +3310,14 @@ independent scoring tracks concurrently (fork-2 / join-2).
   \node[start] (s) at (0, 0) {};
   \node[act, below=0.35cm of s] (load) {Load paralog-disjoint splits};
 
-  % Fork 1 --- leakage gate (4 parallel checks)
+  % Fork 1 --- leakage gate (6 parallel checks, P0-2 fix)
   \node[fork, below=0.45cm of load] (f1) {};
-  \node[act, below=0.55cm of f1, xshift=-4.2cm] (ch1) {Check banned features};
-  \node[act, below=0.55cm of f1, xshift=-1.4cm] (ch2) {Check 100\% missense};
-  \node[act, below=0.55cm of f1, xshift=1.4cm]  (ch3) {Check no paralog};
-  \node[act, below=0.55cm of f1, xshift=4.2cm]  (ch4) {Check rate gap};
+  \node[act, below=0.55cm of f1, xshift=-4.5cm, minimum width=1.7cm] (ch1) {Banned features};
+  \node[act, below=0.55cm of f1, xshift=-2.7cm, minimum width=1.7cm] (ch2) {100\% missense};
+  \node[act, below=0.55cm of f1, xshift=-0.9cm, minimum width=1.7cm] (ch3) {Paralog disjoint};
+  \node[act, below=0.55cm of f1, xshift=0.9cm,  minimum width=1.7cm] (ch4) {Rate gap};
+  \node[act, below=0.55cm of f1, xshift=2.7cm,  minimum width=1.7cm] (ch5) {ESM-2 banned};
+  \node[act, below=0.55cm of f1, xshift=4.5cm,  minimum width=1.7cm] (ch6) {ESM-2 split};
   \node[fork, below=1.7cm of f1] (j1) {};
 
   \node[dec, below=0.45cm of j1] (d1) {Pass?};
@@ -3309,7 +3342,7 @@ independent scoring tracks concurrently (fork-2 / join-2).
   % Flow
   \draw[arrow] (s) -- (load);
   \draw[arrow] (load) -- (f1);
-  \foreach \c in {ch1, ch2, ch3, ch4} {\draw[arrow] (f1) -- (\c); \draw[arrow] (\c) -- (j1);}
+  \foreach \c in {ch1, ch2, ch3, ch4, ch5, ch6} {\draw[arrow] (f1) -- (\c); \draw[arrow] (\c) -- (j1);}
   \draw[arrow] (j1) -- (d1);
   \draw[arrow] (d1) -- (halt) node[midway, above, font=\sffamily\scriptsize]{no};
   \draw[arrow] (d1) -- (opt) node[midway, right, font=\sffamily\scriptsize, xshift=1pt]{yes};
@@ -3322,10 +3355,14 @@ independent scoring tracks concurrently (fork-2 / join-2).
 \end{tikzpicture}
 \caption[Activity diagram]{\textbf{Activity diagram} for the
 training + evaluation workflow. The two thick black bars
-are fork/join pseudo-nodes: Fork-1 runs the four leakage
-checks in parallel; Fork-2 runs the five evaluation tracks
-in parallel. If any leakage check fails, execution halts
-without touching the training stage.}
+are fork/join pseudo-nodes: Fork-1 runs the \textbf{six}
+leakage checks in parallel; Fork-2 runs the five evaluation
+tracks in parallel. If any leakage check fails, execution
+halts without touching the training stage.
+\textbf{Conceptual blueprint --- production uses sequential
+script invocation, not a true parallel orchestrator}; the
+fork/join nodes denote logical independence rather than
+implementation parallelism.}
 \label{fig:act}
 \end{figure}
 
