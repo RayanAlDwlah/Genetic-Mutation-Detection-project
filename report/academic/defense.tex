@@ -942,290 +942,72 @@
   \end{columns}
 \end{frame}
 
-% ═════════════════ PART 7: IMPLEMENTATION ═════════════════
+% ═════════════════ SECTION 7 — IMPLEMENTATION ═════════════════
 \section{Implementation}
 
-% NOTE: Hardware + software stack slide moved to the appendix.
-
-% ───────────── SLIDE 28 ─────────────
-\begin{frame}{Testing strategy: 5-level pyramid}
-  \begin{columns}[T]
-    \begin{column}{0.55\linewidth}
-      \small
-      \begin{enumerate}
-        \item \textbf{Unit} -- 120 tests, $<$10~s\\
-              \scriptsize pure functions, metric math, paralog regex
-        \item \textbf{Property} -- 8 \texttt{hypothesis} properties\\
-              \scriptsize calibrator monotonicity, rank preservation
-        \item \textbf{Integration} -- 25 tests, 1--2~min\\
-              \scriptsize leakage gate, cache fallback, module flows
-        \item \textbf{Scientific / E2E} -- 5 scripts, 5--15~min\\
-              \scriptsize reproduce-headline within $10^{-3}$
-        \item \textbf{CI gate} -- blocks merge on red
-      \end{enumerate}
-    \end{column}
-    \begin{column}{0.43\linewidth}
-      \centering
-      \small
-      \begin{tabular}{@{}lr@{}}
-        \toprule
-        \textbf{Summary} & \textbf{Value} \\
-        \midrule
-        Total tests   & 157 / 158 pass \\
-        Coverage      & 59\% (CI gate 55\%) \\
-        Top modules   & $\geq$90\% \\
-        Reproducibility & six-decimal \\
-        \bottomrule
-      \end{tabular}
-      \vspace{1em}
-      \footnotesize
-      \textcolor{kkuGreen}{\textbf{Committee requirement:}} thorough
-      testing with technique chosen by student.
-    \end{column}
-  \end{columns}
-\end{frame}
-
-% NOTE: CI screenshot slide moved to the appendix; the next slide
-% (leakage gate output) carries the headline message live.
-
-% ───────────── SLIDE 30 ─────────────
-\begin{frame}[fragile]{Leakage gate -- CI-enforced invariants}
-  \begin{exampleblock}{\texttt{\$ python -m src.verify\_no\_leakage}}
-\begin{verbatim}
-============================================================
-LEAKAGE GATE  --  src/verify_no_leakage.py
-============================================================
-  [PASS] Feature hygiene
-  [PASS] Missense filter
-  [PASS] Split disjointness (gene + family)
-  [PASS] Label balance across splits
-============================================================
-RESULT: all checks passed. Baseline is leak-free.
-\end{verbatim}
-  \end{exampleblock}
-  \small
-  All 4 invariants fail-closed: any red row \textbf{blocks the merge}
-  to \texttt{main} via GitHub Actions.
-\end{frame}
-
-% ───────────── SLIDE 30a ─────────────
-\begin{frame}{ESM-2 zero-shot -- scoring architecture}
-  \begin{columns}[T]
-    \begin{column}{0.55\linewidth}
-      \centering
-      \begin{tikzpicture}[
-        font=\sffamily\tiny,
-        tok/.style={draw, rounded corners=2pt, minimum width=0.55cm,
-          minimum height=0.5cm, align=center, fill=blue!8,
-          font=\sffamily\tiny\ttfamily, thick},
-        mask/.style={tok, fill=red!25, font=\sffamily\tiny\ttfamily\bfseries},
-        block/.style={draw, rounded corners=3pt, minimum width=5.2cm,
-          minimum height=0.45cm, align=center, fill=green!10, thick,
-          font=\sffamily\tiny},
-        head/.style={block, fill=orange!15},
-        oput/.style={draw, rounded corners=3pt, minimum width=2.2cm,
-          minimum height=0.55cm, align=center, fill=yellow!25, thick,
-          font=\sffamily\tiny},
-        arrow/.style={-{Latex[length=4pt]}, thick},
-      ]
-        \node[tok] (t1) at (0,    2.4) {M};
-        \node[tok] (t2) at (0.58, 2.4) {E};
-        \node[tok] (t3) at (1.16, 2.4) {T};
-        \node[tok] (t4) at (1.74, 2.4) {K};
-        \node[mask] (m) at (2.32, 2.4) {[MASK]};
-        \node[tok] (t5) at (2.95, 2.4) {L};
-        \node[tok] (t6) at (3.53, 2.4) {V};
-        \node[tok] (t7) at (4.11, 2.4) {$\ldots$};
-        \node[tok] (t8) at (4.69, 2.4) {G};
-
-        \node[block, below=0.25cm of m, xshift=0.6cm]  (b1) {Transformer Block 1 (12 heads, $d{=}480$)};
-        \node[block, below=0.08cm of b1]              (b2) {Transformer Block 2};
-        \node[font=\sffamily\tiny\bfseries, below=0.03cm of b2] (dots) {$\vdots$};
-        \node[block, below=0.03cm of dots]            (b12){Transformer Block 12};
-        \node[head,  below=0.08cm of b12]             (lm) {Language-modelling head (20-way)};
-        \node[oput,  below=0.25cm of lm, fill=red!15, minimum width=4.5cm]
-             (llr) {$\mathrm{LLR} = \log\,p_\theta(a_{\text{alt}})/p_\theta(a_{\text{ref}})$};
-
-        \draw[arrow] (m.south) -- (b1.north);
-        \draw[arrow] (b12) -- (lm);
-        \draw[arrow] (lm) -- (llr);
-      \end{tikzpicture}
-    \end{column}
-    \begin{column}{0.43\linewidth}
-      \textbf{Model:}\\
-      \texttt{facebook/esm2\_t12\_35M\_UR50D}
-      \vspace{0.4em}
-      \begin{itemize}\small
-        \item 12 transformer blocks
-        \item $d=480$, 20 attention heads
-        \item $\sim$35M parameters
-        \item \textbf{Zero-shot}: no weight updates
-      \end{itemize}
-      \vspace{0.4em}
-      \textbf{Log-likelihood ratio:}
-      \vspace{-0.3em}
-      {\small
-      \[
-        \mathrm{LLR}_{\text{ESM-2}}
-        = \log \frac{\mathbb{P}_\theta(a_{\text{alt}} \mid s_{\backslash\pi})}
-                    {\mathbb{P}_\theta(a_{\text{ref}} \mid s_{\backslash\pi})}
-      \]
-      }
-      \footnotesize where $s_{\backslash\pi}$ is the sequence with
-      position $\pi$ masked.\par
-      \normalsize Lower LLR $\Rightarrow$ more pathogenic.
-    \end{column}
-  \end{columns}
-\end{frame}
-
-% ───────────── SLIDE 30b ─────────────
-\begin{frame}{Rank fusion -- operator + formula}
-  \centering
-  \begin{tikzpicture}[
-    font=\sffamily\scriptsize,
-    box/.style={draw, rounded corners=3pt, minimum width=2.2cm,
-      minimum height=0.7cm, align=center, thick},
-    xgb/.style={box, fill=green!10},
-    esm/.style={box, fill=blue!10},
-    rank/.style={box, fill=orange!12, minimum width=1.7cm},
-    sum/.style={draw, circle, fill=yellow!30, thick, minimum size=0.7cm,
-      font=\sffamily\small\bfseries},
-    oput/.style={box, fill=red!12},
-    arrow/.style={-{Latex[length=4pt]}, thick},
-  ]
-    \node[box, fill=gray!10] (v) at (0, 0) {Variant $v$};
-    \node[xgb] (xg) at (3, 0.9)  {XGBoost\\$\hat p_{\text{XGB}}$};
-    \node[esm] (em) at (3, -0.9) {ESM-2 LLR\\$s_{\text{ESM}}$};
-    \node[rank] (r1) at (5.3, 0.9)  {rank $r^{\text{XGB}}$};
-    \node[rank] (r2) at (5.3, -0.9) {rank $r^{\text{ESM}}$};
-    \node[sum]  (f)  at (7.4, 0) {$+$};
-    \node[oput] (fuse) at (10, 0) {$s^{\text{fused}}$};
-
-    \draw[arrow] (v) -- (xg); \draw[arrow] (v) -- (em);
-    \draw[arrow] (xg) -- (r1); \draw[arrow] (em) -- (r2);
-    \draw[arrow] (r1) to[out=0, in=100] (f);
-    \draw[arrow] (r2) to[out=0, in=-100] (f);
-    \draw[arrow] (f) -- (fuse);
-  \end{tikzpicture}
-  \vspace{0.5em}
-
-  \small
-  \[
-    s_i^{\text{fused}} \;=\; (1 - \alpha) \cdot \frac{r_i^{\text{XGB}}}{n}
-                            \;+\; \alpha \cdot \frac{r_i^{\text{ESM}}}{n},
-    \qquad \alpha^{*} = 0.175
-  \]
-
-  \scriptsize
-  Optimal $\alpha$ tuned on validation $\Rightarrow$ down-weights the
-  weaker PLM signal. Uniform $\alpha{=}0.5$ is actually \emph{worse}
-  than XGBoost alone.
-\end{frame}
-
-% ───────────── SLIDE 31 ─────────────
-\begin{frame}{ESM-2 zero-shot + rank fusion}
-  \centering
+% ───────────── SLIDE 17 — Implementation: H/W + S/W + Docker ─────────────
+\begin{frame}{Implementation --- hardware, software stack, reproducibility}
   \footnotesize
-  \textbf{Test split (28{,}098 variants, paralog-disjoint)}
-
-  \vspace{0.4em}
-  \begin{tabular}{@{}l c c c@{}}
-    \toprule
-    Model & ROC-AUC & PR-AUC & $\alpha$ \\
-    \midrule
-    XGBoost (calibrated)           & 0.938 & 0.827 & ---   \\
-    ESM-2 LLR (zero-shot)          & 0.739 & 0.610 & ---   \\
-    Rank fusion, uniform           & 0.895 & 0.784 & 0.50  \\
-    \rowcolor{kkuGoldLight}
-    \textbf{Rank fusion, tuned}    & \textbf{0.941} & \textbf{0.852} & \textbf{0.175} \\
-    \bottomrule
-  \end{tabular}
-
-  \vspace{0.8em}
   \begin{columns}[T]
-    \begin{column}{0.5\textwidth}
-      \textbf{External (denovo-db, family-holdout):}
-      \begin{itemize}
-        \footnotesize
-        \item XGBoost: ROC $0.573$
-        \item ESM-2 alone: ROC $0.552$
-        \item Fusion: ROC $\mathbf{0.588}$ ($+0.015$)
-      \end{itemize}
-    \end{column}
-    \begin{column}{0.5\textwidth}
-      \begin{exampleblock}{Two signals of orthogonality}
-        \footnotesize
-        Fusion improves over either source AND the gain transfers to
-        held-out gene families. Motivates training-time integration of
-        the LLR.
-      \end{exampleblock}
-    \end{column}
-  \end{columns}
-\end{frame}
+    \column{0.33\textwidth}
+    \textbf{\textcolor{kkuGreen}{Hardware}}
+    \begin{itemize}\setlength{\itemsep}{0.15em}
+      \item Apple Silicon laptop (MPS GPU)
+      \item Free-tier Colab T4 (ESM-2 scoring only)
+      \item GitHub Actions \texttt{ubuntu-22.04}
+    \end{itemize}
 
-% ───────────── SLIDE: training-time ESM-2 ablation (Implementation) ─────────────
-\begin{frame}{Training-time ESM-2 LLR integration: ablation}
-  \begin{columns}[T]
-    \begin{column}{0.55\textwidth}
-      \footnotesize
-      \begin{tabular}{@{}l r r@{}}
-        \toprule
-        \textbf{Model} & \textbf{Test ROC} & \textbf{Test PR} \\
-        \midrule
-        Baseline (no ESM-2)               & 0.938 & 0.827 \\
-        Augmented \texttt{no\_esm2}       & 0.939 & 0.840 \\
-        Augmented \texttt{esm2\_only}     & 0.739 & 0.610 \\
-        \rowcolor{green!10}
-        \textbf{Augmented \texttt{full}}  & \textbf{0.948} & \textbf{0.865} \\
-        \bottomrule
-      \end{tabular}
-      \vspace{0.4em}
-      \begin{itemize}\footnotesize
-        \item Paired bootstrap full vs no\_esm2 ($n{=}28{,}098$):
-        \item $\Delta\text{PR-AUC} = +0.031$ \;[+0.027,\,+0.036], $p<10^{-4}$
-        \item $\Delta\text{ROC-AUC} = +0.009$ \;[+0.008,\,+0.010], $p<10^{-4}$
-        \item Frozen baseline hyperparams; Optuna re-tune
-              $|\Delta|<0.005$ (appendix only).
-      \end{itemize}
-    \end{column}
-    \begin{column}{0.45\textwidth}
-      \centering
-      \includegraphics[width=\linewidth]{figures/ablation_esm2_forest_phase21.png}
-    \end{column}
-  \end{columns}
-\end{frame}
+    \column{0.33\textwidth}
+    \textbf{\textcolor{kkuGreen}{Software stack}}
+    \begin{itemize}\setlength{\itemsep}{0.1em}
+      \item Python 3.11 + pinned deps
+      \item \textsc{XGBoost} 2.x + \textsc{Optuna} 4
+      \item \textsc{SHAP}, scikit-learn, scipy
+      \item HF \texttt{transformers}, PyTorch
+      \item \texttt{esm2\_t12\_35M\_UR50D}
+      \item pandas, polars, parquet, pyarrow
+    \end{itemize}
 
-% ───────────── SLIDE: SHAP shift baseline vs augmented (Implementation) ─────────────
-\begin{frame}{What ESM-2 changed in SHAP}
-  \begin{columns}[T]
-    \column{0.55\textwidth}
-    \includegraphics[width=\linewidth]{figures/shap_phase2_only.png}
-
-    \column{0.45\textwidth}
-    \footnotesize
-    \textbf{Top features after ESM-2 integration:}
-    \begin{itemize}\setlength{\itemsep}{0.4em}
-      \item \texttt{is\_imputed\_esm2\_llr} ranks \#1 --- the imputation flag
-            itself carries strong signal (skipped variants live in
-            non-canonical or truncated transcripts).
-      \item \texttt{esm2\_llr} ranks \#4 --- substantial but not dominant.
-      \item Conservation features (phyloP, GERP) remain top-tier; ESM-2
-            partly substitutes, partly supplements
-            (Spearman $\rho \le |0.31|$).
-      \item denovo-db holdout: $\Delta\text{ROC} = -0.13$ ---
-            in-distribution gain does not transfer at the 35\,M scale.
+    \column{0.33\textwidth}
+    \textbf{\textcolor{kkuGreen}{Reproducibility}}
+    \begin{itemize}\setlength{\itemsep}{0.1em}
+      \item Docker (TeX Live 2026)
+      \item \texttt{requirements-lock.txt}
+      \item Fixed seeds (42)
+      \item \textbf{157 pytest tests}, 59\% coverage
+      \item CI: ruff + black + mypy + leakage gate
+      \item Snapshot tests on metric files
     \end{itemize}
   \end{columns}
 
-  \vspace{0.4em}
-  \scriptsize
-  \emph{Phase-1 top features were} \texttt{phyloP100way\_vertebrate},
-  \texttt{AN}, \texttt{lof\_z} \emph{(ranks 1, 2, 3); after ESM-2,
-  \texttt{lof\_z} drops to rank~5 while \texttt{is\_imputed\_esm2\_llr}
-  + \texttt{esm2\_llr} take ranks 1 and 4.}
+  \vspace{0.6em}
+  \begin{exampleblock}{Single-command reproduction}
+    \scriptsize
+    \texttt{docker build -t missense-classifier .\ \&\&}\\
+    \texttt{\hphantom{XX}docker run --rm missense-classifier make reproduce-headline}\\[0.3em]
+    \emph{Reproduces every metric within $10^{-3}$ on a clean clone.}
+  \end{exampleblock}
 \end{frame}
 
-% ═════════════════ PART 8: COMPARISON ═════════════════
+% ═════════════════ SECTION 8 — RESULTS (placeholder, built in D8) ═════════════════
+\section{Results}
+
+% NOTE: 4 Results slides (Headline / External / ESM-2 zero-shot+rank-fusion /
+% Phase-2.1+SHAP) will be built in D8 from canonical-numbers.md.
+% In D7 we left a single placeholder so Section 8 has a frame.
+
+% ───────────── SLIDE PLACEHOLDER (to be filled in D8) ─────────────
+\begin{frame}{[D8] Section 8 Results --- placeholder}
+  \centering
+  \large
+  \emph{This slide will be replaced in D8 with the four Results slides.}
+  \par
+  \vspace{1em}
+  \footnotesize
+  Results section is rebuilt from \texttt{canonical-numbers.md}.
+\end{frame}
+
+% ═════════════════ SECTION 9 — COMPARISON ═════════════════
 \section{Comparison}
 
 % ───────────── SLIDE 32a -- comparison table ─────────────
