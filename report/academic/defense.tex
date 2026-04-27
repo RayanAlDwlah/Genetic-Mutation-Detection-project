@@ -675,6 +675,7 @@
   \begin{columns}[T]
     \column{0.62\textwidth}
     \centering
+    \resizebox{\linewidth}{!}{%
     \begin{tikzpicture}[
       font=\sffamily\scriptsize,
       actor/.style={font=\sffamily\tiny, align=center},
@@ -710,7 +711,7 @@
       \draw[inc] (u1) -- (u3);
       \draw[inc] (u6) -- (u1);
       \draw[inc] (u7) -- (u8);
-    \end{tikzpicture}
+    \end{tikzpicture}}
 
     \column{0.38\textwidth}
     \scriptsize
@@ -849,8 +850,9 @@
 % ───────────── SLIDE 15 — Activity diagram (6 leakage checks, P1 caption) ─────────────
 \begin{frame}{Activity diagram --- training + evaluation workflow}
   \centering
+  \resizebox{0.95\linewidth}{!}{%
   \begin{tikzpicture}[
-    font=\sffamily\tiny, scale=0.85, transform shape,
+    font=\sffamily\tiny,
     start/.style={circle, fill=black, minimum size=0.22cm, inner sep=0pt},
     stop/.style={circle, draw=black, double, minimum size=0.3cm, inner sep=0pt, fill=black!15},
     act/.style={draw, rounded corners=4pt, minimum width=1.55cm,
@@ -899,14 +901,13 @@
     \draw[arrow] (opt) -- (thr); \draw[arrow] (thr) -- (cal); \draw[arrow] (cal) -- (f2);
     \foreach \t in {ta, tb, tc, td, te} {\draw[arrow] (f2) -- (\t); \draw[arrow] (\t) -- (j2);}
     \draw[arrow] (j2) -- (rep); \draw[arrow] (rep) -- (endn);
-  \end{tikzpicture}
+  \end{tikzpicture}}
 
-  \vspace{0.1em}
+  \vspace{0.2em}
   \scriptsize
-  \emph{Fork-1 runs all six leakage checks; Fork-2 runs five evaluation
-  tracks. Conceptual blueprint --- production uses sequential script
-  invocation, not a true parallel orchestrator. State and Component
-  diagrams are in the appendix.}
+  \emph{Fork-1 = 6 leakage checks (parallel); Fork-2 = 5 eval tracks.
+  Conceptual flow; production uses sequential scripts.
+  State + Component $\rightarrow$ appendix.}
 \end{frame}
 
 % ═════════════════ PART 6: INTERFACE ═════════════════
