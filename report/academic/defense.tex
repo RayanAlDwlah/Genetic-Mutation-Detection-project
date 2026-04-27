@@ -1154,42 +1154,66 @@
   \end{enumerate}
 \end{frame}
 
-% ───────────── SLIDE 23 — Future work + Deficiencies (D1–D8, C3) ─────────────
-\begin{frame}{Future work + deficiencies}
+% ───────────── SLIDE 23 — Future work (standalone) ─────────────
+\begin{frame}{Future work}
   \footnotesize
+  \begin{enumerate}\setlength{\itemsep}{0.7em}
+    \item \textbf{Larger-checkpoint ESM-2.}
+          Upgrade to \texttt{esm2\_t33\_650M\_UR50D}
+          ($19\times$ parameters); expected to lift the OOD
+          ceiling (current 35M shows $\Delta\text{ROC} = -0.13$
+          on unseen gene families).
+    \item \textbf{AlphaFold-2 structural features.}
+          pLDDT, SASA, DSSP secondary structure, residue depth ---
+          orthogonal to PLM signal, complementary to conservation.
+    \item \textbf{ProteinGym DMS external validation.}
+          Third dataset independent of ClinVar and
+          \textsc{denovo-db}; deep mutational scanning fitness
+          measurements as both validation set and auxiliary
+          training signal.
+    \item \textbf{Hybrid stacking + ACMG integration.}
+          Meta-learner combining XGBoost + ESM-2 + AlphaMissense,
+          packaged as an ACMG-compatible plug-in for clinical
+          workflows.
+  \end{enumerate}
+\end{frame}
+
+% ───────────── SLIDE 24 — Deficiencies D1–D8 (standalone, 2 cols) ─────────────
+\begin{frame}{Deficiencies (D1--D8)}
+  \scriptsize
+  \emph{Honest limitations of the artifact, each paired with a
+  next-step item on the previous slide.}
+  \vspace{0.6em}
+
   \begin{columns}[T]
     \column{0.5\textwidth}
-    \textbf{\textcolor{kkuGreen}{Future work}}
-    \begin{enumerate}\setlength{\itemsep}{0.2em}
-      \item \textbf{Larger-checkpoint ESM-2.}
-            Upgrade to \texttt{esm2\_t33\_650M\_UR50D}
-            ($19\times$ parameters); expected to lift the OOD
-            ceiling.
-      \item \textbf{AlphaFold-2 structural features.}
-            pLDDT, SASA, DSSP, residue depth --- orthogonal to PLM.
-      \item \textbf{ProteinGym DMS external validation.}
-            Third dataset independent of ClinVar +
-            \textsc{denovo-db}.
-      \item \textbf{Hybrid stacking + ACMG integration.}
-            Meta-learner of XGBoost + ESM-2 + AM as ACMG plug-in.
-    \end{enumerate}
+    \begin{description}[leftmargin=1em, itemsep=0.5em]
+      \item[D1] external ROC $0.573$, CI covers chance
+                ($n=201$) --- larger external cohort needed.
+      \item[D2] ClinVar-only training (no DMS labels).
+      \item[D3] isotonic-only calibration (no per-gene
+                recalibration).
+      \item[D4] ESM-2 zero-shot only \,---\,
+                \textcolor{kkuGreen}{\textbf{shipped}} (Phase 2.1).
+    \end{description}
 
     \column{0.5\textwidth}
-    \textbf{\textcolor{kkuGreen}{Deficiencies (D1--D8)}}
-    \begin{description}[leftmargin=1em, itemsep=0.1em]
-      \item[D1] external ROC $0.573$, CI covers chance ($n=201$)
-      \item[D2] ClinVar-only training (no DMS labels)
-      \item[D3] isotonic-only calibration (no per-gene)
-      \item[D4] ESM-2 zero-shot only \,---\,
-                \textcolor{kkuGreen}{\textbf{shipped}} (Phase 2.1)
-      \item[D5] no AlphaFold-2 structural features yet
-      \item[D6] Streamlit-only (no REST API, no VEP plug-in)
-      \item[D7] own-coverage baselines (no matched-coverage rerun)
+    \begin{description}[leftmargin=1em, itemsep=0.5em]
+      \item[D5] no AlphaFold-2 structural features yet.
+      \item[D6] Streamlit-only (no REST API, no VEP plug-in).
+      \item[D7] own-coverage baselines (no matched-coverage
+                rerun on $\mathcal{S}_{\text{AM}}$).
       \item[D8] pre-constraint preds not persisted \,---\,
                 \textcolor{kkuGreen}{\textbf{recovered}}
-                (\texttt{f8ab464})
+                (\texttt{f8ab464}).
     \end{description}
   \end{columns}
+
+  \vspace{0.6em}
+  \scriptsize
+  \emph{Two of the eight (D4, D8) were resolved during this
+  project (green). The remaining six are the roadmap to the next
+  phase --- mapped to the four future-work items on Slide~23.}
 \end{frame}
 
 % ───────────── SLIDE 24 — Thank you / Q&A (dedicated) ─────────────
