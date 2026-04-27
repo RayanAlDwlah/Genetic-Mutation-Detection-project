@@ -1125,36 +1125,12 @@
 \end{frame}
 
 % ═════════════════ SECTION 10 — CONCLUSION + FUTURE WORK ═════════════════
+% Order: Future → Deficiencies → Conclusion → Q&A
+% (Conclusion last before Q&A is the international academic standard:
+% the take-home is the LAST thing the audience hears before questions.)
 \section{Conclusion}
 
-% ───────────── SLIDE 22 — Conclusion + take-home messages (single column) ─────────────
-\begin{frame}{Conclusion --- take-home messages}
-  \footnotesize
-  \begin{enumerate}\setlength{\itemsep}{0.6em}
-    \item \textbf{Audited numbers beat inflated ones.}
-          Calibrated PR-AUC $0.827$ has no known contamination;
-          the pre-audit $0.955$ had three.
-    \item \textbf{Like-for-like baselines change the conversation.}
-          On the same paralog-disjoint test we beat classical tools
-          cleanly (SIFT $0.620$, PolyPhen-2 $0.728$) and sit just
-          below AlphaMissense ($-0.025$ PR-AUC) under stricter
-          methodology.
-    \item \textbf{Training-time PLM integration adds significant
-          in-distribution signal.} The ESM-2-augmented model lifts
-          test PR-AUC $0.827 \to 0.865$
-          ($\Delta=+0.031$, $p<10^{-4}$, paired bootstrap on
-          $n=28{,}098$).
-    \item \textbf{External validation is the real benchmark.}
-          Partial closure on \textsc{denovo-db} (paired
-          $\Delta\text{ROC}=+0.076$, CI still covers chance at
-          $n=201$); the in-distribution ESM-2 gain does \emph{not}
-          transfer to unseen gene families
-          ($\Delta\text{ROC}=-0.13$, motivates a larger PLM
-          checkpoint).
-  \end{enumerate}
-\end{frame}
-
-% ───────────── SLIDE 23 — Future work (standalone) ─────────────
+% ───────────── SLIDE 22 — Future work ─────────────
 \begin{frame}{Future work}
   \footnotesize
   \begin{enumerate}\setlength{\itemsep}{0.7em}
@@ -1206,10 +1182,37 @@
   \vspace{0.6em}
   \footnotesize
   \emph{Two of the eight (D4, D8) were resolved during this project.
-  The remaining six map to the four future-work items on Slide~23.}
+  The remaining six map to the four future-work items on Slide~22.}
 \end{frame}
 
-% ───────────── SLIDE 24 — Thank you / Q&A (dedicated) ─────────────
+% ───────────── SLIDE 24 — Conclusion + take-home messages ─────────────
+\begin{frame}{Conclusion --- take-home messages}
+  \footnotesize
+  \begin{enumerate}\setlength{\itemsep}{0.6em}
+    \item \textbf{Audited numbers beat inflated ones.}
+          Calibrated PR-AUC $0.827$ has no known contamination;
+          the pre-audit $0.955$ had three.
+    \item \textbf{Like-for-like baselines change the conversation.}
+          On the same paralog-disjoint test we beat classical tools
+          cleanly (SIFT $0.620$, PolyPhen-2 $0.728$) and sit just
+          below AlphaMissense ($-0.025$ PR-AUC) under stricter
+          methodology.
+    \item \textbf{Training-time PLM integration adds significant
+          in-distribution signal.} The ESM-2-augmented model lifts
+          test PR-AUC $0.827 \to 0.865$
+          ($\Delta=+0.031$, $p<10^{-4}$, paired bootstrap on
+          $n=28{,}098$).
+    \item \textbf{External validation is the real benchmark.}
+          Partial closure on \textsc{denovo-db} (paired
+          $\Delta\text{ROC}=+0.076$, CI still covers chance at
+          $n=201$); the in-distribution ESM-2 gain does \emph{not}
+          transfer to unseen gene families
+          ($\Delta\text{ROC}=-0.13$, motivates a larger PLM
+          checkpoint).
+  \end{enumerate}
+\end{frame}
+
+% ───────────── SLIDE 25 — Thank you / Q&A (dedicated) ─────────────
 \begin{frame}{Thank you --- Questions?}
   \centering
   \vspace{1.2em}
