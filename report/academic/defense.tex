@@ -1067,85 +1067,64 @@
 % ═════════════════ SECTION 9 — COMPARISON ═════════════════
 \section{Comparison}
 
-% ───────────── SLIDE 32a -- comparison table ─────────────
+% ───────────── SLIDE 22 — Comparison with published methods ─────────────
 \begin{frame}{Comparison with published methods}
   \centering
-  \footnotesize
+  \scriptsize
   All baselines re-scored on our paralog-disjoint test split
   (28{,}098 variants).
+  \vspace{0.4em}
 
-  \vspace{0.6em}
   \begin{tabular}{@{}l c l c c@{}}
     \toprule
     \textbf{Method} & \textbf{Year} & \textbf{Methodology} &
     \textbf{Coverage} & \textbf{PR-AUC} \\
     \midrule
-    SIFT                          & 2003 & legacy, no guards     & 96\%  & 0.620 \\
-    PolyPhen-2\textsuperscript{$\dagger$} & 2010 & legacy, no guards & 93\% & 0.728 \\
-    AlphaMissense\textsuperscript{*} & 2023 & high ClinVar risk  & 86\%  & 0.890 \\
-    ESM-2 LLR (zero-shot)         & 2023 & no supervision        & 100\% & 0.604 \\
+    SIFT                                 & 2003 & legacy, no guards     & 96\%  & 0.620 \\
+    PolyPhen-2\textsuperscript{$\dagger$} & 2010 & legacy, no guards     & 93\%  & 0.728 \\
+    AlphaMissense\textsuperscript{*}      & 2023 & high ClinVar risk    & 86\%  & 0.890 \\
+    ESM-2 LLR (zero-shot)                & 2023 & no supervision        & 100\% & 0.604 \\
     \midrule
-    XGBoost (ours, baseline)      & 2026 & paralog $+$ audit     & 100\% & 0.827 \\
+    XGBoost (ours, baseline)             & 2026 & paralog $+$ audit     & 100\% & 0.827 \\
     \rowcolor{kkuGoldLight}
     \textbf{XGBoost $+$ ESM-2 LLR (ours)} & \textbf{2026} &
     \textbf{paralog $+$ audit} & \textbf{100\%} & \textbf{0.865} \\
     \bottomrule
   \end{tabular}
 
-  \vspace{0.4em}
-  \scriptsize
-  \emph{Each row reported on that baseline's own-coverage subset, so
-  rows are NOT directly comparable; matched-coverage analysis in the
-  thesis (Section 5.5) closes most of the AM gap.}\par
-  \vspace{0.2em}
-  \textsuperscript{*}\,AlphaMissense is ClinVar-calibrated; ClinVar-derived
-  test sets overlap its training signal.\;
-  \textsuperscript{$\dagger$}\,PolyPhen-2 was trained on HumDiv/HumVar
-  which overlap ClinVar.\;
-  REVEL omitted: 13 ClinVar-trained base learners $\Rightarrow$ compound
-  contamination.
-\end{frame}
-
-% ───────────── SLIDE 32b -- methodology framing ─────────────
-\begin{frame}{Why our numbers are different}
-  \footnotesize
+  \vspace{0.5em}
   \begin{columns}[T]
-    \begin{column}{0.5\textwidth}
-      \textbf{What only \emph{we} report}
-      \begin{itemize}\setlength{\itemsep}{0.05em}
-        \item Paralog-family-disjoint split (CI-enforced)
-        \item Three-source leakage audit
-        \item External validation on \textsc{denovo-db}
-        \item Bootstrap 95\% CIs $+$ paired bootstrap on ablations
-        \item Calibration deep-dive (ECE $= 0.011$)
-        \item Docker $+$ lock file: 6-decimal reproduction
-      \end{itemize}
-    \end{column}
-    \begin{column}{0.5\textwidth}
-      \textbf{Honest framing}
-      \begin{itemize}\setlength{\itemsep}{0.05em}
-        \item $+0.245$ PR-AUC over SIFT
-        \item $+0.137$ PR-AUC over PolyPhen-2
-        \item AM gap: $-0.063$ (Phase-1) $\to \mathbf{-0.025}$
-              (Phase-2.1 with ESM-2 LLR)
-        \item AM trains on ClinVar; our test shares that distribution,
-              so the residual gap shrinks further once methodology is
-              fully matched.
-      \end{itemize}
-    \end{column}
+    \column{0.5\textwidth}
+    \textbf{\textcolor{kkuGreen}{What only \emph{we} report}}
+    \begin{itemize}\setlength{\itemsep}{0.04em}
+      \item Paralog-family-disjoint split (CI-enforced)
+      \item Three-source leakage audit
+      \item External validation on \textsc{denovo-db}
+      \item Bootstrap 95\,\% CIs + paired bootstrap on $\Delta$
+      \item Calibration deep-dive (ECE $=0.011$)
+      \item Docker + lock file: 6-decimal reproduction
+    \end{itemize}
+
+    \column{0.5\textwidth}
+    \textbf{\textcolor{kkuGreen}{Honest framing}}
+    \begin{itemize}\setlength{\itemsep}{0.04em}
+      \item $+0.245$ PR-AUC over SIFT
+      \item $+0.137$ PR-AUC over PolyPhen-2
+      \item AM gap: $-0.063$ (Phase-1) $\to$ $\mathbf{-0.025}$ (Phase-2.1)
+      \item AM is ClinVar-calibrated; matched-coverage on
+            $\mathcal{S}_{\text{AM}}$ shrinks gap further (D7).
+    \end{itemize}
   \end{columns}
 
   \vspace{0.3em}
-  \begin{exampleblock}{Take-away}
-    \scriptsize
-    Under matched methodology our model beats classical tools cleanly
-    and trails AlphaMissense by less than AM's own ClinVar bias ---
-    and that residual margin shrinks \emph{another} 60\% with
-    training-time ESM-2 LLR.
-  \end{exampleblock}
+  \scriptsize
+  \emph{Each row on its baseline's own-coverage subset --- rows NOT directly comparable.}\par
+  \textsuperscript{*}\,AM ClinVar-calibrated $\Rightarrow$ test overlaps training signal.\;
+  \textsuperscript{$\dagger$}\,PolyPhen-2 trained on HumDiv/HumVar (overlaps ClinVar).\;
+  REVEL omitted (13 ClinVar-trained base learners).
 \end{frame}
 
-% ═════════════════ PART 9: CONCLUSION ═════════════════
+% ═════════════════ SECTION 10 — CONCLUSION + FUTURE WORK ═════════════════
 \section{Conclusion}
 
 % ───────────── SLIDE 33a ─────────────
