@@ -331,32 +331,67 @@
 % ═════════════════ SECTION 3 — CONTRIBUTION ═════════════════
 \section{Contribution}
 
-% ───────────── SLIDE 9 ─────────────
-\begin{frame}{What we contribute}
-  \begin{enumerate}\setlength{\itemsep}{0.15em}
-    \item \textbf{Transparent leakage audit} with
-          before-and-after numbers (PR-AUC $0.955 \rightarrow 0.836$).
-    \item \textbf{Like-for-like re-scoring} of three published
-          baselines on our own paralog-disjoint test.
-    \item \textbf{External validation on \textsc{denovo-db}} with
-          pre/post gnomAD-constraint decomposition.
-    \item \textbf{Two-pass ESM-2 integration} ---
-          Phase-1 zero-shot rank-fusion ($\Delta$ROC $+0.003$ test,
-          $+0.015$ external) plus Phase-2.1 training-time LLR feature
-          ($\Delta$PR-AUC $+0.031$, $p<10^{-4}$).
-    \item \textbf{Auditable methodological package}: 95\% bootstrap
-          CI on every metric, Murphy-decomposed calibration,
-          paired bootstrap on ablations.
-    \item \textbf{Engineering artifacts}: $157$ tests, CI-enforced
-          leakage gate, Docker, Streamlit demo, LaTeX report.
-  \end{enumerate}
+% ───────────── SLIDE 7 — Contribution + tech stack ─────────────
+\begin{frame}{Our contribution + technology stack}
+  \begin{columns}[T]
+    \column{0.55\textwidth}
+    \textbf{\textcolor{kkuGreen}{Six contributions}}
+    \scriptsize
+    \begin{enumerate}\setlength{\itemsep}{0.18em}
+      \item \textbf{Leakage audit} --- PR-AUC
+            $0.955 \rightarrow 0.836$ raw / $0.827$ calibrated, three
+            named contamination sources removed.
+      \item \textbf{Like-for-like baseline re-scoring} ---
+            \textsc{SIFT}, \textsc{PolyPhen-2}, \textsc{AlphaMissense}
+            scored on \emph{our own} paralog-disjoint test
+            (own-coverage CIs).
+      \item \textbf{External validation on \textsc{denovo-db}} ---
+            paired bootstrap on $\Delta$ROC ($+0.076$, $p=0.073$)
+            post-constraint vs.\ pre-constraint.
+      \item \textbf{ESM-2 dual integration} ---
+            Phase~1 zero-shot rank fusion + Phase~2.1 training-time
+            feature ($\Delta$PR-AUC $+0.0313$, $p<10^{-4}$).
+      \item \textbf{Auditable methodology} --- 95\,\% bootstrap CI on
+            every metric, Murphy decomposition, paired tests.
+      \item \textbf{Reproducible artifact} --- $157$ tests,
+            CI-enforced leakage gate, Docker image, Streamlit demo,
+            LaTeX academic report.
+    \end{enumerate}
 
-  \vspace{0.3em}
+    \column{0.45\textwidth}
+    \textbf{\textcolor{kkuGreen}{Technology stack}}
+    \scriptsize\setlength{\parskip}{0.25em}
+
+    \textbf{ML core:} \textsc{XGBoost} 2.x, \textsc{Optuna} 4 (TPE,
+    40 trials), \textsc{SHAP}, \texttt{scikit-learn}
+
+    \textbf{Protein language model:}
+    HuggingFace \texttt{transformers}, \texttt{esm2\_t12\_35M\_UR50D}
+    (35M params)
+
+    \textbf{Data + features:}
+    \textsc{ClinVar}, \textsc{gnomAD} v2.1 + v4, \textsc{dbNSFP} 5.3.1a;
+    \texttt{pandas}, \texttt{polars}, parquet/pyarrow
+
+    \textbf{External APIs:}
+    \textsc{Ensembl} VEP REST (with on-disk cache fallback)
+
+    \textbf{Infrastructure:}
+    Docker (TeX Live 2026), GitHub Actions CI, \texttt{pytest} 157,
+    \texttt{ruff}, \texttt{black}, \texttt{mypy}, \texttt{pre-commit}
+
+    \textbf{Delivery surfaces:}
+    \textsc{Streamlit} demo, \textsc{Typer} CLI, 10 narrative Jupyter
+    notebooks, LaTeX defense + thesis
+  \end{columns}
+
+  \vspace{0.4em}
   \centering
-  \small \url{github.com/RayanAlDwlah/Genetic-Mutation-Detection-project}
+  \scriptsize
+  \url{github.com/RayanAlDwlah/Genetic-Mutation-Detection-project}
 \end{frame}
 
-% ═════════════════ PART 4: PROPOSED SYSTEM ═════════════════
+% ═════════════════ SECTION 4 — PROPOSED SYSTEM ═════════════════
 \section{Proposed System}
 
 % ───────────── SLIDE 10 ─────────────
