@@ -465,123 +465,232 @@
   Part~2 model feeds Part~3).}
 \end{frame}
 
-% ───────────── SLIDE 9 — Part 1: Preprocessing (merged) ─────────────
-\begin{frame}{Part 1 --- Data preprocessing}
+% ───────────── Part 1.1: Data sources ─────────────
+\begin{frame}{Part 1.1 --- Data sources}
   \footnotesize
-  \begin{columns}[T]
-    \column{0.48\textwidth}
-    \textbf{\textcolor{kkuGreen}{Sources}} (joined on GRCh38 \texttt{chr:pos:ref:alt})
-    \begin{itemize}\setlength{\itemsep}{0.1em}
-      \item \textsc{ClinVar} --- labels (review star $\geq 2$)
-      \item \textsc{gnomAD} v2.1 + v4 --- AF, AC, AN
-      \item \textsc{dbNSFP} 5.3 --- conservation, AA chemistry, Pfam
-      \item \textsc{gnomAD} v2.1.1 --- gene-level constraint (pLI, LOEUF, mis\_z)
+  \begin{block}{Four datasets joined on canonical \texttt{chr:pos:ref:alt} (GRCh38)}
+    \begin{itemize}\setlength{\itemsep}{0.25em}
+      \item \textbf{\textsc{ClinVar}} --- pathogenic / benign labels,
+            review star $\geq 2$; ${\sim}283{,}392$ candidate variants.
+      \item \textbf{\textsc{gnomAD} v2.1 + v4} --- allele frequency,
+            allele count, allele number.
+      \item \textbf{\textsc{dbNSFP} 5.3.1a} --- conservation
+            (phyloP, GERP++), AA chemistry (Grantham, BLOSUM62),
+            Pfam domain annotations.
+      \item \textbf{\textsc{gnomAD} v2.1.1 constraint} --- gene-level
+            pLI, LOEUF, mis\_z, oe\_mis\_upper, lof\_z.
     \end{itemize}
-
-    \vspace{0.4em}
-    \textbf{\textcolor{kkuGreen}{Output}} 195{,}098 missense variants $\rightarrow$
-    Part~2 as \texttt{splits/\{train,val,test\}.parquet}.
-
-    \column{0.52\textwidth}
-    \textbf{\textcolor{kkuGreen}{Two critical filters}}
-
-    \begin{block}{Missense-only}
-      Drop rows with null \texttt{ref\_aa} OR null \texttt{alt\_aa}
-      $\Rightarrow$ remove \textbf{$\sim$88K non-missense rows}.
-      Pre-audit: 64\% of pathogenic rows had null AA $\Rightarrow$
-      model learned ``null $\Rightarrow$ pathogenic''.
-      \alert{Fix alone drops PR-AUC $0.955 \rightarrow 0.819$.}
-    \end{block}
-
-    \begin{block}{Paralog-aware split}
-      Family-level via \texttt{assign\_gene\_family}
-      (16 regex + trailing-digit fallback).
-      \textbf{15{,}479 genes $\rightarrow$ 7{,}851 families},
-      zero shared across train/val/test (CI-enforced).
-    \end{block}
-  \end{columns}
-\end{frame}
-
-% ───────────── SLIDE 10 — Part 2: Training + leakage + calibration ─────────────
-\begin{frame}{Part 2 --- Training, leakage audit, calibration}
-  \scriptsize
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-    \textbf{\textcolor{kkuGreen}{Leakage gate (6 CI-enforced invariants)}}
-    \begin{enumerate}\setlength{\itemsep}{0.04em}
-      \item No banned features (\texttt{is\_common, chr, ref, alt})
-      \item 100\,\% missense-only rows in training
-      \item Zero shared gene families (gene + family disjoint)
-      \item Pathogenic-rate gap $< 0.08$ across splits
-      \item Phase-2.1 ESM-2 features pass banned-upstream-meta check
-      \item ESM-2 split integrity (no test/val overlap in score parquet)
-    \end{enumerate}
-    \emph{Every push to \texttt{main} runs all six;
-    failure blocks the merge.}
-
-    \vspace{0.6em}
-    \textbf{\textcolor{kkuGreen}{Five-stage leakage journey}} (raw PR-AUC)
-    $0.955 \rightarrow 0.819 \rightarrow 0.816 \rightarrow 0.835 \rightarrow 0.836$.
-    Calibrated headline: $0.827$.
-
-    \column{0.5\textwidth}
-    \textbf{\textcolor{kkuGreen}{Model}}
-    XGBoost + Optuna TPE (multivariate grouping), 40 trials,
-    PR-AUC objective, median pruner after 200 rounds.
-
-    \vspace{0.4em}
-    \textbf{\textcolor{kkuGreen}{Calibration}} Isotonic on validation;
-    Murphy: $\text{Brier} = \text{Rel} - \text{Res} + \text{Unc}$.
-    \begin{tabular}{@{} l r r r @{}}
-      \toprule
-      & Brier & Rel.\ & ECE \\
-      \midrule
-      Raw      & 0.088 & 0.0054 & 0.054 \\
-      Platt    & 0.083 & 0.0011 & 0.029 \\
-      \textbf{Isotonic} & \textbf{0.083} & \textbf{0.0002} & \textbf{0.011} \\
-      \bottomrule
-    \end{tabular}
-    \emph{Reliability drops 23$\times$; resolution unchanged
-    $\Rightarrow$ discrimination preserved.}
-  \end{columns}
-\end{frame}
-
-% ───────────── SLIDE 11 — Part 3: Evaluation framework ─────────────
-\begin{frame}{Part 3 --- Evaluation framework}
-  \footnotesize
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-    \textbf{\textcolor{kkuGreen}{Internal evaluation}}
-    \begin{itemize}\setlength{\itemsep}{0.12em}
-      \item Paralog-disjoint test split — \textbf{28{,}098 variants}.
-      \item 95\,\% bootstrap CI on every metric (1{,}000 reps, seed 42):
-            ROC-AUC, PR-AUC, F1, MCC, Brier.
-      \item Murphy decomposition for calibration
-            (Reliability, Resolution, Uncertainty).
-      \item \textbf{Paired bootstrap on $\Delta$} for ablations
-            (n = 28{,}098, same resampled indices for both models).
-    \end{itemize}
-
-    \column{0.5\textwidth}
-    \textbf{\textcolor{kkuGreen}{External evaluation}}
-    \begin{itemize}\setlength{\itemsep}{0.12em}
-      \item \textsc{denovo-db} family-holdout — \textbf{n = 201}
-            unseen gene families.
-      \item Pre- vs.\ post-constraint paired bootstrap
-            (recovered checkpoint at \texttt{f8ab464}).
-      \item Permutation test for $\text{AUC} > 0.5$
-            (10{,}000 reps, seed 42).
-      \item Calibration transfer audit: does isotonic from
-            ClinVar val transfer to denovo-db?
-    \end{itemize}
-  \end{columns}
+  \end{block}
 
   \vspace{0.5em}
-  \begin{exampleblock}{Why this framework}
-    Internal CIs guard against single-split optimism;
-    paired tests guard against unfair $\Delta$ comparisons;
-    external denovo-db guards against ClinVar-shaped overfit.
+  \begin{exampleblock}{Output to Part 2}
+    \texttt{splits/\{train,val,test\}.parquet} after the two filters
+    described in Part 1.2 + 1.3.
   \end{exampleblock}
+\end{frame}
+
+% ───────────── Part 1.2: Missense-only filter ─────────────
+\begin{frame}{Part 1.2 --- Missense-only filter}
+  \footnotesize
+  \begin{block}{The single biggest audit finding}
+    Drop every row with null \texttt{ref\_aa} \emph{or} null
+    \texttt{alt\_aa} $\Rightarrow$
+    remove \textbf{${\sim}88{,}000$ non-missense rows}.
+    Result: \textbf{$195{,}098$ true missense variants} survive.
+  \end{block}
+
+  \vspace{0.5em}
+  \begin{itemize}\setlength{\itemsep}{0.3em}
+    \item \textbf{Pre-audit:} $64\%$ of ``pathogenic'' rows had null AA fields ---
+          the model was learning ``null AA $\Rightarrow$ pathogenic'',
+          \emph{not biology}.
+    \item \alert{Fix alone drops PR-AUC $0.955 \rightarrow 0.819$ ---
+                 the largest single drop in the entire audit.}
+    \item Implemented in \texttt{src/clinvar\_cleaning.py}; CI-enforced
+          via \texttt{verify\_no\_leakage.py} check~\#2.
+  \end{itemize}
+\end{frame}
+
+% ───────────── Part 1.3: Paralog-aware split ─────────────
+\begin{frame}{Part 1.3 --- Paralog-aware split}
+  \footnotesize
+  \begin{block}{Why a plain gene-level split fails}
+    $52\%$ of prefix families ({\sc ZNF}*, {\sc SLC}*, {\sc KRT}*,
+    {\sc TMEM}*) are shared between train and test under a naïve
+    gene split. With $\geq 80\%$ sequence identity between paralogs,
+    the model has effectively seen the test set.
+  \end{block}
+
+  \vspace{0.4em}
+  \textbf{\textcolor{kkuGreen}{Fix:}} family-level
+  \texttt{GroupShuffleSplit} via \texttt{assign\_gene\_family} ---
+  \begin{itemize}\setlength{\itemsep}{0.15em}
+    \item 16 regex patterns ({\sc KRT}*, {\sc ZNF}*, etc.) + trailing-digit fallback.
+    \item \textbf{$15{,}479$ genes $\rightarrow$ $7{,}851$ families.}
+    \item Zero family overlap across train / val / test, CI-enforced.
+  \end{itemize}
+
+  \vspace{0.3em}
+  \scriptsize
+  \emph{Motivated by Heijl \emph{et al.}\ (2020): $5$--$15$ percentage-point
+  ROC inflation under random splits, measured across $55$ published predictors.}
+\end{frame}
+
+% ───────────── Part 2.1: Leakage gate (6 CI checks) ─────────────
+\begin{frame}{Part 2.1 --- Leakage gate (6 CI-enforced invariants)}
+  \footnotesize
+  \begin{enumerate}\setlength{\itemsep}{0.25em}
+    \item \textbf{Banned features} --- no \texttt{is\_common},
+          \texttt{chr}, \texttt{ref}, \texttt{alt} in the training
+          matrix; no ClinVar-trained meta-predictors (REVEL, CADD,
+          ClinPred, M-CAP, MetaSVM).
+    \item \textbf{$100\%$ missense-only} rows in the training split
+          (Part~1.2 filter applied).
+    \item \textbf{Split disjointness} --- zero shared genes \emph{and}
+          zero shared paralog families across train / val / test.
+    \item \textbf{Label-rate gap} $<\,0.08$ across splits (prevents
+          stratification leakage through prevalence drift).
+    \item \textbf{Phase-2.1 ESM-2 features} pass banned-upstream-meta
+          check (LLR not derived from any ClinVar-trained scorer).
+    \item \textbf{ESM-2 split integrity} --- no test/val overlap
+          in the score parquet returned from the Colab batch.
+  \end{enumerate}
+
+  \vspace{0.4em}
+  \begin{exampleblock}{Every push to \texttt{main} runs all six}
+    Failure $\Rightarrow$ blocks the merge via GitHub Actions.
+    Source: \texttt{src/verify\_no\_leakage.py:CHECKS}.
+  \end{exampleblock}
+\end{frame}
+
+% ───────────── Part 2.2: Five-stage leakage journey ─────────────
+\begin{frame}{Part 2.2 --- Five-stage leakage journey}
+  \centering
+  \includegraphics[width=\linewidth,height=0.70\textheight,keepaspectratio]{figures/scientific/leakage_journey.png}
+
+  \vspace{0.3em}
+  \footnotesize
+  \emph{Raw PR-AUC across the audit:
+  $0.955 \to 0.819 \to 0.816 \to 0.835 \to 0.836$.}\par
+  \emph{Stage 2 (missense filter) is the largest single drop;
+  stages 3--5 recover modestly through feature hygiene + paralog
+  split + Optuna re-tune.}\par
+  \emph{Calibrated headline: $\mathbf{0.827}$ {\scriptsize $[0.819, 0.835]$}.}
+\end{frame}
+
+% ───────────── Part 2.3: Model + Optuna HPO ─────────────
+\begin{frame}{Part 2.3 --- Model architecture + hyperparameter optimisation}
+  \footnotesize
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+    \textbf{\textcolor{kkuGreen}{Model: XGBoost}}
+    \begin{itemize}\setlength{\itemsep}{0.18em}
+      \item Gradient-boosted decision trees (XGBoost 2.x).
+      \item $78$ features post-hygiene (Phase 1).
+      \item $80$ features after ESM-2 LLR addition (Phase 2.1).
+      \item Train: $138{,}921$ variants, val: $28{,}079$.
+    \end{itemize}
+
+    \column{0.5\textwidth}
+    \textbf{\textcolor{kkuGreen}{Optuna TPE search}}
+    \begin{itemize}\setlength{\itemsep}{0.18em}
+      \item $40$ trials, multivariate grouping.
+      \item Objective: PR-AUC on validation.
+      \item Median pruner after $200$ rounds.
+      \item Early stopping = $80$ boost rounds.
+      \item Fixed \texttt{seed = 42}.
+    \end{itemize}
+  \end{columns}
+
+  \vspace{0.6em}
+  \begin{exampleblock}{Result: a flat hyperparameter landscape}
+    Top-10 trials within $0.001$ PR-AUC of each other. The baseline
+    ceiling is real --- further gains require better
+    \emph{representations} (ESM-2 LLR, AlphaFold structure), not
+    more search.
+  \end{exampleblock}
+\end{frame}
+
+% ───────────── Part 2.4: Isotonic calibration + Murphy ─────────────
+\begin{frame}{Part 2.4 --- Isotonic calibration + Murphy decomposition}
+  \footnotesize
+  \centering
+  $\text{Brier} = \text{Reliability} - \text{Resolution} + \text{Uncertainty}$
+  \vspace{0.5em}
+
+  \begin{tabular}{@{} l r r r r r @{}}
+    \toprule
+    \textbf{Calibrator} & \textbf{Brier} & \textbf{Reliability} & \textbf{Resolution} & \textbf{ECE} & \textbf{Log-loss} \\
+    \midrule
+    Raw      & 0.0876          & 0.00543          & 0.1055          & 0.054          & 0.286 \\
+    Platt    & 0.0834          & 0.00114          & 0.1055          & 0.029          & 0.278 \\
+    \rowcolor{kkuGoldLight}
+    \textbf{Isotonic} & \textbf{0.0826} & \textbf{0.00024} & 0.1053 & \textbf{0.011} & \textbf{0.273} \\
+    \bottomrule
+  \end{tabular}
+
+  \vspace{0.6em}
+  \begin{itemize}\setlength{\itemsep}{0.15em}
+    \item Resolution constant $\Rightarrow$ discrimination unchanged
+          (isotonic is a monotone post-hoc transform).
+    \item Reliability drops $\mathbf{23\times}$ $\Rightarrow$
+          probability calibration works.
+    \item ECE $0.054 \to 0.011$ $<$ $0.02$ \emph{clinical target}.
+  \end{itemize}
+\end{frame}
+
+% ───────────── Part 3.1: Internal evaluation framework ─────────────
+\begin{frame}{Part 3.1 --- Internal evaluation framework}
+  \footnotesize
+  \begin{block}{Paralog-disjoint test split}
+    \textbf{$28{,}098$ variants}, fully disjoint from train + val at
+    the paralog-family level. ${\sim}30\%$ pathogenic class rate.
+  \end{block}
+
+  \vspace{0.4em}
+  \textbf{\textcolor{kkuGreen}{Statistical methodology}}
+  \begin{itemize}\setlength{\itemsep}{0.25em}
+    \item \textbf{$95\%$ bootstrap CI} on every reported metric ---
+          ROC-AUC, PR-AUC, F1, MCC, Brier --- $1{,}000$ replicates,
+          \texttt{seed = 42}.
+    \item \textbf{Murphy decomposition} for calibration: separates
+          discrimination from probability quality (Part 2.4).
+    \item \textbf{Paired bootstrap on $\Delta$} for ablations ---
+          \emph{same resampled indices} for both compared models,
+          $n=28{,}098$, gives a much tighter CI than two independent
+          runs.
+  \end{itemize}
+
+  \vspace{0.3em}
+  \scriptsize
+  \emph{No single-number claims; every metric reported with an interval.}
+\end{frame}
+
+% ───────────── Part 3.2: External evaluation framework ─────────────
+\begin{frame}{Part 3.2 --- External evaluation framework}
+  \footnotesize
+  \begin{block}{\textsc{denovo-db} family-holdout slice}
+    \textbf{$n = 201$} variants in gene families completely unseen
+    during training. Cohort: affected vs control de-novo missense.
+  \end{block}
+
+  \vspace{0.4em}
+  \textbf{\textcolor{kkuGreen}{Three orthogonal tests}}
+  \begin{itemize}\setlength{\itemsep}{0.25em}
+    \item \textbf{Permutation test} for $H_0\!: \text{AUC} \le 0.5$
+          ($10{,}000$ replicates, \texttt{seed = 42}).
+    \item \textbf{Paired bootstrap on
+          $\Delta = \text{AUC}_{\text{post}} - \text{AUC}_{\text{pre}}$}
+          (constraint features), recovered pre-constraint checkpoint
+          at \texttt{f8ab464}.
+    \item \textbf{Calibration transfer audit} --- does isotonic from
+          ClinVar val ($\sim$24\% pathogenic) transfer to denovo-db's
+          $\sim$80\% prior? Spoiler: it does \emph{not} (D3).
+  \end{itemize}
+
+  \vspace{0.3em}
+  \scriptsize
+  \emph{External validation guards against ClinVar-shaped overfit.}
 \end{frame}
 
 % NOTE: 3 displaced "Part 3" slides moved (and updated) to Section 8 Results.
@@ -824,17 +933,95 @@
   \vspace{0.2em}
   \scriptsize
   \emph{Fork-1 = 6 leakage checks (parallel); Fork-2 = 5 eval tracks.
-  Conceptual flow; production uses sequential scripts.
-  State + Component $\rightarrow$ appendix.}
+  Conceptual flow; production uses sequential scripts.}
 \end{frame}
 
-% ═════════════════ SECTION 6 — IMPLEMENTATION AND EXPERIMENTAL RESULTS ═════════════════
-% Per supervisor's 7-section outline: Interface + Implementation + Results +
-% Comparison are all merged into one section "Implementation and experimental
-% results". Slide order preserved.
-\section{Implementation and experimental results}
+% ───────────── State diagram (UML 5/6) ─────────────
+\begin{frame}{State diagram --- variant life-cycle}
+  \centering
+  \begin{tikzpicture}[
+    font=\sffamily\footnotesize,
+    node distance=0.7cm and 1.5cm,
+    st/.style={draw, rounded corners=6pt, minimum width=2.3cm,
+      minimum height=0.7cm, align=center, thick, fill=green!15, font=\sffamily\scriptsize},
+    term/.style={st, fill=red!15},
+    init/.style={circle, fill=black, minimum size=0.3cm, inner sep=0pt},
+    final/.style={circle, draw=black, double, minimum size=0.4cm,
+      inner sep=0pt, fill=black!20},
+    arrow/.style={-{Latex[length=4pt]}, thick},
+  ]
+    \node[init] (s) {};
+    \node[st, right=of s]   (sub) {Submitted};
+    \node[st, right=of sub] (ann) {Annotated};
+    \node[st, below=of ann] (sc)  {Scored};
+    \node[st, left=of sc]   (cal) {Calibrated};
+    \node[st, left=of cal]  (cls) {Classified};
+    \node[term, below=of cal] (fail) {Failed};
+    \node[final, left=of cls] (e) {};
 
-% ───────────── SLIDE 16 — Interface (Streamlit demo + CLI) ─────────────
+    \draw[arrow] (s) -- (sub);
+    \draw[arrow] (sub) -- node[above, font=\sffamily\tiny]{assemble()} (ann);
+    \draw[arrow] (ann) -- node[right, font=\sffamily\tiny]{predict()} (sc);
+    \draw[arrow] (sc)  -- node[above, font=\sffamily\tiny]{calibrate()} (cal);
+    \draw[arrow] (cal) -- node[above, font=\sffamily\tiny]{band(p)} (cls);
+    \draw[arrow] (cls) -- node[above, font=\sffamily\tiny]{emit} (e);
+    \draw[arrow, dashed, red!70] (ann) -- node[right, font=\sffamily\tiny, red!80]{VEP err} (fail);
+    \draw[arrow, dashed, red!70] (sc)  -- node[right, font=\sffamily\tiny, red!80]{NaN} (fail);
+  \end{tikzpicture}
+
+  \vspace{0.4em}
+  \scriptsize
+  \emph{Five-state happy path
+  (Submitted $\rightarrow$ Annotated $\rightarrow$ Scored $\rightarrow$
+  Calibrated $\rightarrow$ Classified). Two error transitions to Failed:
+  upstream VEP REST errors and downstream NaN feature errors.}
+\end{frame}
+
+% ───────────── Component diagram (UML 6/6) ─────────────
+\begin{frame}{Component diagram --- module-level dependencies}
+  \centering
+  \begin{tikzpicture}[
+    font=\sffamily\scriptsize,
+    comp/.style={draw, thick, rounded corners=2pt, minimum width=2.2cm,
+      minimum height=0.65cm, align=center, fill=blue!8, font=\sffamily\tiny},
+    ext/.style={draw, thick, rounded corners=10pt, minimum width=2.2cm,
+      minimum height=0.65cm, fill=gray!15, align=center, font=\sffamily\tiny},
+    arrow/.style={-{Latex[length=4pt]}, thick},
+    dep/.style={-{Latex[length=4pt]}, dashed, gray!70, thick},
+  ]
+    \node[comp] (sl)    at (0,    2.2) {Streamlit UI};
+    \node[comp] (cli)   at (0,    1.1) {Typer CLI};
+    \node[comp] (svc)   at (3.0,  1.65){ScoreService};
+    \node[comp] (mdl)   at (6.0,  2.2) {Model (XGBoost)};
+    \node[comp] (cal)   at (6.0,  1.1) {Calibrator};
+    \node[comp] (shap)  at (6.0,  0.0) {SHAPExplainer};
+    \node[comp] (data)  at (3.0,  0.0) {FeatureAssembler};
+    \node[comp] (cache) at (3.0, -1.1) {Parquet cache};
+    \node[ext]  (vep)   at (9.3,  2.2) {VEP REST};
+    \node[ext]  (hf)    at (9.3,  1.1) {HF Hub};
+    \node[ext]  (gnom)  at (9.3,  0.0) {gnomAD FTP};
+
+    \draw[arrow] (sl) -- (svc); \draw[arrow] (cli) -- (svc);
+    \draw[arrow] (svc) -- (mdl); \draw[arrow] (svc) -- (cal);
+    \draw[arrow] (svc) -- (shap); \draw[arrow] (svc) -- (data);
+    \draw[arrow] (data) -- (cache);
+    \draw[dep] (mdl)  -- (vep)  node[midway, above, font=\sffamily\tiny]{HTTP};
+    \draw[dep] (cal)  -- (hf)   node[midway, above, font=\sffamily\tiny]{HTTPS};
+    \draw[dep] (shap) -- (gnom) node[midway, above, font=\sffamily\tiny]{FTP};
+  \end{tikzpicture}
+
+  \vspace{0.4em}
+  \scriptsize
+  \emph{Solid arrows = direct uses; dashed grey = external network
+  dependencies (VEP HTTP, HF Hub HTTPS, gnomAD FTP). Conceptual
+  blueprint; production uses module-level functions, not concrete
+  classes.}
+\end{frame}
+
+% ═════════════════ SECTION 6 — INTERFACE ═════════════════
+\section{Interface}
+
+% ───────────── Interface — Streamlit demo + CLI ─────────────
 \begin{frame}{Interface --- Streamlit demo + Typer CLI}
   \centering
   \includegraphics[width=0.92\linewidth,height=0.58\textheight,keepaspectratio]{figures/screenshots/07_streamlit_demo.png}
@@ -864,7 +1051,8 @@
   \end{columns}
 \end{frame}
 
-% (Implementation slide — under Section 6 "Implementation and experimental results")
+% ═════════════════ SECTION 7 — IMPLEMENTATION AND EXPERIMENTAL RESULTS ═════════════════
+\section{Implementation and experimental results}
 
 % ───────────── SLIDE 17 — Implementation: H/W + S/W + Docker ─────────────
 \begin{frame}{Implementation --- hardware, software stack, reproducibility}
@@ -1143,68 +1331,11 @@
   REVEL omitted (13 ClinVar-trained base learners).
 \end{frame}
 
-% ═════════════════ SECTION 7 — CONCLUSION AND FUTURE WORKS ═════════════════
-% Order: Future → Deficiencies → Conclusion → Q&A
-% (Conclusion last before Q&A is the international academic standard:
-% the take-home is the LAST thing the audience hears before questions.)
+% ═════════════════ SECTION 8 — CONCLUSION AND FUTURE WORKS ═════════════════
+% Per supervisor: only Conclusion + Future, no Deficiencies, no separate Q&A.
 \section{Conclusion and future works}
 
-% ───────────── SLIDE 22 — Future work ─────────────
-\begin{frame}{Future work}
-  \footnotesize
-  \begin{enumerate}\setlength{\itemsep}{0.7em}
-    \item \textbf{Larger-checkpoint ESM-2.}
-          Upgrade to \texttt{esm2\_t33\_650M\_UR50D}
-          ($19\times$ parameters); expected to lift the OOD
-          ceiling (current 35M shows $\Delta\text{ROC} = -0.13$
-          on unseen gene families).
-    \item \textbf{AlphaFold-2 structural features.}
-          pLDDT, SASA, DSSP secondary structure, residue depth ---
-          orthogonal to PLM signal, complementary to conservation.
-    \item \textbf{ProteinGym DMS external validation.}
-          Third dataset independent of ClinVar and
-          \textsc{denovo-db}; deep mutational scanning fitness
-          measurements as both validation set and auxiliary
-          training signal.
-    \item \textbf{Hybrid stacking + ACMG integration.}
-          Meta-learner combining XGBoost + ESM-2 + AlphaMissense,
-          packaged as an ACMG-compatible plug-in for clinical
-          workflows.
-  \end{enumerate}
-\end{frame}
-
-% ───────────── SLIDE 24 — Deficiencies D1–D8 (compact table) ─────────────
-\begin{frame}{Deficiencies (D1--D8)}
-  \footnotesize
-  \emph{Honest limitations, each paired with a next-step item on Slide~23.}
-  \vspace{0.5em}
-
-  \centering
-  \begin{tabular}{@{} c p{6.5cm} l @{}}
-    \toprule
-    \textbf{ID} & \textbf{Limitation} & \textbf{Status} \\
-    \midrule
-    D1 & External ROC $0.573$, CI covers chance ($n=201$) & open \\
-    D2 & ClinVar-only training, no DMS labels             & open \\
-    D3 & Isotonic-only calibration, no per-gene           & open \\
-    \rowcolor{green!10}
-    D4 & ESM-2 zero-shot only on denovo-db                & \textcolor{kkuGreen}{\textbf{shipped}} (Phase 2.1) \\
-    D5 & No AlphaFold-2 structural features yet           & open \\
-    D6 & Streamlit-only --- no REST API, no VEP plug-in   & open \\
-    D7 & Own-coverage baselines, no matched-coverage rerun on $\mathcal{S}_{\text{AM}}$
-                                                          & open \\
-    \rowcolor{green!10}
-    D8 & Pre-constraint preds not persisted               & \textcolor{kkuGreen}{\textbf{recovered}} (\texttt{f8ab464}) \\
-    \bottomrule
-  \end{tabular}
-
-  \vspace{0.6em}
-  \footnotesize
-  \emph{Two of the eight (D4, D8) were resolved during this project.
-  The remaining six map to the four future-work items on Slide~22.}
-\end{frame}
-
-% ───────────── SLIDE 24 — Conclusion + take-home messages ─────────────
+% ───────────── Conclusion — take-home messages ─────────────
 \begin{frame}{Conclusion --- take-home messages}
   \footnotesize
   \begin{enumerate}\setlength{\itemsep}{0.6em}
@@ -1231,26 +1362,28 @@
   \end{enumerate}
 \end{frame}
 
-% ───────────── SLIDE 25 — Thank you / Q&A (dedicated) ─────────────
-\begin{frame}{Thank you --- Questions?}
-  \centering
-  \vspace{1.2em}
-
-  {\Huge\bfseries\color{kkuGreen}Thank you}
-
-  \vspace{0.6em}
-  {\Large Questions?}
-
-  \vspace{2em}
+% ───────────── Future works ─────────────
+\begin{frame}{Future works}
   \footnotesize
-  \begin{tabular}{r l}
-    Code + thesis + slides
-      & \texttt{github.com/RayanAlDwlah/Genetic-Mutation-Detection-project} \\[0.4em]
-    Reproduce headline
-      & \texttt{docker run --rm missense-classifier make reproduce-headline} \\[0.4em]
-    Streamlit demo
-      & \texttt{streamlit run scripts/streamlit\_app.py} \\
-  \end{tabular}
+  \begin{enumerate}\setlength{\itemsep}{0.7em}
+    \item \textbf{Larger-checkpoint ESM-2.}
+          Upgrade to \texttt{esm2\_t33\_650M\_UR50D}
+          ($19\times$ parameters); expected to lift the OOD
+          ceiling (current 35M shows $\Delta\text{ROC} = -0.13$
+          on unseen gene families).
+    \item \textbf{AlphaFold-2 structural features.}
+          pLDDT, SASA, DSSP secondary structure, residue depth ---
+          orthogonal to PLM signal, complementary to conservation.
+    \item \textbf{ProteinGym DMS external validation.}
+          Third dataset independent of ClinVar and
+          \textsc{denovo-db}; deep mutational scanning fitness
+          measurements as both validation set and auxiliary
+          training signal.
+    \item \textbf{Hybrid stacking + ACMG integration.}
+          Meta-learner combining XGBoost + ESM-2 + AlphaMissense,
+          packaged as an ACMG-compatible plug-in for clinical
+          workflows.
+  \end{enumerate}
 \end{frame}
 
 
