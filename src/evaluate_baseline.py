@@ -51,8 +51,7 @@ def _predict(model: xgb.Booster, X) -> np.ndarray:
 def _operating_points(y_true: np.ndarray, y_prob: np.ndarray) -> pd.DataFrame:
     """Find thresholds that hit specific recall / precision targets."""
     precision, recall, thresh = precision_recall_curve(y_true, y_prob)
-    # precision_recall_curve returns len(thresh) == len(precision)-1; align.
-    # Truncate precision/recall to match thresh length.
+    # precision_recall_curve returns len(thresh) == len(precision)-1; align lengths.
     p, r, t = precision[:-1], recall[:-1], thresh
 
     rows: list[dict[str, float]] = []

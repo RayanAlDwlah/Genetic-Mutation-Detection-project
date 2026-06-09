@@ -1,4 +1,3 @@
-# Added for Phase 2.1 (S13): unit tests for the paired-bootstrap helper in ablate_esm2.
 """Unit tests for scripts/ablate_esm2.py paired_bootstrap_diff."""
 from __future__ import annotations
 

@@ -78,7 +78,6 @@ def select_feature_columns(df: pd.DataFrame) -> tuple[list[str], list[str]]:
         "review_stars",
         # pos is raw genomic position with no biological meaning without gene context.
         "pos",
-        # LEAKAGE FIX (April 2026):
         # is_common is a near-deterministic label feature: variants flagged is_common=True
         # are 100% benign (ClinVar labels common gnomAD variants as benign by definition).
         # Keeping it would be definitional circularity even though the tuned XGBoost

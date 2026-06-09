@@ -49,9 +49,6 @@ results/metrics/*
 results/metrics/phase21/*
 !results/metrics/phase21/*.csv
 
-# Assistant worktrees
-.claude/
-
 # Virtual environments
 .venv/
 venv/

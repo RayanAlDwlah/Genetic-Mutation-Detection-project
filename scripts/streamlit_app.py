@@ -326,8 +326,7 @@ def main() -> None:  # pragma: no cover — Streamlit entry point
             value="2:166051955:G:T",
             help=(
                 "Default: 2:166051955:G:T — an SCN1A missense variant "
-                "(Dravet syndrome). Calibrated P(pathogenic) ≈ 1.00. "
-                "More demo keys in docs/defense_prep/DEMO_VARIANTS.md."
+                "(Dravet syndrome). Calibrated P(pathogenic) ≈ 1.00."
             ),
         )
         use_vep = st.checkbox(

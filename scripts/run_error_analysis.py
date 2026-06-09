@@ -1,5 +1,4 @@
-"""Error analysis stratified by paralog family and amino-acid class
-(P1-3 of thesis review).
+"""Error analysis stratified by paralog family and amino-acid class.
 
 Produces three new figures + one CSV:
 

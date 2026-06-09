@@ -3,8 +3,8 @@
 
 Context
 -------
-Phase D (denovo-db) revealed that the tabular baseline performs at chance
-on affected-vs-control de-novo missense. Diagnosis: the model sees
+The tabular baseline performs at chance on affected-vs-control de-novo
+missense. Diagnosis: the model sees
 *variant-level* signals (conservation, AA chemistry) but never the
 *gene-level* constraint prior that clinicians actually use — "this gene is
 intolerant to any damage" vs "this gene is a passenger."
@@ -117,7 +117,7 @@ def main() -> None:
     val = pd.read_parquet(REPO / args.val)
     test = pd.read_parquet(REPO / args.test)
 
-    # 1. Fit medians on TRAIN only (avoid leakage).
+    # Fit medians on TRAIN only (avoid leakage).
     train_m, medians = merge_constraint(train, constraint=constraint)
     val_m, _ = merge_constraint(val, constraint=constraint, impute_medians=medians)
     test_m, _ = merge_constraint(test, constraint=constraint, impute_medians=medians)

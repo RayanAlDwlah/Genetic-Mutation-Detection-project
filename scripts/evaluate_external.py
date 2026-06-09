@@ -6,7 +6,7 @@ Usage
     python scripts/evaluate_external.py                # all sources
     python scripts/evaluate_external.py --only denovo  # one source
 
-The script performs the Phase-D pipeline end-to-end:
+The script performs the external-validation pipeline end-to-end:
 
 1. Load external source into a (variant_key, label, gene, …) table.
 2. Featurize by joining on the cached dbNSFP parquet.
@@ -190,7 +190,6 @@ def run_source(name: str, cfg: dict, args) -> None:
         print(f"  VEP returned features for {len(vep_rows):,} rows")
         if len(vep_rows) > 0:
             vep_enriched = feat.unmapped.merge(vep_rows, on="variant_key", how="inner")
-            # vep_enriched now has all needed feature cols + label/gene/etc.
             feat_rows = pd.concat([feat.featurized, vep_enriched], ignore_index=True, sort=False)
             still_missing = feat.unmapped[
                 ~feat.unmapped["variant_key"].isin(vep_rows["variant_key"])

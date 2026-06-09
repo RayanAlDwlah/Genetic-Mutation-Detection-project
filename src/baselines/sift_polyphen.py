@@ -34,12 +34,11 @@ from pathlib import Path
 import pandas as pd
 import requests
 
-# GRCh38 endpoint — our ClinVar-derived splits are on GRCh38 despite the
-# `dbNSFP5.3.1a_grch37.gz` source filename. We verified empirically:
-# sampling 5 test variants, all 5 matched their annotated gene + amino
-# acid change on GRCh38 but not on GRCh37 (the GRCh37 endpoint returned
-# unrelated intron / downstream consequences at the same numeric position).
-# See `docs/CHANGELOG.md` "Build correction" for the full audit.
+# GRCh38 endpoint — the ClinVar-derived splits are on GRCh38 despite the
+# `dbNSFP5.3.1a_grch37.gz` source filename. Sampled test variants match
+# their annotated gene + amino acid change on GRCh38 but not on GRCh37
+# (the GRCh37 endpoint returns unrelated intron / downstream consequences
+# at the same numeric position).
 #
 # External (denovo-db) variants use a *different* REST URL because
 # denovo-db itself publishes GRCh37 coordinates — those go through the
@@ -105,9 +104,8 @@ def fetch_sift_polyphen(
     `query_df` must have `chr, pos, ref, alt, variant_key`. Returns a
     lookup DataFrame with NaN entries for unscored variants.
 
-    A resumable parquet cache at `cache_path` lets us interrupt and
-    resume long fetches across multiple sessions — the cache is keyed
-    by `variant_key`.
+    A resumable parquet cache at `cache_path` lets long fetches be
+    interrupted and resumed — the cache is keyed by `variant_key`.
     """
     cached: dict[str, dict] = {}
     if cache_path is not None and cache_path.exists() and not force:

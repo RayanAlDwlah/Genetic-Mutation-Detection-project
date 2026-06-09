@@ -1,6 +1,6 @@
 """ESM-2 protein language model integration for mutation classification.
 
-NOTE: This module is a structural placeholder reserved for Phase 2 (post-midterm).
+NOTE: This module is a structural placeholder reserved for planned future work.
 The full implementation will include:
   - Extraction of per-residue embeddings from ESM-2 (facebook/esm2_t6_8M_UR50D)
   - Fine-tuning the model on ClinVar missense variants using LoRA / full fine-tuning

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# Added for Phase 2.1 (S11): Phase-1 vs Phase-2.1 calibration comparison.
 """Compare ECE / MCE / Brier between Phase-1 and Phase-2.1 calibrators.
 
 Reads:

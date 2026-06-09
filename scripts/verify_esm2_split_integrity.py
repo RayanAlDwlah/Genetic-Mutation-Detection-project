@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Added for Phase 2.1 (S2.5): hard guard against ESM-2/HEAD split drift.
+# Hard guard against ESM-2/HEAD split drift.
 """Verify that the ESM-2 score parquets are consistent with HEAD splits.
 
 Checks (all must pass):
@@ -10,10 +10,10 @@ Checks (all must pass):
     5. scored_train_keys cap val_keys  == empty
     6. scored_val_keys   cap test_keys == empty
 
-Coverage per split is reported but not gated. Phase 2.1 must NOT proceed
-past this script with any failed assertion --- a violation would mean a
-training-set ESM-2 score leaked into val or test, inflating the
-Phase-2.1 numbers undetectably.
+Coverage per split is reported but not gated. Downstream work must NOT
+proceed past this script with any failed assertion --- a violation would
+mean a training-set ESM-2 score leaked into val or test, inflating the
+reported numbers undetectably.
 """
 from __future__ import annotations
 

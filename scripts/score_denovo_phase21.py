@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
-# Added for Phase 2.1 (S8): score Phase-2.1 XGBoost on denovo-db.
 """Score the Phase-2.1 XGBoost model on the denovo-db external cohort.
 
 Reconstructs the featurized denovo-db frame from:
   - the existing `external_denovo_db_predictions.parquet` (skeleton:
     variant_key, gene, label, family_holdout)
   - dbNSFP cache + gnomAD-AF cache (committed intermediates)
-  - gnomAD constraint medians (committed CSV; raw constraint table is
-    not in the worktree, so all denovo rows are flagged
-    is_imputed_gnomad_constraint=1, matching the Phase-1 behavior on
-    long-tail genes)
+  - gnomAD constraint medians (committed CSV; the raw constraint table
+    is gitignored and must be provided locally, so all denovo rows are
+    flagged is_imputed_gnomad_constraint=1, matching the Phase-1 behavior
+    on long-tail genes)
   - esm2_denovo_db_scores.parquet (esm2_llr column, aggregated by
     min per variant_key)
 
@@ -83,7 +82,7 @@ def main() -> int:
     # the per-row constraint values produced by the original Phase-1 pipeline).
     # Fall back to medians for any denovo gene NOT in train. Mirrors what the
     # canonical evaluate_external would do given the raw table; required because
-    # the raw constraint table is gitignored in this worktree.
+    # the raw constraint table is gitignored and must be provided locally.
     train = pd.read_parquet(PHASE21_TRAIN)
     gene_constraint = (
         train.dropna(subset=CONSTRAINT_COLS, how="all")

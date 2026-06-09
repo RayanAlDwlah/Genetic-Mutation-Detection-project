@@ -1,4 +1,4 @@
-"""Learning curve (P1-2 of thesis review).
+"""Learning curve.
 
 Retrain XGBoost with the committed Optuna-tuned hyperparameters at a
 subsampled fraction ``f`` of the training split for every

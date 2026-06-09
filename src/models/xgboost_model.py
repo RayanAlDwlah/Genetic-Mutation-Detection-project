@@ -51,8 +51,8 @@ def build_xgboost_model(
     base_params: dict[str, Any] = {
         "objective": "binary:logistic",
         # XGBoost monitors these metrics during training. Early stopping is triggered
-        # by the last metric — "aucpr" — which matches the composite selection
-        # objective (0.65*AUC + 0.35*PRAUC) used in tune_xgboost().
+        # by the last metric — "aucpr" — which matches the PR-AUC selection
+        # objective used in tune_xgboost().
         "eval_metric": ["auc", "aucpr"],
         # "hist" builds approximate histograms for fast split-finding (GPU/CPU).
         "tree_method": "hist",

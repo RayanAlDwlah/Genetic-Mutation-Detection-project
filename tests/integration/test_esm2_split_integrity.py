@@ -1,4 +1,4 @@
-# Added for Phase 2.1 (S13): regression guard for ESM-2 / HEAD split drift.
+# Regression guard for ESM-2 / HEAD split drift.
 """Wrap scripts/verify_esm2_split_integrity.py into a CI test."""
 from __future__ import annotations
 

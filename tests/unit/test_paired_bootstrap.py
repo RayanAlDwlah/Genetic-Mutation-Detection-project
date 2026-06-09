@@ -1,4 +1,3 @@
-# Added for the P0 revision pass (P0-1 Step 3).
 """Unit tests for the paired bootstrap utility."""
 from __future__ import annotations
 

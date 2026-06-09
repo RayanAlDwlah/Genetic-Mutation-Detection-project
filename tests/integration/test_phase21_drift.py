@@ -1,4 +1,4 @@
-# Added for Phase 2.1 (S13): regression guard for the Phase-2.1 test PR-AUC.
+# Regression guard for the Phase-2.1 test PR-AUC.
 """Catches silent drift of the Phase-2.1 model headline number."""
 from __future__ import annotations
 

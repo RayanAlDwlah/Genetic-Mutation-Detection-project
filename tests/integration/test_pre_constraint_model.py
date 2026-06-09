@@ -1,4 +1,3 @@
-# Added for the P0 revision pass (P0-1 Step 5).
 """Regression guard for the pre-constraint denovo-db scoring.
 
 Catches silent drift of the pre-constraint baseline that underpins the

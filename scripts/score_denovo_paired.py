@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-# Added for the P0 revision pass (P0-1 Step 2).
 """Score denovo-db with both pre- and post-constraint XGBoost checkpoints.
 
 Emits two per-variant prediction parquets in the schema required by the
-P0-1 paired-bootstrap script:
+paired-bootstrap script:
     variant_id, y_true, p_pred, slice
 
 `slice` is one of {"holdout", "full"} (emitted as two row groups per file).
@@ -163,7 +162,7 @@ def attach_constraint(feat: pd.DataFrame) -> pd.DataFrame:
 
 
 def to_long(df: pd.DataFrame) -> pd.DataFrame:
-    """Emit full + holdout slice rows in the schema P0-1 requires."""
+    """Emit full + holdout slice rows in the schema the bootstrap script requires."""
     out = []
     full = df.assign(slice="full")[["variant_key", "y_true", "p_pred", "slice"]].rename(
         columns={"variant_key": "variant_id"}

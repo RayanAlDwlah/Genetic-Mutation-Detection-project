@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Added for Phase 2.1 (S3/S4): train XGBoost with esm2_llr as a feature.
+# Train XGBoost for Phase 2.1 with esm2_llr as an added feature.
 """Train Phase-2.1 XGBoost using either frozen Phase-1 hyperparameters
 (headline path) or full Optuna retune (appendix sensitivity).
 
@@ -7,9 +7,8 @@ Reuses src.training utilities (select_feature_columns, prepare_split_features)
 so the only thing that changes vs Phase-1 is the input split parquets and
 the output namespace. Phase-1 artifacts are NEVER overwritten.
 
-Headline rule (per S4 of plan): the frozen-hp model is the canonical
-result; Optuna retune outputs are written to a parallel namespace and
-are appendix-only.
+Headline rule: the frozen-hp model is the canonical result; Optuna
+retune outputs are written to a parallel namespace and are appendix-only.
 """
 from __future__ import annotations
 

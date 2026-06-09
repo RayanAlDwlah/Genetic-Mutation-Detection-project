@@ -39,7 +39,7 @@ FIGURES_DIR.mkdir(parents=True, exist_ok=True)
 PHASE1_PARQUET = SHAP_DIR / "shap_ranking_phase1.csv"  # not present; --mode=full will fail
 PHASE2_PARQUET = SHAP_DIR / "shap_ranking_phase21.csv"
 
-# KKU palette — match your slide theme
+# KKU palette — matches the slide theme
 KKU_GREEN = "#1B5E3F"
 KKU_GOLD = "#C9A961"
 NEUTRAL = "#444444"

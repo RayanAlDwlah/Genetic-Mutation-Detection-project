@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 """Paralog-aware (family-level) train/val/test splitting with strict overlap validation.
 
-LEAKAGE FIX (April 2026):
-Previously split on `gene`, which still allowed paralog leakage — 52% of test
-gene-prefix families (e.g. ZNF*, SLC*, KRT*, TMEM*) overlapped with train,
-inflating PR-AUC by ~3.9 points. The splitter now groups genes into families
-(approximate HGNC families via prefix heuristics) and splits at the family level
-so paralogs stay together in the same split.
+Splitting on raw `gene` still allows paralog leakage: gene-prefix families
+(e.g. ZNF*, SLC*, KRT*, TMEM*) can overlap between train and test and inflate
+PR-AUC. The splitter instead groups genes into families (approximate HGNC
+families via prefix heuristics) and splits at the family level so paralogs stay
+together in the same split.
 """
 
 from __future__ import annotations

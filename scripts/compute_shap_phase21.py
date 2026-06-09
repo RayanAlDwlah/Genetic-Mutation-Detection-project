@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# Added for Phase 2.1 (S6): SHAP on the xgboost_phase21_esm2 model.
 """SHAP interpretation for the Phase-2.1 XGBoost model with esm2_llr.
 
 Mirrors scripts/compute_shap.py but points at the Phase-2.1 splits and
@@ -8,7 +7,7 @@ NOT reuse compute_shap.py's confident-error step, because that step
 joins on results/metrics/xgboost_predictions.parquet (Phase-1) and
 recomputing it here would require a separate Phase-2.1 predictions
 parquet that already lives at
-results/metrics/phase21/xgboost_predictions.parquet from S5.
+results/metrics/phase21/xgboost_predictions.parquet.
 """
 from __future__ import annotations
 

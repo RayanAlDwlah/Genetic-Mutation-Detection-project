@@ -3,7 +3,7 @@
 Rationale
 ---------
 `src/dbnsfp_extraction.py` requires the bulk dbNSFP TSV (~30 GB) to featurize
-new variants. For Phase D v1 we cannot ship that to a clean clone, so this
+new variants. That table cannot be shipped to a clean clone, so this
 module uses the Ensembl VEP REST API to pull the same conservation scores
 the training pipeline consumes, then reproduces all AA-derived features
 (BLOSUM62, Grantham, hydrophobicity, …) in Python using the same helper

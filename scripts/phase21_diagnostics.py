@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# Added for Phase 2.1 (S10): correlations, ablation summary, SHAP comparison plot.
 """Diagnostic artifacts for Phase-2.1 ESM-2 integration.
 
 Generates:

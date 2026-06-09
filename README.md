@@ -39,7 +39,7 @@ I built an XGBoost model that classifies human **missense variants** as *pathoge
 | Phase 2.1 PR-AUC (+ESM-2 LLR) | **0.8647** | [0.858, 0.871] | Paired Δ **+0.0313**, *p* < 10⁻⁴ vs. baseline (n = 28,098) |
 | External ROC-AUC (denovo-db, **unseen families**) | 0.573 | [0.471, 0.672] | Honest negative result; reported, not hidden |
 
-All metrics derived from 1,000-replicate bootstrap CIs on a paralog-disjoint test split (28,098 variants). Source: `thesis.tex §5.6` · `canonical-numbers.md` · `results/metrics/`.
+All metrics derived from 1,000-replicate bootstrap CIs on a paralog-disjoint test split (28,098 variants). Source: `thesis.tex §5.6` · `results/metrics/`.
 
 ---
 
@@ -191,10 +191,8 @@ flowchart LR
 │   ├── metrics/                  # leakage_fix_journey.csv + bootstrap CIs
 │   └── checkpoints/              # versioned model artifacts
 ├── report/                       # thesis.tex (111 pp) + defense.tex (53 pp)
-├── docs/                         # CHANGELOG, defense prep, SHAP interpretation
+├── docs/                         # CHANGELOG + SHAP interpretation
 ├── data/                         # raw + intermediate + committed splits
-├── canonical-numbers.md          # authoritative metric ↔ source mapping
-├── FINAL_STATUS.md               # defense readiness log
 ├── Dockerfile · Makefile · pyproject.toml · requirements-lock.txt
 └── .pre-commit-config.yaml · .github/workflows/*.yml
 ```

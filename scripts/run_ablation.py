@@ -1,4 +1,4 @@
-"""Feature-group ablation (P1-1 of thesis review).
+"""Feature-group ablation.
 
 For each of the six feature groups used in Figure 3.7, retrain XGBoost with
 the group *removed* and report the resulting ROC-AUC / PR-AUC / ECE on the

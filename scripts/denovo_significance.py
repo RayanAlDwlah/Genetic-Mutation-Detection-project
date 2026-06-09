@@ -1,4 +1,4 @@
-"""denovo-db external-validation significance tests (P0-1 of thesis review).
+"""denovo-db external-validation significance tests.
 
 Computes the statistical tests that back the denovo-db generalisation claim:
 

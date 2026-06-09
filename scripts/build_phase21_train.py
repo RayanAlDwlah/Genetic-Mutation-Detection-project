@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
-# Added for Phase 2.1 (S2): merge ESM-2 LLR into the canonical splits.
 """Build Phase-2.1 split parquets that add esm2_llr + is_imputed_esm2_llr.
 
 Idempotent. Never mutates the canonical `data/splits/{train,val,test}.parquet`
-files. Writes to `data/splits/phase21/` (gitignore-exempted in a sibling commit).
+files. Writes to `data/splits/phase21/`.
 
 Aggregation rule: per-variant `min(esm2_llr)` (most-pathogenic isoform).
-S1 verified that the score parquets currently have one row per variant_key
-on test split; the rule still applies cleanly because pandas groupby on a
-unique key reduces to identity.
+The score parquets currently have one row per variant_key on the test split;
+the rule still applies cleanly because pandas groupby on a unique key reduces
+to identity.
 """
 from __future__ import annotations
 

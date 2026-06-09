@@ -1,6 +1,6 @@
-"""ESM-2 sanity tests (P0-2 of thesis review).
+"""ESM-2 sanity tests.
 
-Three tests requested by the review:
+Three tests:
 
 1. ``test_cls_indexing_is_correct`` — mask residue 1 of a synthetic protein
    and assert the softmax places non-negligible probability on the true
@@ -22,11 +22,11 @@ Three tests requested by the review:
 
 All three are gated behind the ``@pytest.mark.gpu`` marker (they
 instantiate the real 35M model). CI runs them with ``-m "not gpu"``, so
-they execute only on the developer laptop where the GPU is available.
+they execute only where a GPU is available.
 
-Acceptance criterion from the review: all three pass or are xfail with
-a documented reason. If a true sign bug is found, the PLM pipeline must
-be rerun and every number in Section 5.6.7 regenerated.
+Acceptance criterion: all three pass or are xfail with a documented
+reason. If a true sign bug is found, the PLM pipeline must be rerun and
+every number in Section 5.6.7 regenerated.
 """
 
 from __future__ import annotations

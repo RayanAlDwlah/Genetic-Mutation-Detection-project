@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# Added for the P0 revision pass (P0-2).
 """Intersection-subset baseline comparison on the paralog-disjoint test split.
 
 Answers: does AlphaMissense's PR-AUC advantage over our XGBoost
@@ -40,8 +39,7 @@ method, n, roc_auc, roc_lo, roc_hi, pr_auc, pr_lo, pr_hi,
 coverage_original, coverage_intersection,
 am_pr_delta_vs_table52, note.  The note flags whether the
 AlphaMissense intersection PR-AUC deviates from Table 5.2's
-reported 0.890 by more than 0.02 (P0-2 brief: critical-constraint
-check).
+reported 0.890 by more than 0.02.
 """
 from __future__ import annotations
 
@@ -61,13 +59,8 @@ from xgboost import XGBClassifier
 
 REPO = Path(__file__).resolve().parents[1]
 
-# Try the worktree raw path first, fall back to the parent repo (raw data
-# is gitignored so the worktree mirror has it only if symlinked).
-_DBNSFP_CANDIDATES = [
-    REPO / "data/raw/dbnsfp/dbNSFP5.3.1a_grch37.gz",
-    Path("~/Documents/Coding_Project/GenticGraduationProject/data/raw/dbnsfp/dbNSFP5.3.1a_grch37.gz"),
-]
-DBNSFP_TSV = next((p for p in _DBNSFP_CANDIDATES if p.exists()), _DBNSFP_CANDIDATES[0])
+# Raw dbNSFP TSV is gitignored (too large to commit); place it here locally.
+DBNSFP_TSV = REPO / "data/raw/dbnsfp/dbNSFP5.3.1a_grch37.gz"
 
 # Column indices (1-based) in the dbNSFP TSV header — verified by inspection.
 COL_CHR = 1   # GRCh37 chr

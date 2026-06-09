@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Merge ClinVar labels + dbNSFP features + gnomAD frequencies.
 
-Merge order (Option A):
+Merge order:
 1) ClinVar INNER JOIN dbNSFP on variant_key
    - Acts as missense filter, because dbNSFP is missense-focused.
 2) LEFT JOIN gnomAD on variant_key
@@ -97,7 +97,7 @@ def main() -> None:
     dbnsfp = dbnsfp[dbnsfp_feature_cols].copy()
     dbnsfp, dbnsfp_dup = _drop_duplicate_variant_keys(dbnsfp, "dbNSFP")
 
-    # Option A fix: INNER JOIN to apply missense filtering via dbNSFP coverage.
+    # INNER JOIN applies missense filtering via dbNSFP coverage.
     merged = clinvar.merge(dbnsfp, on="variant_key", how="inner", validate="one_to_one")
     rows_after_dbnsfp_inner = len(merged)
     if rows_after_dbnsfp_inner == 0:

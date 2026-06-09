@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-# Added for Phase 2.1 (S1): pick the per-variant ESM-2 aggregation rule data-driven.
 """Probe four candidate aggregation rules for ESM-2 LLR per variant_key.
 
 Variants in dbNSFP frequently map to multiple transcript isoforms; the
 ESM-2 score parquet has one row per (variant_key, transcript_id) pair.
-Phase 2.1 needs a single LLR per variant_key to feed XGBoost as a numeric
+A single LLR per variant_key is needed to feed XGBoost as a numeric
 feature. This probe scores the test split stand-alone using each
 candidate aggregation and reports ROC-AUC + average precision so the
 choice is data-driven rather than imposed.

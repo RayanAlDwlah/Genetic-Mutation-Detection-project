@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# Added for Phase 2.1 (S9): paired bootstrap Phase-1 vs Phase-2.1 on denovo-db.
 """Paired bootstrap on denovo-db: Phase-1 (xgboost_best) vs Phase-2.1 (with ESM-2).
 
 Reads two prediction parquets keyed on variant_key:

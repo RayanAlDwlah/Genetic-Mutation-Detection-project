@@ -149,7 +149,7 @@ def check_phase21_features_present() -> list[str]:
 
 
 def check_esm2_split_integrity() -> list[str]:
-    """Assert that ESM-2 score parquets are consistent with HEAD splits.
+    """Assert that ESM-2 score parquets are consistent with the current splits.
 
     Skips silently when the parquets aren't available (Phase-2.1 not run).
     """

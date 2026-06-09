@@ -46,12 +46,11 @@ score is already in the cache.
 
 Runtime note
 ------------
-This module imports `torch` and `transformers` which live in the
-`~/.venvs/esm2` venv (Python 3.13 with lzma support). The project's main
-pyenv 3.11.7 lacks `_lzma` so HuggingFace refuses to load the tokenizer.
-Run this module with:
+This module imports `torch` and `transformers`. Run it with a Python build
+that has lzma support; without `_lzma` HuggingFace refuses to load the
+tokenizer. Example:
 
-    ~/.venvs/esm2/bin/python -m src.esm2_scorer …
+    python -m src.esm2_scorer …
 """
 
 from __future__ import annotations

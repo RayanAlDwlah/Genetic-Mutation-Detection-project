@@ -10,8 +10,7 @@ Inputs
 - `results/metrics/esm2_denovo_db_scores.parquet`
     Per-variant ESM-2 scores + label + family_holdout flag.
 - `results/metrics/external_denovo_db_predictions.parquet`
-    Calibrated XGBoost probabilities on the same denovo-db sample
-    (from the current Phase D run).
+    Calibrated XGBoost probabilities on the same denovo-db sample.
 
 Outputs
 -------

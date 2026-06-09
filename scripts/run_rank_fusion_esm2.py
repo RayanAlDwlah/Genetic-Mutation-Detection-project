@@ -3,20 +3,18 @@
 
 Motivation
 ----------
-While the full ClinVar training-set ESM-2 scoring is still pending a GPU-quota
-reset, we already have per-variant LLR scores for val + test (≈ 56 K variants,
-99.4 % coverage). That's enough to run a clean rank-fusion experiment:
+Per-variant LLR scores are available for val + test (≈ 56 K variants,
+99.4 % coverage), which is enough to run a clean rank-fusion experiment:
 
-  * XGBoost alone (our supervised baseline)
+  * XGBoost alone (supervised baseline)
   * ESM-2 LLR alone (zero-shot unsupervised)
   * A simple late-fusion score that averages the two per-variant ranks
   * Weight-tuned fusion where the weight α ∈ [0,1] on the ESM-2 rank is
     chosen on **val** and then frozen for the **test** evaluation.
 
-This is identical in spirit to what we did for the denovo-db holdout
-earlier (+0.015 ROC). If the same pattern holds here, we expect a
-slightly larger gain because the ClinVar test set is cleaner (no
-cross-dataset build-coordinate issues).
+This mirrors the denovo-db holdout experiment (+0.015 ROC). The same
+pattern is expected to give a slightly larger gain here because the
+ClinVar test set is cleaner (no cross-dataset build-coordinate issues).
 
 Inputs
 ------

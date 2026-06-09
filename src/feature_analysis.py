@@ -415,27 +415,21 @@ def main() -> None:
     print(f"- path: {INPUT_PATH}")
     print(f"- rows: {len(df):,}, columns: {len(df.columns):,}")
 
-    # Step 0 — strict missense filter (leakage fix, April 2026)
     df, missense_info = filter_missense_only(df)
 
-    # Step 1
     df, _, _ = step1_drop_flagged_columns(df)
 
-    # Step 2
     corr_pairs = compute_high_corr_pairs(df, threshold=0.95)
     df, _ = step2_drop_correlated_columns(df, corr_pairs)
 
-    # Step 3A
     strict_df, strict_info = make_strict_dataset(df)
     STRICT_OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     strict_df.to_parquet(STRICT_OUTPUT, index=False)
 
-    # Step 3B
     balanced_df, balanced_info = make_balanced_dataset(df)
     BALANCED_OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     balanced_df.to_parquet(BALANCED_OUTPUT, index=False)
 
-    # Step 4 summaries
     version_summary("strict", strict_df)
     version_summary(
         "balanced",

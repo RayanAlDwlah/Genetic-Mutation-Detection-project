@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# Added for Phase 2.1 (S7): with vs without ESM-2 ablation, paired bootstrap on test PR-AUC.
 """Ablation study: train Phase-2.1 with vs without ESM-2 features.
 
 Trains three identical XGBoost models (same frozen Phase-1 hyperparameters)

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# Added for the P0 revision pass (P0-1).
 """Paired bootstrap test for denovo-db pre/post-constraint improvement."""
 from __future__ import annotations
 

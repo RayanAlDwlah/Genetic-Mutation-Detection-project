@@ -1,4 +1,4 @@
-"""Matched-coverage baseline evaluation (P0-3 of thesis review).
+"""Matched-coverage baseline evaluation.
 
 The published ROC-AUCs in Table 5.2 of the thesis are computed on each
 baseline's *own* coverage subset (AlphaMissense 86%, PolyPhen-2 93%, SIFT
@@ -20,8 +20,8 @@ Pre-requisites
 * The test-split parquet at ``data/splits/test.parquet``.
 
 None of the above raw artefacts ship with the repository because they
-are > 1 GB each. When the data is present on the reviewer's machine,
-this script produces:
+are > 1 GB each. When the data is present locally, this script
+produces:
 
 * ``results/metrics/baselines_matched_coverage.csv`` — one row per model,
   metrics computed over ``S_AM`` only.

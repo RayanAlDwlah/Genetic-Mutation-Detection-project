@@ -1,4 +1,3 @@
-# Added for Phase 2.1 (S13): unit tests for build_phase21_train aggregation logic.
 """Unit tests for scripts/build_phase21_train.py.
 
 Asserts the per-variant min(esm2_llr) aggregation, NaN propagation, and
