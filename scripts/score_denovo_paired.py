@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Added for the P0 revision pass (see CLAUDE_CODE_P0_FIXES.md, P0-1 Step 2).
+# Added for the P0 revision pass (P0-1 Step 2).
 """Score denovo-db with both pre- and post-constraint XGBoost checkpoints.
 
 Emits two per-variant prediction parquets in the schema required by the

@@ -1,4 +1,4 @@
-# Added for the P0 revision pass (see CLAUDE_CODE_P0_FIXES.md, P0-1 Step 3).
+# Added for the P0 revision pass (P0-1 Step 3).
 """Unit tests for the paired bootstrap utility."""
 from __future__ import annotations
 

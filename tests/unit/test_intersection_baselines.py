@@ -1,4 +1,4 @@
-# Added for the P0 revision pass (see CLAUDE_CODE_P0_FIXES.md, P0-2 Step 3).
+# Added for the P0 revision pass (P0-2 Step 3).
 """Unit tests for intersection-subset comparison helpers."""
 from __future__ import annotations
 

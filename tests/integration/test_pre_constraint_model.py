@@ -1,4 +1,4 @@
-# Added for the P0 revision pass (see CLAUDE_CODE_P0_FIXES.md, P0-1 Step 5).
+# Added for the P0 revision pass (P0-1 Step 5).
 """Regression guard for the pre-constraint denovo-db scoring.
 
 Catches silent drift of the pre-constraint baseline that underpins the

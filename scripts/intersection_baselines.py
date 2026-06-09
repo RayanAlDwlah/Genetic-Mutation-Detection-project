@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Added for the P0 revision pass (see CLAUDE_CODE_P0_FIXES.md, P0-2).
+# Added for the P0 revision pass (P0-2).
 """Intersection-subset baseline comparison on the paralog-disjoint test split.
 
 Answers: does AlphaMissense's PR-AUC advantage over our XGBoost
