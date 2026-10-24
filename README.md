@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🧬 Missense Variant Pathogenicity Classification
+# Missense Variant Pathogenicity Classification
 
 ### *Finding the honest ceiling of tabular ML for clinical genomics*
 
@@ -8,19 +8,19 @@
 
 [![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/release/python-3110/)
 [![XGBoost 2.x](https://img.shields.io/badge/XGBoost-2.x-orange.svg)](https://xgboost.readthedocs.io/)
-[![ROC-AUC 0.938](https://img.shields.io/badge/ROC--AUC-0.938-brightgreen.svg)](#-headline-results)
-[![PR-AUC 0.827](https://img.shields.io/badge/PR--AUC%20(calibrated)-0.827-brightgreen.svg)](#-headline-results)
-[![ECE 0.0105](https://img.shields.io/badge/ECE-0.0105-brightgreen.svg)](#-method-highlights)
-[![Reproducible](https://img.shields.io/badge/reproducibility-Docker%20%2B%20locked%20deps-blue.svg)](#-reproducibility)
+[![ROC-AUC 0.938](https://img.shields.io/badge/ROC--AUC-0.938-brightgreen.svg)](#headline-results)
+[![PR-AUC 0.827](https://img.shields.io/badge/PR--AUC%20(calibrated)-0.827-brightgreen.svg)](#headline-results)
+[![ECE 0.0105](https://img.shields.io/badge/ECE-0.0105-brightgreen.svg)](#method-highlights)
+[![Reproducible](https://img.shields.io/badge/reproducibility-Docker%20%2B%20locked%20deps-blue.svg)](#reproducibility)
 [![tests](https://github.com/RayanAlDwlah/Genetic-Mutation-Detection-project/actions/workflows/test.yml/badge.svg)](https://github.com/RayanAlDwlah/Genetic-Mutation-Detection-project/actions/workflows/test.yml)
 [![lint](https://github.com/RayanAlDwlah/Genetic-Mutation-Detection-project/actions/workflows/lint.yml/badge.svg)](https://github.com/RayanAlDwlah/Genetic-Mutation-Detection-project/actions/workflows/lint.yml)
-[![License: Academic](https://img.shields.io/badge/License-Academic-lightgrey.svg)](#-license)
+[![License: Academic](https://img.shields.io/badge/License-Academic-lightgrey.svg)](#license)
 
 </div>
 
 ---
 
-## 🎯 TL;DR
+## TL;DR
 
 I built an XGBoost model that classifies human **missense variants** as *pathogenic* or *benign* using ClinVar labels, gnomAD allele frequencies, dbNSFP conservation/biochemistry features, and a zero-shot ESM-2 protein-language signal. Then **I audited my own baseline** — and discovered three leakage sources that had inflated test PR-AUC to a misleading **0.955**; the honest tuned value is **0.836**. Fixing them and calibrating outputs gave the headline result: **PR-AUC 0.827 [0.819, 0.835] (calibrated) · ECE 0.0105 · 195,098 missense variants (after the missense filter) · 7,851 paralog-disjoint gene families**. Adding ESM-2 lifts in-distribution PR-AUC further, but does not help on the external de novo set (see below).
 
@@ -28,7 +28,7 @@ I built an XGBoost model that classifies human **missense variants** as *pathoge
 
 ---
 
-## 📊 Headline Results
+## Headline Results
 
 | Metric | Value | 95 % CI | Notes |
 |:--|:--:|:--:|:--|
@@ -46,7 +46,7 @@ Internal rows: 1,000-replicate bootstrap CIs on the paralog-disjoint test split 
 
 ---
 
-## 🔍 The Leakage Audit — The Spine of This Project
+## The Leakage Audit — The Spine of This Project
 
 The first model I trained scored a suspiciously high test PR-AUC of **0.955**. Instead of celebrating, I audited it.
 
@@ -73,7 +73,7 @@ The **automated leakage gate** (`src/verify_no_leakage.py`) runs in CI on every 
 
 ---
 
-## 🧠 Method Highlights
+## Method Highlights
 
 ### Calibration — proven, not assumed
 
@@ -117,7 +117,7 @@ Why this is biology, not leakage:
 
 ---
 
-## 🔁 Reproducibility
+## Reproducibility
 
 | Layer | What's pinned / enforced |
 |:--|:--|
@@ -134,7 +134,7 @@ make reproduce-headline   # re-scores the committed checkpoint, fails if drift >
 
 ---
 
-## ✅ Code Quality & Engineering
+## Code Quality & Engineering
 
 | Aspect | Detail |
 |:--|:--|
@@ -147,7 +147,7 @@ make reproduce-headline   # re-scores the committed checkpoint, fails if drift >
 
 ---
 
-## 🧱 Pipeline
+## Pipeline
 
 ```mermaid
 flowchart LR
@@ -173,7 +173,7 @@ flowchart LR
 
 ---
 
-## 📁 Repository Structure
+## Repository Structure
 
 ```text
 .
@@ -202,7 +202,7 @@ flowchart LR
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Run locally (CPU, ~15 min for evaluation)
 
@@ -239,7 +239,7 @@ make ablate-esm2       # paired bootstrap for Phase 2.1 contribution
 
 ---
 
-## 📈 Inputs
+## Inputs
 
 | Source | Used for | Records (post-filter) |
 |:--|:--|:--:|
@@ -252,7 +252,7 @@ Final dataset → 7,851 paralog-disjoint gene families → 70 / 15 / 15 split (t
 
 ---
 
-## 📝 Citation
+## Citation
 
 ```bibtex
 @misc{aldwlah2026missense,
@@ -268,17 +268,17 @@ Final dataset → 7,851 paralog-disjoint gene families → 70 / 15 / 15 split (t
 
 ---
 
-## 👤 Author
+## Author
 
 **Rayan Saleh Al-Dwlah**
 B.Sc. Computer Science (AI / Machine Learning) — King Khalid University, Abha — Class of 2026
-📧 rayanaldwlah@gmail.com · 🔗 [LinkedIn](https://www.linkedin.com/in/rayanaldwlah/) · 🐙 [GitHub](https://github.com/RayanAlDwlah)
+rayanaldwlah@gmail.com · [LinkedIn](https://www.linkedin.com/in/rayanaldwlah/) · [GitHub](https://github.com/RayanAlDwlah)
 
 **Supervisor:** Mr. Makki Akasha Babiker Al-Bashir — King Khalid University, College of Computer Science.
 
 ---
 
-## 🏷️ License
+## License
 
 Released for **academic and research use**. Industrial / clinical deployment would require SFDA (Saudi Food and Drug Authority) review — see `report/thesis.tex §6.3` for the deployment-readiness discussion.
 
