@@ -66,10 +66,7 @@ CONSTRAINT_MEDIANS = REPO / "results/metrics/gnomad_constraint_medians.csv"
 
 
 def _load_constraint_medians() -> dict[str, float]:
-    return {
-        k: float(v)
-        for k, v in pd.read_csv(CONSTRAINT_MEDIANS, index_col=0)["value"].items()
-    }
+    return {k: float(v) for k, v in pd.read_csv(CONSTRAINT_MEDIANS, index_col=0)["value"].items()}
 
 
 def _attach_constraint_for_demo(featurized: pd.DataFrame) -> pd.DataFrame:
@@ -79,16 +76,13 @@ def _attach_constraint_for_demo(featurized: pd.DataFrame) -> pd.DataFrame:
     is not bundled (it's a 5 MB external download, not always present)."""
     medians = _load_constraint_medians()
     overlap = [
-        c for c in CONSTRAINT_COLS + ["is_imputed_gnomad_constraint"]
-        if c in featurized.columns
+        c for c in CONSTRAINT_COLS + ["is_imputed_gnomad_constraint"] if c in featurized.columns
     ]
     if overlap:
         featurized = featurized.drop(columns=overlap)
     if CONSTRAINT_TABLE.exists():
         constraint = load_constraint_table(CONSTRAINT_TABLE)
-        merged, _ = merge_constraint(
-            featurized, constraint=constraint, impute_medians=medians
-        )
+        merged, _ = merge_constraint(featurized, constraint=constraint, impute_medians=medians)
         return merged
     out = featurized.copy()
     for col, val in medians.items():
@@ -246,8 +240,7 @@ def score_variant(variant_key: str, *, use_vep: bool = False) -> dict:
                 featurized["is_imputed_esm2_llr"] = 1
             row = featurized.iloc[0]
             source_note = (
-                "Live VEP REST + gnomAD constraint merge "
-                "(ESM-2 LLR imputed for live variants)."
+                "Live VEP REST + gnomAD constraint merge " "(ESM-2 LLR imputed for live variants)."
             )
         else:
             return {
@@ -363,9 +356,7 @@ def main() -> None:  # pragma: no cover — Streamlit entry point
             """)
         return
 
-    spinner_msg = (
-        "Calling Ensembl VEP REST + scoring…" if use_vep else "Featurizing + scoring…"
-    )
+    spinner_msg = "Calling Ensembl VEP REST + scoring…" if use_vep else "Featurizing + scoring…"
     with st.spinner(spinner_msg):
         out = score_variant(vk.strip(), use_vep=use_vep)
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Paired bootstrap test for denovo-db pre/post-constraint improvement."""
+
 from __future__ import annotations
 
 import argparse
@@ -13,7 +14,9 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 METRICS_DIR = REPO_ROOT / "results" / "metrics"
 
 
-def load_paired_predictions(slice_name: str = "holdout") -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def load_paired_predictions(
+    slice_name: str = "holdout",
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Return (y_true, p_pre, p_post) aligned on variant_id, filtered to the slice."""
     pre = pd.read_parquet(METRICS_DIR / "denovo_predictions_pre_constraint.parquet")
     post = pd.read_parquet(METRICS_DIR / "denovo_predictions_post_constraint.parquet")
@@ -94,8 +97,12 @@ def main() -> int:
     rows = []
     for metric in ["roc_auc", "pr_auc"]:
         result = paired_bootstrap_delta(
-            y_true, p_pre, p_post, metric=metric,
-            n_boot=args.n_boot, seed=args.seed,
+            y_true,
+            p_pre,
+            p_post,
+            metric=metric,
+            n_boot=args.n_boot,
+            seed=args.seed,
         )
         result["slice"] = args.slice
         rows.append(result)

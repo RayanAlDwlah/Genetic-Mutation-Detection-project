@@ -15,6 +15,7 @@ proceed past this script with any failed assertion --- a violation would
 mean a training-set ESM-2 score leaked into val or test, inflating the
 reported numbers undetectably.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -41,7 +42,9 @@ def main() -> int:
     # Subset checks
     if not scored_train.issubset(train_keys):
         leak = scored_train - train_keys
-        failures.append(f"scored_train has {len(leak)} keys NOT in train (sample: {list(leak)[:3]})")
+        failures.append(
+            f"scored_train has {len(leak)} keys NOT in train (sample: {list(leak)[:3]})"
+        )
     if not scored_val.issubset(val_keys):
         leak = scored_val - val_keys
         failures.append(f"scored_val has {len(leak)} keys NOT in val (sample: {list(leak)[:3]})")

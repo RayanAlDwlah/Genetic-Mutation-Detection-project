@@ -230,8 +230,8 @@ def render_triptych(
     # green good. Lets the eye read the triptych as a progression even
     # before noticing the ECE values.
     panels = [
-        ("Raw", p_test_raw, "#c0392b"),                  # red
-        ("Platt scaling", p_test_platt, "#e67e22"),      # orange
+        ("Raw", p_test_raw, "#c0392b"),  # red
+        ("Platt scaling", p_test_platt, "#e67e22"),  # orange
         ("Isotonic regression", p_test_iso, "#1B5E3F"),  # KKU-green
     ]
     fig, axes = plt.subplots(1, 3, figsize=(14, 4.5), sharey=True)

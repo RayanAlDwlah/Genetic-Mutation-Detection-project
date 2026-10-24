@@ -1,6 +1,7 @@
-# Human-readable floor requirements. CI and Docker install from
-# requirements-lock.txt for exact reproducibility; this file is for
-# developers installing into fresh environments.
+# Human-readable floor requirements. CI installs this file on Ubuntu.
+# requirements-lock.txt is an exact freeze taken on macOS (referenced by
+# the Dockerfile and `make install`); it does not install on the Ubuntu
+# CI runner.
 
 # Data handling
 pandas>=2.0,<3

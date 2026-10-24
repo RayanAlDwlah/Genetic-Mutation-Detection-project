@@ -12,6 +12,7 @@ For each (slice in {full, holdout}, metric in {roc_auc, pr_auc}):
 NEVER overwrites results/metrics/denovo_paired_bootstrap.csv
 (that holds the pre-vs-post-constraint paired result from P0-1).
 """
+
 from __future__ import annotations
 
 import argparse
@@ -60,8 +61,10 @@ def main() -> int:
         columns={"p_calibrated": "p_phase21"}
     )
     merged = p1.merge(p2, on="variant_key", how="inner")
-    print(f"[paired_bootstrap_phase21] joined {len(merged)} variants "
-          f"(holdout={int(merged['family_holdout'].sum())})")
+    print(
+        f"[paired_bootstrap_phase21] joined {len(merged)} variants "
+        f"(holdout={int(merged['family_holdout'].sum())})"
+    )
     assert len(merged) > 0, "empty join"
 
     rows = []
@@ -79,23 +82,27 @@ def main() -> int:
             point, lo, hi, p_one, used, skipped = paired_diff(
                 y, p_a, p_b, fn, args.n_boot, args.seed
             )
-            rows.append({
-                "metric": mname,
-                "slice": slice_name,
-                "phase1_auc": phase1_auc,
-                "phase2_auc": phase2_auc,
-                "paired_delta": point,
-                "ci_low": lo,
-                "ci_high": hi,
-                "p_value_one_sided": p_one,
-                "n_samples": int(mask.sum()),
-                "n_boot_used": used,
-                "n_boot_skipped": skipped,
-            })
+            rows.append(
+                {
+                    "metric": mname,
+                    "slice": slice_name,
+                    "phase1_auc": phase1_auc,
+                    "phase2_auc": phase2_auc,
+                    "paired_delta": point,
+                    "ci_low": lo,
+                    "ci_high": hi,
+                    "p_value_one_sided": p_one,
+                    "n_samples": int(mask.sum()),
+                    "n_boot_used": used,
+                    "n_boot_skipped": skipped,
+                }
+            )
             sign = "+" if point >= 0 else ""
-            print(f"  slice={slice_name:8s} metric={mname:7s} "
-                  f"phase1={phase1_auc:.4f} phase2={phase2_auc:.4f} "
-                  f"Δ={sign}{point:.4f} CI=[{lo:+.4f},{hi:+.4f}] p={p_one:.4f}")
+            print(
+                f"  slice={slice_name:8s} metric={mname:7s} "
+                f"phase1={phase1_auc:.4f} phase2={phase2_auc:.4f} "
+                f"Δ={sign}{point:.4f} CI=[{lo:+.4f},{hi:+.4f}] p={p_one:.4f}"
+            )
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     pd.DataFrame(rows).to_csv(OUT, index=False)

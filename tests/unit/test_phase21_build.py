@@ -3,10 +3,10 @@
 Asserts the per-variant min(esm2_llr) aggregation, NaN propagation, and
 the is_imputed_esm2_llr flag.
 """
+
 from __future__ import annotations
 
 import pandas as pd
-
 from scripts.build_phase21_train import aggregate_min, merge_split
 
 

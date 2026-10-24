@@ -79,8 +79,8 @@ def _assign_family(gene: str) -> str:
 def _parse_args() -> argparse.Namespace:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--train", type=Path, default=REPO / "data/splits/train.parquet")
-    ap.add_argument("--val",   type=Path, default=REPO / "data/splits/val.parquet")
-    ap.add_argument("--test",  type=Path, default=REPO / "data/splits/test.parquet")
+    ap.add_argument("--val", type=Path, default=REPO / "data/splits/val.parquet")
+    ap.add_argument("--test", type=Path, default=REPO / "data/splits/test.parquet")
     ap.add_argument(
         "--params",
         type=Path,
@@ -120,7 +120,7 @@ def _subsample_family_aware(train: pd.DataFrame, fraction: float, seed: int) -> 
 
 
 def _train_and_eval(x_tr, y_tr, x_val, y_val, x_te, y_te, params, args):
-    import xgboost as xgb  # noqa: PLC0415
+    import xgboost as xgb
 
     def _prepare(df: pd.DataFrame) -> pd.DataFrame:
         out = df.copy()
@@ -151,7 +151,8 @@ def _train_and_eval(x_tr, y_tr, x_val, y_val, x_te, y_te, params, args):
         "seed": args.seed,
     }
     booster = xgb.train(
-        xgb_params, d_tr,
+        xgb_params,
+        d_tr,
         num_boost_round=args.n_estimators,
         evals=[(d_val, "val")],
         early_stopping_rounds=30,
@@ -173,9 +174,20 @@ def main() -> None:
     te = pd.read_parquet(args.test)
     params = pd.read_csv(args.params).iloc[0].to_dict()
 
-    banned = {"variant_key", "label", "review_stars", "chr", "ref", "alt",
-              "gene", "pos", "ClinicalSignificance", "PhenotypeIDS",
-              "is_common", "is_imputed_gnomad_constraint"}
+    banned = {
+        "variant_key",
+        "label",
+        "review_stars",
+        "chr",
+        "ref",
+        "alt",
+        "gene",
+        "pos",
+        "ClinicalSignificance",
+        "PhenotypeIDS",
+        "is_common",
+        "is_imputed_gnomad_constraint",
+    }
     feature_cols = [c for c in tr_full.columns if c not in banned]
 
     y_val = val["label"].to_numpy(dtype=int)
@@ -189,19 +201,23 @@ def main() -> None:
             print(f"[skip f={f}] degenerate single-class subsample")
             continue
         p_val, p_te = _train_and_eval(
-            tr[feature_cols], y_tr,
-            val[feature_cols], y_val,
-            te[feature_cols], y_te,
-            params, args,
+            tr[feature_cols],
+            y_tr,
+            val[feature_cols],
+            y_val,
+            te[feature_cols],
+            y_te,
+            params,
+            args,
         )
         row = {
             "fraction": float(f),
             "n_train": int(len(tr)),
             "n_train_pos": int(y_tr.sum()),
             "val_roc": float(roc_auc_score(y_val, p_val)),
-            "val_pr":  float(average_precision_score(y_val, p_val)),
+            "val_pr": float(average_precision_score(y_val, p_val)),
             "test_roc": float(roc_auc_score(y_te, p_te)),
-            "test_pr":  float(average_precision_score(y_te, p_te)),
+            "test_pr": float(average_precision_score(y_te, p_te)),
         }
         print(
             f"[f={f:.2f}] n_train={row['n_train']:,} "
@@ -217,6 +233,7 @@ def main() -> None:
 
     # Figure
     import matplotlib
+
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
@@ -236,8 +253,10 @@ def main() -> None:
         ax.annotate(
             f"f={r['fraction']:.2f}\n n={int(r['n_train']):,}",
             (r["n_train"], r["test_roc"]),
-            textcoords="offset points", xytext=(5, -14),
-            fontsize=7, color="#045531",
+            textcoords="offset points",
+            xytext=(5, -14),
+            fontsize=7,
+            color="#045531",
         )
 
     # Approximate slope at 100% (log-linear fit on last two points).
@@ -247,9 +266,11 @@ def main() -> None:
         dx = np.log10(tail.iloc[-1]["n_train"]) - np.log10(tail.iloc[0]["n_train"])
         slope = dy / dx if dx != 0 else float("nan")
         ax.text(
-            0.03, 0.95,
+            0.03,
+            0.95,
             f"slope @ tail: $\\Delta$ROC / $\\Delta\\log_{{10}} n$ $=$ {slope:.4f}",
-            transform=ax.transAxes, fontsize=9,
+            transform=ax.transAxes,
+            fontsize=9,
             verticalalignment="top",
             bbox={"facecolor": "white", "alpha": 0.85, "pad": 3, "edgecolor": "#045531"},
         )

@@ -22,7 +22,6 @@ import sys
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 
 # -----------------------------------------------------------------------------
@@ -45,19 +44,22 @@ KKU_GOLD = "#C9A961"
 NEUTRAL = "#444444"
 
 # Figure aesthetics
-plt.rcParams.update({
-    "font.family": "DejaVu Sans",
-    "font.size": 10,
-    "axes.spines.top": False,
-    "axes.spines.right": False,
-    "axes.grid": True,
-    "grid.alpha": 0.3,
-})
+plt.rcParams.update(
+    {
+        "font.family": "DejaVu Sans",
+        "font.size": 10,
+        "axes.spines.top": False,
+        "axes.spines.right": False,
+        "axes.grid": True,
+        "grid.alpha": 0.3,
+    }
+)
 
 
 # -----------------------------------------------------------------------------
 # Data loading
 # -----------------------------------------------------------------------------
+
 
 def load_shap_summary(data_path: Path, top_n: int = 15) -> pd.DataFrame:
     """
@@ -70,10 +72,7 @@ def load_shap_summary(data_path: Path, top_n: int = 15) -> pd.DataFrame:
     if not data_path.exists():
         raise FileNotFoundError(f"SHAP file not found: {data_path}")
 
-    if data_path.suffix == ".csv":
-        df = pd.read_csv(data_path)
-    else:
-        df = pd.read_parquet(data_path)
+    df = pd.read_csv(data_path) if data_path.suffix == ".csv" else pd.read_parquet(data_path)
 
     # Tolerate alternate column names
     if "mean_abs_shap" not in df.columns:
@@ -100,6 +99,7 @@ def load_shap_summary(data_path: Path, top_n: int = 15) -> pd.DataFrame:
 # Plotting — single panel
 # -----------------------------------------------------------------------------
 
+
 def plot_single_panel(phase2_df: pd.DataFrame, output_path: Path) -> None:
     """Single-panel horizontal bar chart of Phase-2.1 SHAP values."""
 
@@ -109,10 +109,7 @@ def plot_single_panel(phase2_df: pd.DataFrame, output_path: Path) -> None:
     df = phase2_df.iloc[::-1].reset_index(drop=True)
 
     # Highlight ESM-2 features in gold, others in green
-    colors = [
-        KKU_GOLD if "esm2" in feat.lower() else KKU_GREEN
-        for feat in df["feature"]
-    ]
+    colors = [KKU_GOLD if "esm2" in feat.lower() else KKU_GREEN for feat in df["feature"]]
 
     bars = ax.barh(
         df["feature"],
@@ -143,6 +140,7 @@ def plot_single_panel(phase2_df: pd.DataFrame, output_path: Path) -> None:
 
     # Legend explaining the color coding
     from matplotlib.patches import Patch
+
     legend_elements = [
         Patch(facecolor=KKU_GOLD, edgecolor="white", label="ESM-2 features"),
         Patch(facecolor=KKU_GREEN, edgecolor="white", label="Phase-1 features"),
@@ -164,6 +162,7 @@ def plot_single_panel(phase2_df: pd.DataFrame, output_path: Path) -> None:
 # Plotting — two panel
 # -----------------------------------------------------------------------------
 
+
 def plot_two_panel(
     phase1_df: pd.DataFrame,
     phase2_df: pd.DataFrame,
@@ -174,10 +173,13 @@ def plot_two_panel(
     fig, axes = plt.subplots(1, 2, figsize=(13, 6), dpi=150, sharex=False)
 
     # Determine a shared x-axis upper bound for visual comparability
-    xmax = max(
-        phase1_df["mean_abs_shap"].max(),
-        phase2_df["mean_abs_shap"].max(),
-    ) * 1.15
+    xmax = (
+        max(
+            phase1_df["mean_abs_shap"].max(),
+            phase2_df["mean_abs_shap"].max(),
+        )
+        * 1.15
+    )
 
     for ax, df, title, has_esm2 in [
         (axes[0], phase1_df, "Phase-1 (no ESM-2)", False),
@@ -187,8 +189,7 @@ def plot_two_panel(
 
         if has_esm2:
             colors = [
-                KKU_GOLD if "esm2" in feat.lower() else KKU_GREEN
-                for feat in df_plot["feature"]
+                KKU_GOLD if "esm2" in feat.lower() else KKU_GREEN for feat in df_plot["feature"]
             ]
         else:
             colors = [KKU_GREEN] * len(df_plot)
@@ -215,6 +216,7 @@ def plot_two_panel(
 
     # Legend on the right panel only
     from matplotlib.patches import Patch
+
     legend_elements = [
         Patch(facecolor=KKU_GOLD, edgecolor="white", label="ESM-2 features"),
         Patch(facecolor=KKU_GREEN, edgecolor="white", label="Phase-1 features"),
@@ -230,6 +232,7 @@ def plot_two_panel(
 # -----------------------------------------------------------------------------
 # Main
 # -----------------------------------------------------------------------------
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)

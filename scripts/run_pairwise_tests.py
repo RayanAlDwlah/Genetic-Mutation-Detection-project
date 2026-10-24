@@ -26,7 +26,6 @@ import argparse
 from pathlib import Path
 
 import pandas as pd
-
 from src.stats.paired_tests import (
     PairwiseRow,
     delong_test,
@@ -65,13 +64,13 @@ def _denovo_family_holdout_table(args: argparse.Namespace) -> pd.DataFrame:
     esm = pd.read_parquet(args.esm2_denovo)
 
     ho = xgb_df[xgb_df["family_holdout"]].copy()
-    merged = ho.merge(
-        esm[["variant_key", "esm2_llr"]], on="variant_key", how="inner"
-    )
+    merged = ho.merge(esm[["variant_key", "esm2_llr"]], on="variant_key", how="inner")
     # Drop any rows missing ESM-2 (some variants skip due to window issues).
     merged = merged.dropna(subset=["esm2_llr"])
-    print(f"[denovo family-holdout] paired set: {len(merged):,} variants "
-          f"(of {len(ho):,} in the slice)")
+    print(
+        f"[denovo family-holdout] paired set: {len(merged):,} variants "
+        f"(of {len(ho):,} in the slice)"
+    )
 
     y = merged["label"].to_numpy(dtype=int)
     p_xgb = merged["p_calibrated"].to_numpy(dtype=float)
@@ -89,8 +88,6 @@ def _denovo_family_holdout_table(args: argparse.Namespace) -> pd.DataFrame:
     rank_esm = pd.Series(s_esm_raw).rank(pct=True).to_numpy()
     # Uniform rank-mean fusion, matching the denovo-db analysis script.
     p_fusion = 0.5 * rank_xgb + 0.5 * rank_esm
-    # Direction-corrected "what fusion should be": XGB + (-LLR) ranks.
-    p_esm_signed = -s_esm_raw
 
     rows: list[PairwiseRow] = []
     for a, b, p1, p2 in [

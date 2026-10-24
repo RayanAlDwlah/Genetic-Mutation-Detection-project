@@ -23,6 +23,7 @@ ROC-AUC and average precision are invariant to any monotone transform
 whether we score p_raw or p_calibrated. We emit the calibrated probability
 as `p_pred` for downstream consistency.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -33,10 +34,8 @@ import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.isotonic import IsotonicRegression
 from sklearn.preprocessing import OneHotEncoder
-from xgboost import XGBClassifier
-
-from src.data_splitting import assign_gene_family
 from src.gnomad_constraint import CONSTRAINT_COLS, load_constraint_table, merge_constraint
+from xgboost import XGBClassifier
 
 REPO = Path(__file__).resolve().parents[1]
 
@@ -75,8 +74,9 @@ def join_raw_features(skel: pd.DataFrame) -> pd.DataFrame:
     dbnsfp = pd.read_parquet(DBNSFP)
     af = pd.read_parquet(GNOMAD_AF)
     merged = skel.merge(dbnsfp, on="variant_key", how="left")
-    merged = merged.merge(af[["variant_key", "AF_popmax", "AN", "AC", "log_AF"]],
-                          on="variant_key", how="left")
+    merged = merged.merge(
+        af[["variant_key", "AF_popmax", "AN", "AC", "log_AF"]], on="variant_key", how="left"
+    )
     # Imputation flags: 1 if source column is NaN, else 0.
     for flag, src in zip(IMPUTED_FLAGS, IMPUTED_SRC_COLS):
         merged[flag] = merged[src].isna().astype(int)
@@ -179,10 +179,16 @@ def to_long(df: pd.DataFrame) -> pd.DataFrame:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--out-pre", type=Path,
-                    default=REPO / "results/metrics/denovo_predictions_pre_constraint.parquet")
-    ap.add_argument("--out-post", type=Path,
-                    default=REPO / "results/metrics/denovo_predictions_post_constraint.parquet")
+    ap.add_argument(
+        "--out-pre",
+        type=Path,
+        default=REPO / "results/metrics/denovo_predictions_pre_constraint.parquet",
+    )
+    ap.add_argument(
+        "--out-post",
+        type=Path,
+        default=REPO / "results/metrics/denovo_predictions_post_constraint.parquet",
+    )
     args = ap.parse_args()
 
     skel = load_denovo_skeleton()

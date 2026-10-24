@@ -12,6 +12,7 @@ bootstrap (1000 reps, seed=42) of Δ(test PR-AUC) and Δ(test ROC-AUC)
 between full and no_esm2 --- this is the headline statistical claim
 of Phase 2.1.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -19,9 +20,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import xgboost as xgb
 from sklearn.metrics import average_precision_score, roc_auc_score
-
 from src.evaluation import bootstrap_metrics
 from src.models.xgboost_model import build_xgboost_model
 from src.training import prepare_split_features, select_feature_columns
@@ -39,9 +38,17 @@ def load_phase1_params() -> dict[str, float | int]:
     df = pd.read_csv(PARAMS)
     row = df.iloc[0]
     keys = [
-        "max_depth", "learning_rate", "min_child_weight", "subsample",
-        "colsample_bytree", "colsample_bylevel", "gamma", "reg_alpha",
-        "reg_lambda", "max_delta_step", "scale_pos_weight",
+        "max_depth",
+        "learning_rate",
+        "min_child_weight",
+        "subsample",
+        "colsample_bytree",
+        "colsample_bylevel",
+        "gamma",
+        "reg_alpha",
+        "reg_lambda",
+        "max_delta_step",
+        "scale_pos_weight",
     ]
     int_keys = {"max_depth", "min_child_weight", "max_delta_step"}
     out: dict[str, float | int] = {}
@@ -152,19 +159,25 @@ def main() -> int:
         print(f"\n[ablate_esm2] training condition={cond_name}")
         p_val, p_test, feat = train_one(train, val, test, drop, keep_only, params, spw, args.seed)
         probs_test[cond_name] = p_test
-        roc_boot = bootstrap_metrics(y_test, p_test, threshold=0.5, n_boot=args.n_boot, seed=args.seed)
-        rows.append({
-            "condition": cond_name,
-            "n_features": len(feat),
-            "test_roc_auc": float(roc_auc_score(y_test, p_test)),
-            "test_pr_auc": float(average_precision_score(y_test, p_test)),
-            "test_roc_ci_low": roc_boot["roc_auc"]["ci_lo"],
-            "test_roc_ci_high": roc_boot["roc_auc"]["ci_hi"],
-            "test_pr_ci_low": roc_boot["pr_auc"]["ci_lo"],
-            "test_pr_ci_high": roc_boot["pr_auc"]["ci_hi"],
-        })
-        print(f"  ROC={rows[-1]['test_roc_auc']:.4f} PR={rows[-1]['test_pr_auc']:.4f} "
-              f"n_features={len(feat)}")
+        roc_boot = bootstrap_metrics(
+            y_test, p_test, threshold=0.5, n_boot=args.n_boot, seed=args.seed
+        )
+        rows.append(
+            {
+                "condition": cond_name,
+                "n_features": len(feat),
+                "test_roc_auc": float(roc_auc_score(y_test, p_test)),
+                "test_pr_auc": float(average_precision_score(y_test, p_test)),
+                "test_roc_ci_low": roc_boot["roc_auc"]["ci_lo"],
+                "test_roc_ci_high": roc_boot["roc_auc"]["ci_hi"],
+                "test_pr_ci_low": roc_boot["pr_auc"]["ci_lo"],
+                "test_pr_ci_high": roc_boot["pr_auc"]["ci_hi"],
+            }
+        )
+        print(
+            f"  ROC={rows[-1]['test_roc_auc']:.4f} PR={rows[-1]['test_pr_auc']:.4f} "
+            f"n_features={len(feat)}"
+        )
 
     out_df = pd.DataFrame(rows)
     OUT_AB = REPO / "results/metrics/ablation_esm2_phase21.csv"
@@ -174,17 +187,25 @@ def main() -> int:
     print(out_df.to_string(index=False))
 
     # Paired bootstrap full vs no_esm2
-    print("\n[ablate_esm2] paired bootstrap full vs no_esm2 (test split, n=%d)..." % len(y_test))
+    print(f"\n[ablate_esm2] paired bootstrap full vs no_esm2 (test split, n={len(y_test)})...")
     pair_rows = []
     for metric_name, fn in [("roc_auc", roc_auc_score), ("pr_auc", average_precision_score)]:
-        res = paired_bootstrap_diff(y_test, probs_test["full"], probs_test["no_esm2"],
-                                    metric_fn=fn, n_boot=args.n_boot, seed=args.seed)
+        res = paired_bootstrap_diff(
+            y_test,
+            probs_test["full"],
+            probs_test["no_esm2"],
+            metric_fn=fn,
+            n_boot=args.n_boot,
+            seed=args.seed,
+        )
         res["metric"] = metric_name
         res["comparison"] = "full vs no_esm2"
         pair_rows.append(res)
-        print(f"  Δ{metric_name}={res['point_delta']:+.4f}  "
-              f"CI95=[{res['ci_low']:+.4f}, {res['ci_high']:+.4f}]  "
-              f"p={res['p_value_two_sided']:.4f}")
+        print(
+            f"  Δ{metric_name}={res['point_delta']:+.4f}  "
+            f"CI95=[{res['ci_low']:+.4f}, {res['ci_high']:+.4f}]  "
+            f"p={res['p_value_two_sided']:.4f}"
+        )
     OUT_PB = REPO / "results/metrics/phase21_ablation_paired_bootstrap.csv"
     pd.DataFrame(pair_rows).to_csv(OUT_PB, index=False)
     print(f"[ablate_esm2] wrote {OUT_PB}")
@@ -242,9 +263,13 @@ def main() -> int:
         (axes[1], roc_means, roc_los, roc_his, "Test ROC-AUC"),
     ]:
         ax.errorbar(
-            means, ys,
+            means,
+            ys,
             xerr=[[m - lo for m, lo in zip(means, los)], [hi - m for m, hi in zip(means, his)]],
-            fmt="o", color="#2c3e50", ecolor="#7f8c8d", capsize=4,
+            fmt="o",
+            color="#2c3e50",
+            ecolor="#7f8c8d",
+            capsize=4,
         )
         ax.set_yticks(ys)
         ax.set_yticklabels(labels)

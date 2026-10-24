@@ -9,6 +9,7 @@ The score parquets currently have one row per variant_key on the test split;
 the rule still applies cleanly because pandas groupby on a unique key reduces
 to identity.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -51,11 +52,15 @@ def coverage_report(name: str, df: pd.DataFrame) -> None:
     n_present = int((df["is_imputed_esm2_llr"] == 0).sum())
     n_imputed = int((df["is_imputed_esm2_llr"] == 1).sum())
     by_class = df.groupby("label")["esm2_llr"].agg(["mean", "median", "count"])
-    print(f"[build_phase21] {name}: n={n}  esm2 present={n_present} ({n_present/n:.2%})  "
-          f"imputed={n_imputed} ({n_imputed/n:.2%})")
-    print(f"  per-class LLR (lower = more pathogenic):")
+    print(
+        f"[build_phase21] {name}: n={n}  esm2 present={n_present} ({n_present/n:.2%})  "
+        f"imputed={n_imputed} ({n_imputed/n:.2%})"
+    )
+    print("  per-class LLR (lower = more pathogenic):")
     for label, row in by_class.iterrows():
-        print(f"    label={int(label)}: mean={row['mean']:.4f}  median={row['median']:.4f}  n={int(row['count'])}")
+        print(
+            f"    label={int(label)}: mean={row['mean']:.4f}  median={row['median']:.4f}  n={int(row['count'])}"
+        )
 
 
 def main() -> int:

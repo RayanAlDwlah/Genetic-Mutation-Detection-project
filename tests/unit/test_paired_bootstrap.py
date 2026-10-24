@@ -1,8 +1,8 @@
 """Unit tests for the paired bootstrap utility."""
+
 from __future__ import annotations
 
 import numpy as np
-
 from scripts.paired_bootstrap_denovo import paired_bootstrap_delta
 
 

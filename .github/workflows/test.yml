@@ -13,12 +13,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           lfs: false
 
       - name: Set up Python 3.11
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
           cache: "pip"
@@ -47,14 +47,18 @@ jobs:
           python -m src.verify_no_leakage
 
       - name: pytest (with coverage)
+        # needs_gpu tests download the 35M ESM-2 checkpoint from the
+        # Hugging Face Hub and run the model; they are deselected here and
+        # run locally with `pytest -m needs_gpu`. Everything else, including
+        # the integration tests on the committed splits and checkpoints, runs.
         env:
           PYTHONPATH: ${{ github.workspace }}
         run: |
-          python -m pytest tests/ -n auto --cov-report=xml
+          python -m pytest tests/ -n auto -m "not needs_gpu" --cov-report=xml
 
       - name: Upload coverage to artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: coverage-xml
           path: coverage.xml

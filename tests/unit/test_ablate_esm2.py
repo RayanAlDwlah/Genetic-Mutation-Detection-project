@@ -1,10 +1,10 @@
 """Unit tests for scripts/ablate_esm2.py paired_bootstrap_diff."""
+
 from __future__ import annotations
 
 import numpy as np
-from sklearn.metrics import roc_auc_score
-
 from scripts.ablate_esm2 import paired_bootstrap_diff
+from sklearn.metrics import roc_auc_score
 
 
 def test_paired_bootstrap_zero_when_identical():

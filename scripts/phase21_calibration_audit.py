@@ -10,6 +10,7 @@ respective bootstrap_ci CSVs. Writes a single comparison table; flags
 whether Phase-2.1 calibration drifted by more than 0.01 ECE (the
 fallback-to-Platt threshold from the plan).
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -37,16 +38,18 @@ def main() -> int:
             boot_row = boot_df[boot_df["metric_set"] == eval_set]
             if cal_row.empty or boot_row.empty:
                 continue
-            rows.append({
-                "phase": phase,
-                "eval_set": eval_set,
-                "calibrator_method": "isotonic",
-                "ece": float(cal_row["ECE"].iloc[0]),
-                "mce": float(cal_row["MCE"].iloc[0]),
-                "brier_loss": float(boot_row["brier_loss__mean"].iloc[0]),
-                "roc_auc": float(boot_row["roc_auc__mean"].iloc[0]),
-                "pr_auc": float(boot_row["pr_auc__mean"].iloc[0]),
-            })
+            rows.append(
+                {
+                    "phase": phase,
+                    "eval_set": eval_set,
+                    "calibrator_method": "isotonic",
+                    "ece": float(cal_row["ECE"].iloc[0]),
+                    "mce": float(cal_row["MCE"].iloc[0]),
+                    "brier_loss": float(boot_row["brier_loss__mean"].iloc[0]),
+                    "roc_auc": float(boot_row["roc_auc__mean"].iloc[0]),
+                    "pr_auc": float(boot_row["pr_auc__mean"].iloc[0]),
+                }
+            )
 
     df = pd.DataFrame(rows)
     OUT.parent.mkdir(parents=True, exist_ok=True)
@@ -60,7 +63,9 @@ def main() -> int:
     delta = p21_ece - p1_ece
     print(f"\nΔECE (phase21 − phase1) = {delta:+.4f}")
     if delta > 0.01:
-        print("[calib_audit] WARN: Phase-2.1 ECE worse than Phase-1 by > 0.01; consider Platt fallback.")
+        print(
+            "[calib_audit] WARN: Phase-2.1 ECE worse than Phase-1 by > 0.01; consider Platt fallback."
+        )
     else:
         print(f"[calib_audit] OK: |ΔECE| = {abs(delta):.4f}, isotonic kept as headline calibrator.")
     return 0

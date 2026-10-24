@@ -10,6 +10,7 @@ the output namespace. Phase-1 artifacts are NEVER overwritten.
 Headline rule: the frozen-hp model is the canonical result; Optuna
 retune outputs are written to a parallel namespace and are appendix-only.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -18,7 +19,6 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-
 from src.evaluation import compute_classification_metrics, select_best_threshold
 from src.models.xgboost_model import (
     XGBTuningConfig,
@@ -109,7 +109,9 @@ def main() -> None:
     test_df = pd.read_parquet(test_path)
 
     numeric_cols, categorical_cols = select_feature_columns(train_df)
-    print(f"[train_phase21] selected {len(numeric_cols)} numeric + {len(categorical_cols)} categorical")
+    print(
+        f"[train_phase21] selected {len(numeric_cols)} numeric + {len(categorical_cols)} categorical"
+    )
     if "esm2_llr" not in numeric_cols:
         raise SystemExit(
             "ABORT: esm2_llr is not in the numeric feature list. "
@@ -203,14 +205,14 @@ def main() -> None:
 
     best_model.save_model(str(ckpt))
     history.to_csv(metrics_dir / f"xgboost_{args.prefix}_tuning_history.csv", index=False)
-    threshold_curve.to_csv(metrics_dir / f"xgboost_{args.prefix}_val_threshold_curve.csv", index=False)
+    threshold_curve.to_csv(
+        metrics_dir / f"xgboost_{args.prefix}_val_threshold_curve.csv", index=False
+    )
     metrics_df.to_csv(metrics_dir / f"xgboost_{args.prefix}_split_metrics.csv", index=False)
     pd.DataFrame({"encoded_feature": encoded_feature_names}).to_csv(
         metrics_dir / f"xgboost_{args.prefix}_feature_columns.csv", index=False
     )
-    selected = (
-        history.iloc[0].get("score", float("nan")) if not history.empty else float("nan")
-    )
+    selected = history.iloc[0].get("score", float("nan")) if not history.empty else float("nan")
     pd.DataFrame(
         [
             {

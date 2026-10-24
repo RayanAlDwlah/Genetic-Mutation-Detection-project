@@ -41,6 +41,7 @@ am_pr_delta_vs_table52, note.  The note flags whether the
 AlphaMissense intersection PR-AUC deviates from Table 5.2's
 reported 0.890 by more than 0.02.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -63,15 +64,15 @@ REPO = Path(__file__).resolve().parents[1]
 DBNSFP_TSV = REPO / "data/raw/dbnsfp/dbNSFP5.3.1a_grch37.gz"
 
 # Column indices (1-based) in the dbNSFP TSV header — verified by inspection.
-COL_CHR = 1   # GRCh37 chr
-COL_POS = 2   # GRCh37 pos (1-based)
+COL_CHR = 1  # GRCh37 chr
+COL_POS = 2  # GRCh37 pos (1-based)
 COL_REF = 3
 COL_ALT = 4
 COL_AAREF = 5
 COL_AAALT = 6
 COL_SIFT = 49
 COL_POLYPHEN = 58  # Polyphen2_HVAR_score
-COL_AM = 135       # AlphaMissense_score
+COL_AM = 135  # AlphaMissense_score
 
 
 def score_xgboost_on_test() -> pd.DataFrame:
@@ -265,7 +266,9 @@ def main() -> int:
     # Per-method (variant_id, y_true, score) frames; "score" is direction-normalised
     # so higher = more pathogenic for every method.
     methods: dict[str, pd.DataFrame] = {
-        "XGBoost": xgb.rename(columns={"variant_key": "variant_id"})[["variant_id", "y_true", "score"]],
+        "XGBoost": xgb.rename(columns={"variant_key": "variant_id"})[
+            ["variant_id", "y_true", "score"]
+        ],
     }
     base = db_merged[["variant_key", "label", "sift_min", "polyphen_max", "am_max"]].rename(
         columns={"variant_key": "variant_id", "label": "y_true"}
@@ -323,10 +326,7 @@ def main() -> int:
         )
 
     # AM delta-vs-Table-5.2 critical check
-    if am_pr_intersection is not None:
-        delta = am_pr_intersection - am_pr_table52
-    else:
-        delta = float("nan")
+    delta = am_pr_intersection - am_pr_table52 if am_pr_intersection is not None else float("nan")
     direction_note = (
         " (AM PR-AUC HIGHER on this subset --- coverage-bias hypothesis NOT supported"
         " on this subset; AM gap is real)"
@@ -339,9 +339,9 @@ def main() -> int:
         )
     )
     subset_caveat = (
-        "tabix-recoverable subset only (n=%d): hg19 lookups against an hg38-indexed"
+        f"tabix-recoverable subset only (n={n_int}): hg19 lookups against an hg38-indexed"
         " dbNSFP file. A liftover-based or full-scan intersection is deferred (see"
-        " script docstring)." % n_int
+        " script docstring)."
     )
     note = (
         f"AM intersection PR-AUC delta vs Table 5.2 (0.890): {delta:+.4f}"

@@ -22,7 +22,6 @@ from numpy.typing import ArrayLike
 from scipy import stats
 from sklearn.metrics import average_precision_score, roc_auc_score
 
-
 # ----------------------------- DeLong's test ------------------------------
 
 
@@ -148,9 +147,7 @@ def paired_bootstrap_prauc(
         if yb.sum() == 0 or yb.sum() == n:
             deltas[b] = np.nan
             continue
-        deltas[b] = average_precision_score(yb, p1a[idx]) - average_precision_score(
-            yb, p2a[idx]
-        )
+        deltas[b] = average_precision_score(yb, p1a[idx]) - average_precision_score(yb, p2a[idx])
     valid = deltas[~np.isnan(deltas)]
     ci_lo, ci_hi = np.percentile(valid, [2.5, 97.5])
     frac_ge = float((valid >= 0).mean())

@@ -1,5 +1,6 @@
 # Regression guard for ESM-2 / HEAD split drift.
 """Wrap scripts/verify_esm2_split_integrity.py into a CI test."""
+
 from __future__ import annotations
 
 import subprocess
@@ -16,6 +17,7 @@ SCRIPT = REPO / "scripts/verify_esm2_split_integrity.py"
 def test_esm2_split_integrity_passes():
     result = subprocess.run(
         [sys.executable, str(SCRIPT)],
+        check=False,
         cwd=REPO,
         capture_output=True,
         text=True,

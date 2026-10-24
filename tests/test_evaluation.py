@@ -47,23 +47,14 @@ class TestComputeClassificationMetrics:
         assert m["tn"] + m["fp"] + m["fn"] + m["tp"] == m["support"]
         assert m["pathogenic_count"] + m["benign_count"] == m["support"]
 
-    def test_single_class_graceful_degradation(self) -> None:
-        """Single-class input: ROC-AUC must be NaN (undefined), but the
-        rest of the metrics should still compute without crashing — this
-        matches sklearn's graceful-nan behavior."""
+    def test_single_class_raises(self) -> None:
+        """Single-class input: ROC-AUC and PR-AUC are undefined, so the
+        function refuses to report them. It raises a ValueError instead of
+        returning NaN metrics that could be mistaken for real results."""
         y_true = np.zeros(10, dtype=int)
         y_prob = np.full(10, 0.1)
-        # Sklearn emits UndefinedMetricWarning; pyproject.toml has warnings
-        # as errors, so we must wrap in warns().
-        import warnings
-
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            m = compute_classification_metrics(y_true, y_prob)
-        assert np.isnan(m["roc_auc"]), f"expected NaN ROC-AUC, got {m['roc_auc']}"
-        # Support + counts remain sane.
-        assert m["support"] == 10
-        assert m["benign_count"] == 10 and m["pathogenic_count"] == 0
+        with pytest.raises(ValueError, match="Both classes"):
+            compute_classification_metrics(y_true, y_prob)
 
     def test_extreme_probabilities_are_clipped(self) -> None:
         """Exact 0 and 1 probabilities are clipped to avoid log(0)."""

@@ -78,12 +78,14 @@ def _reliability_curve(y: np.ndarray, p: np.ndarray, n_bins: int = 10) -> pd.Dat
         if n == 0:
             rows.append({"bin": b, "n": 0, "mean_pred": np.nan, "mean_true": np.nan})
             continue
-        rows.append({
-            "bin": b,
-            "n": n,
-            "mean_pred": float(p[mask].mean()),
-            "mean_true": float(y[mask].mean()),
-        })
+        rows.append(
+            {
+                "bin": b,
+                "n": n,
+                "mean_pred": float(p[mask].mean()),
+                "mean_true": float(y[mask].mean()),
+            }
+        )
     return pd.DataFrame(rows)
 
 
@@ -143,20 +145,25 @@ def main() -> None:
 
     # Figure: 2x1 reliability curves (full + family_holdout)
     import matplotlib
+
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
     fig, axes = plt.subplots(1, 2, figsize=(10.5, 5), sharey=True)
     for ax, slice_name in zip(axes, ["full", "family_holdout"]):
-        for variant, col, color, marker in [
+        for variant, _col, color, marker in [
             ("raw", "p_raw", "#C9463D", "o"),
             ("isotonic", "p_calibrated", "#045531", "s"),
         ]:
             c = curves[(slice_name, variant)]
             c = c[c["n"] > 0]
             ax.plot(
-                c["mean_pred"], c["mean_true"],
-                marker=marker, lw=1.8, color=color, alpha=0.9,
+                c["mean_pred"],
+                c["mean_true"],
+                marker=marker,
+                lw=1.8,
+                color=color,
+                alpha=0.9,
                 label=f"{variant} (ECE={out[(out['slice'] == slice_name) & (out['variant'] == variant)]['ece'].iloc[0]:.3f})",
             )
         ax.plot([0, 1], [0, 1], "--", color="gray", lw=1, label="ideal")

@@ -55,6 +55,10 @@ filterwarnings = [
     # Optuna marks TPESampler(multivariate=True) as experimental but has
     # kept the API stable for years; our tuning config depends on it.
     "ignore::optuna.exceptions.ExperimentalWarning",
+    # matplotlib >= 3.11 flags Colormap.set_bad/set_over/set_under, which
+    # shap.plots calls at import time. Third-party deprecation noise, not a
+    # defect in this repo.
+    "ignore:The set_(bad|over|under) function will be deprecated:PendingDeprecationWarning",
 ]
 
 # ──────────────────────────── coverage ──────────────────────────────
@@ -161,6 +165,9 @@ ignore = [
 "src/esm2_scorer.py" = ["C401"]
 # Matplotlib plotting scripts — style-only warnings that don't help readers.
 "scripts/make_lockdown_figures.py" = ["E702", "RUF001", "C408"]
+# Figure labels and printed tables use α, ×, − and – on purpose.
+"scripts/run_rank_fusion_esm2.py" = ["RUF001"]
+"scripts/phase21_calibration_audit.py" = ["RUF001"]
 "scripts/evaluate_external.py" = ["SIM115"]
 
 # ──────────────────────────── black ─────────────────────────────────

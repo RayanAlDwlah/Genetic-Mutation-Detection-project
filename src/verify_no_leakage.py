@@ -177,10 +177,14 @@ def check_esm2_split_integrity() -> list[str]:
         errors.append(f"[esm2_split_integrity] {leak} scored_test keys NOT in test")
     cross_tt = len(keys["scored_train"] & keys["test"])
     if cross_tt:
-        errors.append(f"[esm2_split_integrity] {cross_tt} variant_keys in BOTH scored_train and test")
+        errors.append(
+            f"[esm2_split_integrity] {cross_tt} variant_keys in BOTH scored_train and test"
+        )
     cross_tv = len(keys["scored_train"] & keys["val"])
     if cross_tv:
-        errors.append(f"[esm2_split_integrity] {cross_tv} variant_keys in BOTH scored_train and val")
+        errors.append(
+            f"[esm2_split_integrity] {cross_tv} variant_keys in BOTH scored_train and val"
+        )
     cross_vt = len(keys["scored_val"] & keys["test"])
     if cross_vt:
         errors.append(f"[esm2_split_integrity] {cross_vt} variant_keys in BOTH scored_val and test")

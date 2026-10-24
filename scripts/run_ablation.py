@@ -1,4 +1,4 @@
-"""Feature-group ablation.
+r"""Feature-group ablation.
 
 For each of the six feature groups used in Figure 3.7, retrain XGBoost with
 the group *removed* and report the resulting ROC-AUC / PR-AUC / ECE on the
@@ -32,7 +32,6 @@ Usage::
 from __future__ import annotations
 
 import argparse
-import json
 from pathlib import Path
 
 import numpy as np
@@ -86,8 +85,8 @@ FEATURE_GROUPS: dict[str, list[str]] = {
 def _parse_args() -> argparse.Namespace:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--train", type=Path, default=REPO / "data/splits/train.parquet")
-    ap.add_argument("--val",   type=Path, default=REPO / "data/splits/val.parquet")
-    ap.add_argument("--test",  type=Path, default=REPO / "data/splits/test.parquet")
+    ap.add_argument("--val", type=Path, default=REPO / "data/splits/val.parquet")
+    ap.add_argument("--test", type=Path, default=REPO / "data/splits/test.parquet")
     ap.add_argument(
         "--params",
         type=Path,
@@ -139,7 +138,7 @@ def _paired_bootstrap_delta(y, p_full, p_abl, metric, n_boot, seed):
 
 
 def _train_and_eval(x_tr, y_tr, x_val, y_val, x_te, y_te, params, args):
-    import xgboost as xgb  # noqa: PLC0415
+    import xgboost as xgb
 
     # Build categorical DMatrix: we pass ref_aa / alt_aa as pandas 'category'.
     def _prepare(df: pd.DataFrame) -> pd.DataFrame:
@@ -196,9 +195,20 @@ def main() -> None:
     te = pd.read_parquet(args.test)
     params = pd.read_csv(args.params).iloc[0].to_dict()
 
-    banned = {"variant_key", "label", "review_stars", "chr", "ref", "alt",
-              "gene", "pos", "ClinicalSignificance", "PhenotypeIDS",
-              "is_common", "is_imputed_gnomad_constraint"}
+    banned = {
+        "variant_key",
+        "label",
+        "review_stars",
+        "chr",
+        "ref",
+        "alt",
+        "gene",
+        "pos",
+        "ClinicalSignificance",
+        "PhenotypeIDS",
+        "is_common",
+        "is_imputed_gnomad_constraint",
+    }
 
     feature_cols = [c for c in tr.columns if c not in banned]
     print(f"full feature set: {len(feature_cols)} cols")
@@ -210,21 +220,34 @@ def main() -> None:
     rows = []
     # 1. Full baseline
     p_full = _train_and_eval(
-        tr[feature_cols], y_tr,
-        val[feature_cols], y_val,
-        te[feature_cols], y_te,
-        params, args,
+        tr[feature_cols],
+        y_tr,
+        val[feature_cols],
+        y_val,
+        te[feature_cols],
+        y_te,
+        params,
+        args,
     )
     roc_full = float(roc_auc_score(y_te, p_full))
     pr_full = float(average_precision_score(y_te, p_full))
     ece_full = _ece(y_te, p_full)
     print(f"[full]           ROC={roc_full:.4f}  PR={pr_full:.4f}  ECE={ece_full:.4f}")
     rows.append(
-        {"group": "FULL_BASELINE", "n_dropped": 0,
-         "test_roc": roc_full, "test_pr": pr_full, "test_ece": ece_full,
-         "d_roc": 0.0, "d_roc_lo": 0.0, "d_roc_hi": 0.0,
-         "d_pr": 0.0,  "d_pr_lo":  0.0, "d_pr_hi":  0.0,
-         "d_ece": 0.0}
+        {
+            "group": "FULL_BASELINE",
+            "n_dropped": 0,
+            "test_roc": roc_full,
+            "test_pr": pr_full,
+            "test_ece": ece_full,
+            "d_roc": 0.0,
+            "d_roc_lo": 0.0,
+            "d_roc_hi": 0.0,
+            "d_pr": 0.0,
+            "d_pr_lo": 0.0,
+            "d_pr_hi": 0.0,
+            "d_ece": 0.0,
+        }
     )
 
     # 2. Ablations
@@ -232,35 +255,55 @@ def main() -> None:
         keep = [c for c in feature_cols if c not in cols]
         n_dropped = len(feature_cols) - len(keep)
         p_abl = _train_and_eval(
-            tr[keep], y_tr,
-            val[keep], y_val,
-            te[keep], y_te,
-            params, args,
+            tr[keep],
+            y_tr,
+            val[keep],
+            y_val,
+            te[keep],
+            y_te,
+            params,
+            args,
         )
         roc_abl = float(roc_auc_score(y_te, p_abl))
         pr_abl = float(average_precision_score(y_te, p_abl))
         ece_abl = _ece(y_te, p_abl)
 
         d_roc, dr_lo, dr_hi = _paired_bootstrap_delta(
-            y_te, p_full, p_abl, roc_auc_score, args.n_boot, args.seed,
+            y_te,
+            p_full,
+            p_abl,
+            roc_auc_score,
+            args.n_boot,
+            args.seed,
         )
         d_pr, dp_lo, dp_hi = _paired_bootstrap_delta(
-            y_te, p_full, p_abl, average_precision_score, args.n_boot, args.seed,
+            y_te,
+            p_full,
+            p_abl,
+            average_precision_score,
+            args.n_boot,
+            args.seed,
         )
         print(
             f"[{group:18s}] dropped={n_dropped:2d}  ROC={roc_abl:.4f}  "
             f"PR={pr_abl:.4f}  d_ROC={d_roc:+.4f}"
         )
-        rows.append({
-            "group": group,
-            "n_dropped": n_dropped,
-            "test_roc": roc_abl,
-            "test_pr": pr_abl,
-            "test_ece": ece_abl,
-            "d_roc": d_roc, "d_roc_lo": dr_lo, "d_roc_hi": dr_hi,
-            "d_pr": d_pr,   "d_pr_lo":  dp_lo, "d_pr_hi":  dp_hi,
-            "d_ece": ece_abl - ece_full,
-        })
+        rows.append(
+            {
+                "group": group,
+                "n_dropped": n_dropped,
+                "test_roc": roc_abl,
+                "test_pr": pr_abl,
+                "test_ece": ece_abl,
+                "d_roc": d_roc,
+                "d_roc_lo": dr_lo,
+                "d_roc_hi": dr_hi,
+                "d_pr": d_pr,
+                "d_pr_lo": dp_lo,
+                "d_pr_hi": dp_hi,
+                "d_ece": ece_abl - ece_full,
+            }
+        )
 
     out = pd.DataFrame(rows)
     args.out_csv.parent.mkdir(parents=True, exist_ok=True)
@@ -269,21 +312,30 @@ def main() -> None:
 
     # Figure: bar chart of delta metrics
     import matplotlib
+
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
     abl = out[out["group"] != "FULL_BASELINE"].sort_values("d_roc")
     fig, ax = plt.subplots(1, 2, figsize=(10, 4), sharey=True)
-    ax[0].barh(abl["group"], abl["d_roc"], xerr=[abl["d_roc"] - abl["d_roc_lo"],
-                                                  abl["d_roc_hi"] - abl["d_roc"]],
-               color="#045531", alpha=0.85)
+    ax[0].barh(
+        abl["group"],
+        abl["d_roc"],
+        xerr=[abl["d_roc"] - abl["d_roc_lo"], abl["d_roc_hi"] - abl["d_roc"]],
+        color="#045531",
+        alpha=0.85,
+    )
     ax[0].axvline(0, color="gray", lw=0.7)
     ax[0].set_xlabel("$\\Delta$ ROC-AUC (full $-$ ablated)")
     ax[0].set_title("ROC-AUC ablation (paralog-disjoint test)")
 
-    ax[1].barh(abl["group"], abl["d_pr"], xerr=[abl["d_pr"] - abl["d_pr_lo"],
-                                                  abl["d_pr_hi"] - abl["d_pr"]],
-               color="#C9A959", alpha=0.85)
+    ax[1].barh(
+        abl["group"],
+        abl["d_pr"],
+        xerr=[abl["d_pr"] - abl["d_pr_lo"], abl["d_pr_hi"] - abl["d_pr"]],
+        color="#C9A959",
+        alpha=0.85,
+    )
     ax[1].axvline(0, color="gray", lw=0.7)
     ax[1].set_xlabel("$\\Delta$ PR-AUC (full $-$ ablated)")
     ax[1].set_title("PR-AUC ablation")

@@ -31,9 +31,7 @@ def compute_classification_metrics(
 
     y_true_arr = np.asarray(y_true).astype(int)
     if len(np.unique(y_true_arr)) < 2:
-        raise ValueError(
-            "Both classes (0 and 1) must be present in y_true to compute metrics."
-        )
+        raise ValueError("Both classes (0 and 1) must be present in y_true to compute metrics.")
     # Clip probabilities away from 0/1 to prevent log(0) in log_loss and brier_score_loss.
     y_prob_arr = np.clip(np.asarray(y_prob).astype(float), 1e-12, 1.0 - 1e-12)
     y_pred = (y_prob_arr >= threshold).astype(int)

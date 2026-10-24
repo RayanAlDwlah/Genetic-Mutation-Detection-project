@@ -12,11 +12,11 @@ Pathogenicity = -agg(esm2_llr): higher LLR (model sees alt as plausible)
 should correspond to benign, so we negate before scoring against the
 binary `label` column.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 from sklearn.metrics import average_precision_score, roc_auc_score
 
@@ -49,8 +49,10 @@ def main() -> int:
     isoform_counts = scores.groupby("variant_key").size()
     p50 = float(isoform_counts.median())
     p95 = float(isoform_counts.quantile(0.95))
-    print(f"[probe] {len(scores)} score rows over {scores['variant_key'].nunique()} unique variants "
-          f"(isoforms p50={p50:.0f} p95={p95:.0f})")
+    print(
+        f"[probe] {len(scores)} score rows over {scores['variant_key'].nunique()} unique variants "
+        f"(isoforms p50={p50:.0f} p95={p95:.0f})"
+    )
 
     rows = []
     for rule in ["min", "max", "mean", "first"]:

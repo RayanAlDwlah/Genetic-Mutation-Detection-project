@@ -36,13 +36,25 @@ REPO = Path(__file__).resolve().parents[1]
 
 # --- AA classification (Wikipedia: amino-acid properties, standard 20) ---
 AA_CLASS = {
-    "A": "non-polar", "V": "non-polar", "L": "non-polar",
-    "I": "non-polar", "M": "non-polar", "P": "non-polar",
-    "S": "polar", "T": "polar", "N": "polar",
-    "Q": "polar", "C": "polar",
-    "K": "positive", "R": "positive", "H": "positive",
-    "D": "negative", "E": "negative",
-    "F": "aromatic", "Y": "aromatic", "W": "aromatic",
+    "A": "non-polar",
+    "V": "non-polar",
+    "L": "non-polar",
+    "I": "non-polar",
+    "M": "non-polar",
+    "P": "non-polar",
+    "S": "polar",
+    "T": "polar",
+    "N": "polar",
+    "Q": "polar",
+    "C": "polar",
+    "K": "positive",
+    "R": "positive",
+    "H": "positive",
+    "D": "negative",
+    "E": "negative",
+    "F": "aromatic",
+    "Y": "aromatic",
+    "W": "aromatic",
     "G": "special",
 }
 AA_CLASSES = ["polar", "non-polar", "positive", "negative", "aromatic", "special"]
@@ -85,8 +97,8 @@ def _assign_family(gene: str) -> str:
 def _parse_args() -> argparse.Namespace:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--train", type=Path, default=REPO / "data/splits/train.parquet")
-    ap.add_argument("--val",   type=Path, default=REPO / "data/splits/val.parquet")
-    ap.add_argument("--test",  type=Path, default=REPO / "data/splits/test.parquet")
+    ap.add_argument("--val", type=Path, default=REPO / "data/splits/val.parquet")
+    ap.add_argument("--test", type=Path, default=REPO / "data/splits/test.parquet")
     ap.add_argument(
         "--params",
         type=Path,
@@ -119,7 +131,7 @@ def _parse_args() -> argparse.Namespace:
 
 
 def _train_predict(tr, val, te, feature_cols, params, args):
-    import xgboost as xgb  # noqa: PLC0415
+    import xgboost as xgb
 
     def _prepare(df: pd.DataFrame) -> pd.DataFrame:
         out = df.copy()
@@ -128,8 +140,10 @@ def _train_predict(tr, val, te, feature_cols, params, args):
                 out[c] = out[c].astype("category")
         return out
 
-    x_tr = _prepare(tr[feature_cols]); y_tr = tr["label"].to_numpy(dtype=int)
-    x_val = _prepare(val[feature_cols]); y_val = val["label"].to_numpy(dtype=int)
+    x_tr = _prepare(tr[feature_cols])
+    y_tr = tr["label"].to_numpy(dtype=int)
+    x_val = _prepare(val[feature_cols])
+    y_val = val["label"].to_numpy(dtype=int)
     x_te = _prepare(te[feature_cols])
 
     d_tr = xgb.DMatrix(x_tr, label=y_tr, enable_categorical=True)
@@ -154,8 +168,12 @@ def _train_predict(tr, val, te, feature_cols, params, args):
         "seed": args.seed,
     }
     booster = xgb.train(
-        xp, d_tr, num_boost_round=args.n_estimators,
-        evals=[(d_val, "val")], early_stopping_rounds=30, verbose_eval=False,
+        xp,
+        d_tr,
+        num_boost_round=args.n_estimators,
+        evals=[(d_val, "val")],
+        early_stopping_rounds=30,
+        verbose_eval=False,
     )
     p_val = booster.predict(d_val)
     p_te = booster.predict(d_te)
@@ -171,9 +189,20 @@ def main() -> None:
     te = pd.read_parquet(args.test)
     params = pd.read_csv(args.params).iloc[0].to_dict()
 
-    banned = {"variant_key", "label", "review_stars", "chr", "ref", "alt",
-              "gene", "pos", "ClinicalSignificance", "PhenotypeIDS",
-              "is_common", "is_imputed_gnomad_constraint"}
+    banned = {
+        "variant_key",
+        "label",
+        "review_stars",
+        "chr",
+        "ref",
+        "alt",
+        "gene",
+        "pos",
+        "ClinicalSignificance",
+        "PhenotypeIDS",
+        "is_common",
+        "is_imputed_gnomad_constraint",
+    }
     feature_cols = [c for c in tr.columns if c not in banned]
 
     print("training + predicting on test ...")
@@ -214,10 +243,14 @@ def main() -> None:
     # ---------- 2. 6x6 AA class heat-map of FN rate ----------
     pos = te[te["label"] == 1]
     fn_heat = pd.DataFrame(
-        index=AA_CLASSES, columns=AA_CLASSES, dtype=float,
+        index=AA_CLASSES,
+        columns=AA_CLASSES,
+        dtype=float,
     ).fillna(0.0)
     count_heat = pd.DataFrame(
-        index=AA_CLASSES, columns=AA_CLASSES, dtype=int,
+        index=AA_CLASSES,
+        columns=AA_CLASSES,
+        dtype=int,
     ).fillna(0)
     for rc in AA_CLASSES:
         for ac in AA_CLASSES:
@@ -235,7 +268,11 @@ def main() -> None:
                     "n": int(count_heat.loc[rc, ac]),
                     "n_pos": int(count_heat.loc[rc, ac]),
                     "roc": float("nan"),
-                    "fn_rate": float(fn_heat.loc[rc, ac]) if not np.isnan(fn_heat.loc[rc, ac]) else float("nan"),
+                    "fn_rate": (
+                        float(fn_heat.loc[rc, ac])
+                        if not np.isnan(fn_heat.loc[rc, ac])
+                        else float("nan")
+                    ),
                     "fp_rate": float("nan"),
                 }
             )
@@ -243,7 +280,9 @@ def main() -> None:
     # ---------- 3. Confident errors by phyloP quintile ----------
     quint_edges = te["phyloP100way_vertebrate"].quantile([0, 0.2, 0.4, 0.6, 0.8, 1.0]).to_numpy()
     te["phyloP_q"] = pd.cut(
-        te["phyloP100way_vertebrate"], bins=quint_edges, include_lowest=True,
+        te["phyloP100way_vertebrate"],
+        bins=quint_edges,
+        include_lowest=True,
         labels=[f"Q{i+1}" for i in range(5)],
     )
     conf = te[te["confident_err"] == 1]
@@ -254,15 +293,17 @@ def main() -> None:
         qconf = conf[conf["phyloP_q"] == q]
         fn_count = int((qconf["label"] == 1).sum())
         fp_count = int((qconf["label"] == 0).sum())
-        q_rows.append({
-            "stratum_type": "phyloP_quintile",
-            "stratum": q,
-            "n": int(len(qsub)),
-            "n_pos": int(qsub["label"].sum()),
-            "roc": float("nan"),
-            "fn_rate": fn_count / max(qsub["label"].sum(), 1),
-            "fp_rate": fp_count / max((qsub["label"] == 0).sum(), 1),
-        })
+        q_rows.append(
+            {
+                "stratum_type": "phyloP_quintile",
+                "stratum": q,
+                "n": int(len(qsub)),
+                "n_pos": int(qsub["label"].sum()),
+                "roc": float("nan"),
+                "fn_rate": fn_count / max(qsub["label"].sum(), 1),
+                "fp_rate": fp_count / max((qsub["label"] == 0).sum(), 1),
+            }
+        )
         quint_summary.append({"quintile": q, "FN": fn_count, "FP": fp_count})
 
     # ---------- Save CSV ----------
@@ -273,6 +314,7 @@ def main() -> None:
 
     # ---------- Figures ----------
     import matplotlib
+
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
@@ -281,8 +323,8 @@ def main() -> None:
     fig, ax1 = plt.subplots(figsize=(9, 5))
     y = np.arange(len(fam_df))
     ax1.barh(y - 0.25, fam_df["fn_rate"], height=0.23, color="#C9463D", label="FN rate", alpha=0.85)
-    ax1.barh(y,         fam_df["fp_rate"], height=0.23, color="#E4A700", label="FP rate", alpha=0.85)
-    ax1.barh(y + 0.25,  fam_df["roc"],     height=0.23, color="#045531", label="ROC-AUC", alpha=0.85)
+    ax1.barh(y, fam_df["fp_rate"], height=0.23, color="#E4A700", label="FP rate", alpha=0.85)
+    ax1.barh(y + 0.25, fam_df["roc"], height=0.23, color="#045531", label="ROC-AUC", alpha=0.85)
     ax1.set_yticks(y)
     ax1.set_yticklabels(fam_df["stratum"].tolist())
     ax1.set_xlim(0, 1.0)
@@ -298,7 +340,12 @@ def main() -> None:
 
     # Fig 2 — 6x6 heat-map
     fig, ax2 = plt.subplots(figsize=(6.5, 5.5))
-    im = ax2.imshow(fn_heat.to_numpy(dtype=float), cmap="Reds", vmin=0, vmax=max(0.3, fn_heat.to_numpy(dtype=float).max()))
+    im = ax2.imshow(
+        fn_heat.to_numpy(dtype=float),
+        cmap="Reds",
+        vmin=0,
+        vmax=max(0.3, fn_heat.to_numpy(dtype=float).max()),
+    )
     ax2.set_xticks(range(len(AA_CLASSES)))
     ax2.set_yticks(range(len(AA_CLASSES)))
     ax2.set_xticklabels(AA_CLASSES, rotation=35, ha="right")
@@ -313,8 +360,15 @@ def main() -> None:
             if n == 0:
                 ax2.text(j, i, "--", ha="center", va="center", fontsize=8, color="#999")
             else:
-                ax2.text(j, i, f"{v:.2f}\nn={n}", ha="center", va="center", fontsize=7,
-                         color="white" if v > 0.15 else "black")
+                ax2.text(
+                    j,
+                    i,
+                    f"{v:.2f}\nn={n}",
+                    ha="center",
+                    va="center",
+                    fontsize=7,
+                    color="white" if v > 0.15 else "black",
+                )
     fig.colorbar(im, ax=ax2, label="FN rate")
     fig.tight_layout()
     fig.savefig(args.out_aa, dpi=150, bbox_inches="tight")
@@ -331,9 +385,7 @@ def main() -> None:
     ax3.set_xticklabels(qsum["quintile"])
     ax3.set_xlabel("phyloP100way_vertebrate quintile (Q1 = least conserved, Q5 = most)")
     ax3.set_ylabel("count of confident errors")
-    ax3.set_title(
-        "Confident errors (|p - y| > 0.5) stratified by conservation quintile"
-    )
+    ax3.set_title("Confident errors (|p - y| > 0.5) stratified by conservation quintile")
     for i, r in enumerate(qsum.itertuples()):
         ax3.text(i, r.FN + r.FP + 0.5, f"{r.FN+r.FP}", ha="center", va="bottom", fontsize=9)
     ax3.legend(loc="upper right")

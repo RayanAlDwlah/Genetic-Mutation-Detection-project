@@ -1,10 +1,10 @@
 """Unit tests for intersection-subset comparison helpers."""
+
 from __future__ import annotations
 
 import numpy as np
-from sklearn.metrics import roc_auc_score
-
 from scripts.intersection_baselines import bootstrap_metric, parse_score, parse_score_min
+from sklearn.metrics import roc_auc_score
 
 
 def test_bootstrap_returns_point_and_ci():

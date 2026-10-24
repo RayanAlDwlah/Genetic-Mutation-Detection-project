@@ -43,7 +43,6 @@ from pathlib import Path
 
 import pandas as pd
 import requests
-
 from src.structural_features import _NAN_FEATURES, compute_for_position
 
 REPO = Path(__file__).resolve().parents[1]
@@ -219,10 +218,9 @@ def extract_features(
             continue
 
         pdb_path = SCRATCH_DIR / f"{uni}.pdb"
-        if not pdb_path.exists():
-            if not _download_pdb(pdb_url, pdb_path):
-                rows.append(base)
-                continue
+        if not pdb_path.exists() and not _download_pdb(pdb_url, pdb_path):
+            rows.append(base)
+            continue
 
         feats = compute_for_position(pdb_path, int(pos))
         rows.append({**base, **feats.__dict__})
@@ -277,7 +275,7 @@ def _load_variants(
     missing = merged["gene"].isna()
     if missing.any() and denovo_raw is not None and denovo_raw.exists():
         try:
-            from src.external_validation.denovo_loader import load_denovo_db  # noqa: PLC0415
+            from src.external_validation.denovo_loader import load_denovo_db
         except Exception:
             pass
         else:
@@ -326,14 +324,20 @@ def main() -> None:
     )
     args = ap.parse_args()
 
-    vep_path = REPO / args.vep_cache if not Path(args.vep_cache).is_absolute() else Path(args.vep_cache)
-    splits_dir = REPO / args.splits_dir if not Path(args.splits_dir).is_absolute() else Path(args.splits_dir)
+    vep_path = (
+        REPO / args.vep_cache if not Path(args.vep_cache).is_absolute() else Path(args.vep_cache)
+    )
+    splits_dir = (
+        REPO / args.splits_dir if not Path(args.splits_dir).is_absolute() else Path(args.splits_dir)
+    )
     out_path = REPO / args.out if not Path(args.out).is_absolute() else Path(args.out)
 
     if not vep_path.exists():
         raise SystemExit(f"VEP cache not found: {vep_path}")
 
-    denovo_raw = REPO / args.denovo_raw if not Path(args.denovo_raw).is_absolute() else Path(args.denovo_raw)
+    denovo_raw = (
+        REPO / args.denovo_raw if not Path(args.denovo_raw).is_absolute() else Path(args.denovo_raw)
+    )
     variants = _load_variants(vep_path, splits_dir, denovo_raw=denovo_raw)
     print(f"[alphafold] assembled {len(variants):,} (variant, gene, pos) rows")
     if args.limit:

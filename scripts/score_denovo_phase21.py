@@ -18,6 +18,7 @@ predictions and applies it to the denovo-db scores. Outputs
 `external_denovo_db_metrics_phase21.csv` in the schema used by
 the Phase-1 equivalents.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -65,16 +66,22 @@ IMPUTED_SRC = [
 
 def main() -> int:
     skel = pd.read_parquet(SKELETON)[["variant_key", "gene", "label", "family_holdout"]]
-    print(f"[denovo_phase21] skeleton {len(skel)} variants ({int(skel['family_holdout'].sum())} holdout)")
+    print(
+        f"[denovo_phase21] skeleton {len(skel)} variants ({int(skel['family_holdout'].sum())} holdout)"
+    )
 
     dbnsfp = pd.read_parquet(DBNSFP)
     af = pd.read_parquet(GNOMAD_AF)
-    constraint_medians = pd.read_csv(CONSTRAINT_MEDIANS, index_col=0)["value"].astype(float).to_dict()
+    constraint_medians = (
+        pd.read_csv(CONSTRAINT_MEDIANS, index_col=0)["value"].astype(float).to_dict()
+    )
     esm2 = pd.read_parquet(ESM2_DENOVO)[["variant_key", "esm2_llr"]].dropna(subset=["esm2_llr"])
     esm2 = esm2.groupby("variant_key", as_index=False)["esm2_llr"].min()
 
     feat = skel.merge(dbnsfp, on="variant_key", how="left")
-    feat = feat.merge(af[["variant_key", "AF_popmax", "AN", "AC", "log_AF"]], on="variant_key", how="left")
+    feat = feat.merge(
+        af[["variant_key", "AF_popmax", "AN", "AC", "log_AF"]], on="variant_key", how="left"
+    )
     for flag, src in zip(IMPUTED_FLAGS, IMPUTED_SRC):
         feat[flag] = feat[src].isna().astype(int)
 
@@ -134,7 +141,13 @@ def main() -> int:
     # Refit isotonic on Phase-2.1 val raw probs
     val = pd.read_parquet(PHASE21_VAL)
     val_X = val[num_cols + cat_prefixes].copy()
-    val_X[num_cols] = val_X[num_cols].replace([np.inf, -np.inf], np.nan).fillna(medians).fillna(0.0).astype(np.float32)
+    val_X[num_cols] = (
+        val_X[num_cols]
+        .replace([np.inf, -np.inf], np.nan)
+        .fillna(medians)
+        .fillna(0.0)
+        .astype(np.float32)
+    )
     val_Xt = transformer.transform(val_X)
     val_p_raw = booster.predict(xgb.DMatrix(val_Xt))
     iso = IsotonicRegression(out_of_bounds="clip", y_min=0.0, y_max=1.0)
@@ -161,27 +174,33 @@ def main() -> int:
             continue
         roc = float(roc_auc_score(y, sub["p_calibrated"]))
         pr = float(average_precision_score(y, sub["p_calibrated"]))
-        rows.append({
-            "slice": slice_name,
-            "n": int(mask.sum()),
-            "n_positive": int(y.sum()),
-            "roc_auc_calibrated": roc,
-            "pr_auc_calibrated": pr,
-            "roc_auc_raw": float(roc_auc_score(y, sub["p_raw"])),
-            "pr_auc_raw": float(average_precision_score(y, sub["p_raw"])),
-        })
+        rows.append(
+            {
+                "slice": slice_name,
+                "n": int(mask.sum()),
+                "n_positive": int(y.sum()),
+                "roc_auc_calibrated": roc,
+                "pr_auc_calibrated": pr,
+                "roc_auc_raw": float(roc_auc_score(y, sub["p_raw"])),
+                "pr_auc_raw": float(average_precision_score(y, sub["p_raw"])),
+            }
+        )
     metrics_df = pd.DataFrame(rows)
     metrics_df.to_csv(OUT_METRICS, index=False)
     print(f"[denovo_phase21] wrote {OUT_METRICS}")
     print(metrics_df.to_string(index=False))
 
-    cov = pd.DataFrame([{
-        "source": "denovo_db",
-        "n_total": len(out),
-        "n_holdout": int(out["family_holdout"].sum()),
-        "esm2_coverage": float(feat["esm2_llr"].notna().mean()),
-        "constraint_imputed_pct": 1.0,
-    }])
+    cov = pd.DataFrame(
+        [
+            {
+                "source": "denovo_db",
+                "n_total": len(out),
+                "n_holdout": int(out["family_holdout"].sum()),
+                "esm2_coverage": float(feat["esm2_llr"].notna().mean()),
+                "constraint_imputed_pct": 1.0,
+            }
+        ]
+    )
     cov.to_csv(OUT_COVERAGE, index=False)
     print(f"[denovo_phase21] wrote {OUT_COVERAGE}")
     return 0

@@ -5,7 +5,7 @@ Three tests:
 1. ``test_cls_indexing_is_correct`` — mask residue 1 of a synthetic protein
    and assert the softmax places non-negligible probability on the true
    amino acid. This verifies the CLS offset used in
-   :class:`src.esm2_scorer.ESM2Scorer`.
+   :class:`src.esm2_scorer.ESMRunner`.
 
 2. ``test_sign_convention_makes_radical_mutation_negative`` — score a
    radical substitution (small/flexible Gly → bulky/charged Arg) at a
@@ -20,9 +20,10 @@ Three tests:
    correlation > 0.95 between our pipeline and their reported LLRs on
    100 benchmark variants.
 
-All three are gated behind the ``@pytest.mark.gpu`` marker (they
-instantiate the real 35M model). CI runs them with ``-m "not gpu"``, so
-they execute only where a GPU is available.
+All three are gated behind the ``needs_gpu`` marker (they download and
+instantiate the real 35M model from the Hugging Face Hub). CI deselects
+them with ``-m "not needs_gpu"``; run them locally with
+``pytest -m needs_gpu``.
 
 Acceptance criterion: all three pass or are xfail with a documented
 reason. If a true sign bug is found, the PLM pipeline must be rerun and
@@ -39,7 +40,7 @@ REPO = Path(__file__).resolve().parents[2]
 
 
 # These tests load a 35M-parameter model; they are heavy and GPU-friendly.
-pytestmark = pytest.mark.gpu
+pytestmark = pytest.mark.needs_gpu
 
 
 @pytest.fixture(scope="module")
@@ -47,10 +48,10 @@ def scorer():
     """Instantiate the scorer; skip if transformers or torch are missing."""
     torch = pytest.importorskip("torch")
     _ = pytest.importorskip("transformers")
-    from src.esm2_scorer import ESM2Scorer  # noqa: PLC0415
+    from src.esm2_scorer import ESMRunner
 
     device = "mps" if torch.backends.mps.is_available() else "cpu"
-    return ESM2Scorer(device=device)
+    return ESMRunner(device=device)
 
 
 # -------------------------------------------------------------------------
@@ -64,7 +65,7 @@ def test_cls_indexing_is_correct(scorer):
     CLS shift is off by one, the softmax would be at the wrong position
     and the probability of the true AA would be ~uniform (≈5%).
     """
-    import torch  # noqa: PLC0415
+    import torch
 
     seq = "MKLVFK" + "A" * 50 + "G" + "V" * 50 + "R"  # 108 aa
     aa_at_pos_1 = seq[0]  # should be "M"
@@ -100,7 +101,7 @@ def test_sign_convention_makes_radical_mutation_negative(scorer):
     charged. Substituting G for R at a conserved site is usually
     deleterious, so ESM-2 should assign lower probability to R than to
     G (negative LLR)."""
-    import torch  # noqa: PLC0415
+    import torch
 
     # A synthetic sequence with a well-conserved glycine at position 30.
     # This is a sanity test; not a clinical assertion.
@@ -117,7 +118,7 @@ def test_sign_convention_makes_radical_mutation_negative(scorer):
     probs = torch.softmax(logits[0, pos_1based], dim=-1)
     p_g = float(probs[scorer.aa_ids["G"]])
     p_r = float(probs[scorer.aa_ids["R"]])
-    import math  # noqa: PLC0415
+    import math
 
     llr = math.log(max(p_r, 1e-12)) - math.log(max(p_g, 1e-12))
 
@@ -144,7 +145,7 @@ def test_sign_convention_makes_radical_mutation_negative(scorer):
     strict=True,
 )
 def test_published_variant_correlation_placeholder(scorer):
-    import pandas as pd  # noqa: PLC0415
+    import pandas as pd
 
     ref_path = REPO / "data/raw/baselines/brandes2023_suppl.tsv"
     if not ref_path.exists():
@@ -152,4 +153,4 @@ def test_published_variant_correlation_placeholder(scorer):
     # Real implementation would: load ref, re-score with our pipeline,
     # assert np.corrcoef(our_llr, their_llr)[0, 1] > 0.95.
     _ = pd.read_csv(ref_path, sep="\t")
-    assert False, "implement once the reference file is in the repository"
+    raise AssertionError("implement once the reference file is in the repository")

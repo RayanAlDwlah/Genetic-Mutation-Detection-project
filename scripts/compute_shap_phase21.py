@@ -9,6 +9,7 @@ recomputing it here would require a separate Phase-2.1 predictions
 parquet that already lives at
 results/metrics/phase21/xgboost_predictions.parquet.
 """
+
 from __future__ import annotations
 
 import warnings
@@ -17,7 +18,6 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import xgboost as xgb
-
 from src.training import prepare_split_features, select_feature_columns
 
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -41,7 +41,6 @@ RNG_SEED = 42
 def main() -> None:
     import shap
 
-    rng = np.random.default_rng(RNG_SEED)
     train = pd.read_parquet(TRAIN)
     val = pd.read_parquet(VAL)
     test = pd.read_parquet(TEST)
@@ -59,7 +58,9 @@ def main() -> None:
     _x_train, _x_val, x_test_all, feature_names = prepare_split_features(
         train, val, test, numeric_cols, categorical_cols
     )
-    print(f"[shap_phase21] test sample {len(test_sample)} rows, {x_test_all.shape[1]} encoded features")
+    print(
+        f"[shap_phase21] test sample {len(test_sample)} rows, {x_test_all.shape[1]} encoded features"
+    )
     if "num__esm2_llr" not in feature_names:
         raise SystemExit("ABORT: num__esm2_llr missing from encoded features")
 
@@ -96,7 +97,9 @@ def main() -> None:
 
     OUT_SUMMARY.parent.mkdir(parents=True, exist_ok=True)
     fig = plt.figure(figsize=(9, 7))
-    shap.summary_plot(shap_vals, features=x_sample, feature_names=feature_names, max_display=20, show=False)
+    shap.summary_plot(
+        shap_vals, features=x_sample, feature_names=feature_names, max_display=20, show=False
+    )
     fig.tight_layout()
     fig.savefig(OUT_SUMMARY, dpi=140, bbox_inches="tight")
     plt.close(fig)
@@ -105,7 +108,9 @@ def main() -> None:
     fig, ax = plt.subplots(figsize=(9, 6))
     ax.barh([feature_names[i] for i in order][::-1], mean_abs[order][::-1], color="#2c3e50")
     ax.set_xlabel("mean(|SHAP value|)")
-    ax.set_title("Top-20 features by mean |SHAP| --- Phase-2.1 (esm2_llr included)", fontweight="bold")
+    ax.set_title(
+        "Top-20 features by mean |SHAP| --- Phase-2.1 (esm2_llr included)", fontweight="bold"
+    )
     ax.grid(axis="x", alpha=0.25)
     fig.tight_layout()
     fig.savefig(OUT_BAR, dpi=140, bbox_inches="tight")
@@ -133,7 +138,9 @@ def main() -> None:
     # Locate esm2_llr in the ranking
     if "num__esm2_llr" in rank_df["feature"].values:
         rank_row = rank_df[rank_df["feature"] == "num__esm2_llr"].iloc[0]
-        print(f"[shap_phase21] num__esm2_llr rank #{int(rank_row['rank'])} (mean|SHAP|={rank_row['mean_abs_shap']:.4f})")
+        print(
+            f"[shap_phase21] num__esm2_llr rank #{int(rank_row['rank'])} (mean|SHAP|={rank_row['mean_abs_shap']:.4f})"
+        )
 
 
 if __name__ == "__main__":

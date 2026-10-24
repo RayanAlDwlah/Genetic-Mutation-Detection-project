@@ -58,12 +58,8 @@ OUT_FIG = REPO / "results/figures/rank_fusion_esm2.png"
 def _load_scores() -> pd.DataFrame:
     """Merge XGBoost predictions with ESM-2 LLR for val + test."""
     pred = pd.read_parquet(PRED_PATH)
-    val_esm = pd.read_parquet(ESM_DIR / "scores_val.parquet")[
-        ["variant_key", "esm2_llr"]
-    ]
-    test_esm = pd.read_parquet(ESM_DIR / "scores_test.parquet")[
-        ["variant_key", "esm2_llr"]
-    ]
+    val_esm = pd.read_parquet(ESM_DIR / "scores_val.parquet")[["variant_key", "esm2_llr"]]
+    test_esm = pd.read_parquet(ESM_DIR / "scores_test.parquet")[["variant_key", "esm2_llr"]]
     esm = pd.concat([val_esm, test_esm], ignore_index=True).drop_duplicates("variant_key")
     merged = pred.merge(esm, on="variant_key", how="left")
     print(
@@ -149,7 +145,9 @@ def main() -> None:
     rows = []
 
     # XGBoost alone (both raw and calibrated — we report calibrated as the baseline).
-    rows.append({"model": "xgboost_calibrated", **_metrics(y_test, test["p_calibrated"].to_numpy())})
+    rows.append(
+        {"model": "xgboost_calibrated", **_metrics(y_test, test["p_calibrated"].to_numpy())}
+    )
     rows.append(
         {
             "model": "esm2_llr_zero_shot",
@@ -159,7 +157,9 @@ def main() -> None:
     rows.append(
         {
             "model": "rank_fusion_uniform",
-            **_metrics(y_test, _fuse(test["xgb_rank"].to_numpy(), test["esm_rank"].to_numpy(), 0.5)),
+            **_metrics(
+                y_test, _fuse(test["xgb_rank"].to_numpy(), test["esm_rank"].to_numpy(), 0.5)
+            ),
         }
     )
     rows.append(
@@ -205,7 +205,9 @@ def main() -> None:
         prec, rec, _ = precision_recall_curve(y_test, s)
         roc = roc_auc_score(y_test, s)
         pr = average_precision_score(y_test, s)
-        axes[0].plot(fpr, tpr, color=palette[name], label=f"{labels[name]}  (AUC = {roc:.3f})", lw=2)
+        axes[0].plot(
+            fpr, tpr, color=palette[name], label=f"{labels[name]}  (AUC = {roc:.3f})", lw=2
+        )
         axes[1].plot(rec, prec, color=palette[name], label=f"{labels[name]}  (AP = {pr:.3f})", lw=2)
 
     axes[0].plot([0, 1], [0, 1], "k--", alpha=0.4, lw=1)

@@ -49,9 +49,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from sklearn.metrics import average_precision_score, roc_auc_score
-
 from src.stats.paired_tests import delong_test, paired_bootstrap_prauc
-
 
 REPO = Path(__file__).resolve().parents[1]
 
@@ -123,9 +121,9 @@ def main() -> None:
     booster = xgb.Booster()
     booster.load_model(str(args.xgboost_checkpoint))
 
-    feature_cols = pd.read_csv(
-        REPO / "results/metrics/xgboost_feature_columns.csv"
-    ).iloc[:, 0].tolist()
+    feature_cols = (
+        pd.read_csv(REPO / "results/metrics/xgboost_feature_columns.csv").iloc[:, 0].tolist()
+    )
     dmat = xgb.DMatrix(test[feature_cols].to_numpy(), feature_names=feature_cols)
     p_xgb = booster.predict(dmat)
 
@@ -143,7 +141,9 @@ def main() -> None:
 
     rng = np.random.default_rng(args.seed)
 
-    def _bootstrap_ci(y: np.ndarray, p: np.ndarray, metric, n_boot: int) -> tuple[float, float, float]:
+    def _bootstrap_ci(
+        y: np.ndarray, p: np.ndarray, metric, n_boot: int
+    ) -> tuple[float, float, float]:
         obs = float(metric(y, p))
         boots = np.empty(n_boot, dtype=float)
         for b in range(n_boot):
@@ -161,9 +161,9 @@ def main() -> None:
     rows = []
     for name, score_col, higher_is_pathogenic in [
         ("XGBoost (ours)", "p_xgb", True),
-        ("SIFT",           "sift_score", False),  # lower = damaging → invert
-        ("PolyPhen-2",     "polyphen_score", True),
-        ("AlphaMissense",  "am_score", True),
+        ("SIFT", "sift_score", False),  # lower = damaging → invert
+        ("PolyPhen-2", "polyphen_score", True),
+        ("AlphaMissense", "am_score", True),
     ]:
         p = s_am[score_col].to_numpy(dtype=float)
         if not higher_is_pathogenic:
@@ -188,8 +188,11 @@ def main() -> None:
     # Paired DeLong: XGBoost vs AlphaMissense on S_AM
     paired = delong_test(y, s_am["p_xgb"].to_numpy(), s_am["am_score"].to_numpy())
     paired_pr = paired_bootstrap_prauc(
-        y, s_am["p_xgb"].to_numpy(), s_am["am_score"].to_numpy(),
-        n_boot=args.n_boot, seed=args.seed,
+        y,
+        s_am["p_xgb"].to_numpy(),
+        s_am["am_score"].to_numpy(),
+        n_boot=args.n_boot,
+        seed=args.seed,
     )
     args.out_paired.parent.mkdir(parents=True, exist_ok=True)
     args.out_paired.write_text(
